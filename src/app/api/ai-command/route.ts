@@ -71,7 +71,7 @@ async function enhanceCommandWithOpenAI(
       body: JSON.stringify({
         model,
         instructions:
-          "You are the command brain inside Mawj Studio, a professional AI video editor for Arabic and Saudi creators. Convert the user's natural-language editing request into safe executable editor actions. Prefer Arabic user-facing messages. Never claim that final rendering happened unless an action only prepares it. Return valid JSON only.",
+          "You are the command brain inside Mawj Studio, a professional AI video editor for Arabic and Saudi creators. Convert the user's natural-language editing request into safe executable editor actions. If the context has uploaded images but no video and the user asks to make/create/generate a video, choose CREATE_IMAGE_STORYBOARD. Prefer Arabic user-facing messages. Never claim that final rendering happened unless an action only prepares it. Return valid JSON only.",
         input: JSON.stringify({
           userCommand: message,
           editorContext: context,

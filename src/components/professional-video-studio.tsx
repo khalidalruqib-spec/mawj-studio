@@ -1499,6 +1499,12 @@ export function ProfessionalVideoStudio() {
   }
 
   async function generateImageStoryboard(imageAssets: MediaAsset[]) {
+    if (!imageAssets.length) {
+      setError("ارفع صورة واحدة على الأقل عشان أحولها إلى فيديو.");
+      setProjectStatus("Image storyboard needs uploaded images");
+      return;
+    }
+
     const durationSeconds = getImageStoryboardDuration(imageAssets.length);
 
     setIsGenerating(true);
@@ -1922,6 +1928,59 @@ export function ProfessionalVideoStudio() {
     setProjectStatus("Long pauses marked for removal");
   }
 
+  function addEffectLayer(name: string, color: string, duration = Math.min(totalTimelineSeconds, 30)) {
+    const effectLayer: TimelineLayer = {
+      id: crypto.randomUUID(),
+      type: "effect",
+      name,
+      start: 0,
+      duration: Math.max(1, duration),
+      color,
+    };
+
+    commitTimeline((tracks) => {
+      let added = false;
+      const nextTracks = tracks.map((track) => {
+        if (track.kind !== "effects") return track;
+        added = true;
+        return {
+          ...track,
+          layers: [...track.layers, effectLayer],
+        };
+      });
+
+      if (added) return nextTracks;
+
+      return [
+        ...nextTracks,
+        {
+          id: "track-effects",
+          name: "AI Effects",
+          kind: "effects",
+          layers: [effectLayer],
+        },
+      ];
+    });
+  }
+
+  function applyBackgroundReplacement(mode = backgroundMode) {
+    setBackgroundMode(mode);
+    addEffectLayer(`Background replacement · ${mode}`, "#36d399");
+    setProjectStatus(`${mode} background effect applied to timeline`);
+  }
+
+  function applyAudioEnhancementChain() {
+    setActiveAudioTools((tools) => ({
+      ...tools,
+      "Noise reduction": true,
+      "Voice enhancement": true,
+      "Echo reduction": true,
+      "Auto volume leveling": true,
+    }));
+    addEffectLayer("Audio cleanup chain · noise/echo/leveling", "#7dd3fc");
+    setProjectStatus("Audio enhancement chain applied to timeline");
+  }
+
   function generateCaptionsFromTranscript() {
     setCaptions(transcriptToCaptions(transcript.filter((segment) => !segment.deleted)));
     setActivePanel("captions");
@@ -2175,6 +2234,24 @@ export function ProfessionalVideoStudio() {
     setActivePanel("editor");
   }
 
+  function ensureRequiredLocalActions(
+    command: string,
+    actions: AICommandAction[],
+    context: AICommandContext,
+  ) {
+    const local = resolveLocalAICommand(command, context);
+    const mustCreateStoryboard = local.actions.some((action) => action.type === "CREATE_IMAGE_STORYBOARD");
+
+    if (!mustCreateStoryboard || actions.some((action) => action.type === "CREATE_IMAGE_STORYBOARD")) {
+      return actions;
+    }
+
+    return [
+      local.actions.find((action) => action.type === "CREATE_IMAGE_STORYBOARD")!,
+      ...actions,
+    ].slice(0, 5);
+  }
+
   async function runAssistantCommand(commandOverride?: string) {
     const command = (commandOverride ?? assistantCommand).trim();
     if (!command) return;
@@ -2206,7 +2283,8 @@ export function ProfessionalVideoStudio() {
       const data = (await response.json()) as AICommandResponse & { error?: string };
       if (!response.ok) throw new Error(data.error ?? "AI command failed.");
 
-      await executeAssistantActions(data.actions);
+      const actions = ensureRequiredLocalActions(command, data.actions, context);
+      await executeAssistantActions(actions);
       setAssistantEngineState({
         engine: data.engine,
         confidence: data.confidence,
@@ -2214,10 +2292,10 @@ export function ProfessionalVideoStudio() {
         mode: data.mode,
       });
       setAssistantMessages((messages) => [
-        createAssistantMessage("assistant", data.message, data.actions),
+        createAssistantMessage("assistant", data.message, actions),
         ...messages,
       ].slice(0, 12));
-      setProjectStatus(`AI assistant executed ${data.actions.length} action${data.actions.length === 1 ? "" : "s"}`);
+      setProjectStatus(`AI assistant executed ${actions.length} action${actions.length === 1 ? "" : "s"}`);
     } catch (caughtError) {
       const fallback = resolveLocalAICommand(command, context);
       await executeAssistantActions(fallback.actions);
@@ -2250,8 +2328,22 @@ export function ProfessionalVideoStudio() {
         setActivePanel("editor");
       }
 
+      if (action.type === "CREATE_IMAGE_STORYBOARD") {
+        await generateImageStoryboard(mediaAssets.filter((asset) => asset.kind === "image"));
+      }
+
       if (action.type === "ADD_ARABIC_CAPTIONS") {
-        await transcribeVideo();
+        if (studioFile) {
+          await transcribeVideo();
+        } else if (templateProject || plan) {
+          generateCaptionsFromTranscript();
+          setActivePanel("captions");
+          setProjectStatus("Captions created from the current editable storyboard");
+        } else if (mediaAssets.some((asset) => asset.kind === "image")) {
+          await generateImageStoryboard(mediaAssets.filter((asset) => asset.kind === "image"));
+        } else {
+          setError("ارفع فيديو للصوت أو صور عشان أنشئ كابشن مناسب.");
+        }
       }
 
       if (action.type === "REMOVE_SILENCE") {
@@ -2265,17 +2357,12 @@ export function ProfessionalVideoStudio() {
 
       if (action.type === "IMPROVE_AUDIO") {
         setActivePanel("audio");
-        setActiveAudioTools((tools) => ({
-          ...tools,
-          "Noise reduction": true,
-          "Voice enhancement": true,
-          "Auto volume leveling": true,
-        }));
+        applyAudioEnhancementChain();
       }
 
       if (action.type === "REMOVE_BACKGROUND") {
         setActivePanel("background");
-        setBackgroundMode("Studio gradient");
+        applyBackgroundReplacement("Studio gradient");
       }
 
       if (action.type === "CREATE_AD_VERSION") {
@@ -2483,6 +2570,16 @@ export function ProfessionalVideoStudio() {
                         {isTranscribing ? "Captioning..." : "Auto-caption"}
                       </button>
                     ) : null}
+                    {asset.kind === "image" ? (
+                      <button
+                        type="button"
+                        onClick={() => generateImageStoryboard(mediaAssets.filter((item) => item.kind === "image"))}
+                        disabled={isGenerating}
+                        className="col-span-2 min-h-9 rounded-md bg-[var(--brand)] px-2 text-[11px] font-black text-black transition hover:bg-white disabled:opacity-60"
+                      >
+                        {isGenerating ? "Making video..." : "Make video from images"}
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => deleteMediaAsset(asset)}
@@ -2673,7 +2770,7 @@ export function ProfessionalVideoStudio() {
         <BackgroundPanel
           backgroundMode={backgroundMode}
           onChange={setBackgroundMode}
-          onApply={() => setProjectStatus(`${backgroundMode} background queued`)}
+          onApply={() => applyBackgroundReplacement(backgroundMode)}
         />
       );
     }
@@ -2683,7 +2780,7 @@ export function ProfessionalVideoStudio() {
         <AudioPanel
           activeTools={activeAudioTools}
           onToggle={(tool) => setActiveAudioTools((tools) => ({ ...tools, [tool]: !tools[tool] }))}
-          onApply={() => setProjectStatus("Audio enhancement chain applied")}
+          onApply={applyAudioEnhancementChain}
         />
       );
     }
@@ -2797,7 +2894,75 @@ export function ProfessionalVideoStudio() {
     }
   }
 
-  function runAiTool(tool: AiToolItem) {
+  async function runAiTool(tool: AiToolItem) {
+    const imageAssets = mediaAssets.filter((asset) => asset.kind === "image");
+
+    if (tool.id === "idea-to-video" && !studioFile && imageAssets.length) {
+      setPlatform("tiktok");
+      setAspectRatio("9:16");
+      setStyleId("viral-saudi");
+      await generateImageStoryboard(imageAssets);
+      return;
+    }
+
+    if (tool.id === "magic-clips" && !studioFile && imageAssets.length && !templateProject) {
+      await generateImageStoryboard(imageAssets);
+      return;
+    }
+
+    if (tool.id === "auto-captions") {
+      if (studioFile) {
+        await transcribeVideo();
+        return;
+      }
+
+      if (imageAssets.length && !templateProject) {
+        await generateImageStoryboard(imageAssets);
+        return;
+      }
+
+      generateCaptionsFromTranscript();
+      setActivePanel("captions");
+      setProjectStatus("Captions created for the editable project");
+      return;
+    }
+
+    if (tool.id === "dynamic-captions") {
+      generateCaptionsFromTranscript();
+      setCaptionTemplate("Karaoke Yellow");
+      setActivePanel("captions");
+      setProjectStatus("Dynamic caption style applied");
+      return;
+    }
+
+    if (tool.id === "clean-audio") {
+      setActivePanel("audio");
+      applyAudioEnhancementChain();
+      return;
+    }
+
+    if (tool.id === "remove-silence") {
+      removeLongPauses();
+      handleAiAction("moments");
+      setActivePanel("transcript");
+      setProjectStatus("Silence removal markers applied");
+      return;
+    }
+
+    if (tool.id === "social-resize") {
+      setPlatform("tiktok");
+      setAspectRatio("9:16");
+      setStyleId("viral-saudi");
+      setCaptionTemplate("Saudi Viral Bold");
+      setProjectStatus("Project resized for TikTok/Reels/Shorts safe margins");
+    }
+
+    if (tool.id === "remove-background") {
+      setActivePanel("background");
+      applyBackgroundReplacement("Studio gradient");
+      return;
+    }
+
     if (tool.openPanel) {
       setActivePanel(tool.openPanel);
     }
@@ -2807,7 +2972,7 @@ export function ProfessionalVideoStudio() {
     }
 
     if (tool.command) {
-      void runAssistantCommand(tool.command);
+      await runAssistantCommand(tool.command);
       return;
     }
 
@@ -4936,6 +5101,9 @@ function getAICommandContext({
   selectedLayer: TimelineLayer | null;
   totalTimelineSeconds: number;
 }): AICommandContext {
+  const imageCount = mediaAssets.filter((asset) => asset.kind === "image").length;
+  const audioCount = mediaAssets.filter((asset) => asset.kind === "audio").length;
+
   return {
     platform,
     aspectRatio,
@@ -4943,7 +5111,10 @@ function getAICommandContext({
     goal,
     durationSeconds: studioFile?.durationSeconds ?? totalTimelineSeconds,
     hasVideo: Boolean(studioFile),
+    hasImages: imageCount > 0,
     mediaCount: mediaAssets.length,
+    imageCount,
+    audioCount,
     captionCount: captions.length,
     activePanel,
     selectedLayerName: selectedLayer?.name ?? null,

@@ -1,5 +1,6 @@
 export type AICommandActionType =
   | "SET_TIKTOK_FORMAT"
+  | "CREATE_IMAGE_STORYBOARD"
   | "ADD_ARABIC_CAPTIONS"
   | "REMOVE_SILENCE"
   | "EXTRACT_CLIPS"
@@ -22,7 +23,10 @@ export type AICommandContext = {
   goal?: string;
   durationSeconds?: number;
   hasVideo?: boolean;
+  hasImages?: boolean;
   mediaCount?: number;
+  imageCount?: number;
+  audioCount?: number;
   captionCount?: number;
   activePanel?: string;
   selectedLayerName?: string | null;
@@ -40,6 +44,7 @@ export type AICommandResponse = {
 
 export const AI_COMMAND_ACTION_TYPES: AICommandActionType[] = [
   "SET_TIKTOK_FORMAT",
+  "CREATE_IMAGE_STORYBOARD",
   "ADD_ARABIC_CAPTIONS",
   "REMOVE_SILENCE",
   "EXTRACT_CLIPS",
@@ -62,6 +67,37 @@ export function resolveLocalAICommand(
       type: "SET_TIKTOK_FORMAT",
       label: "تهيئة المقاس والإيقاع لفيديو قصير",
       params: { platform: text.includes("short") ? "shorts" : "tiktok", aspectRatio: "9:16" },
+    });
+  }
+
+  if (
+    context.hasImages &&
+    !context.hasVideo &&
+    matchesAny(text, [
+      "video",
+      "reel",
+      "storyboard",
+      "create",
+      "generate",
+      "make",
+      "فيديو",
+      "مقطع",
+      "ريل",
+      "سو",
+      "سوي",
+      "اصنع",
+      "انشئ",
+      "حوّل",
+      "حول",
+      "منتج",
+      "اعلان",
+      "إعلان",
+    ])
+  ) {
+    actions.push({
+      type: "CREATE_IMAGE_STORYBOARD",
+      label: "تحويل الصور إلى فيديو بمشاهد وطبقات قابلة للتعديل",
+      params: { imageCount: context.imageCount ?? context.mediaCount ?? 0 },
     });
   }
 
@@ -115,10 +151,18 @@ export function resolveLocalAICommand(
   }
 
   if (!actions.length) {
-    actions.push({
-      type: "ADD_TEXT_HOOK",
-      label: "إضافة عنوان hook قابل للتعديل",
-    });
+    if (context.hasImages && !context.hasVideo) {
+      actions.push({
+        type: "CREATE_IMAGE_STORYBOARD",
+        label: "تحويل الصور إلى فيديو بمشاهد وطبقات قابلة للتعديل",
+        params: { imageCount: context.imageCount ?? context.mediaCount ?? 0 },
+      });
+    } else {
+      actions.push({
+        type: "ADD_TEXT_HOOK",
+        label: "إضافة عنوان hook قابل للتعديل",
+      });
+    }
   }
 
   const targetCut = getLocalTargetCut(context);
