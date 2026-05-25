@@ -1,4 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
+import { isUsableMediaDuration, resolveMediaDuration } from "@/lib/media-duration";
 
 const DB_NAME = "mawj-studio";
 const DB_VERSION = 1;
@@ -149,6 +150,7 @@ function extractVideoMetadata(file: File) {
     (resolve, reject) => {
       const video = document.createElement("video");
       const url = URL.createObjectURL(file);
+      let resolvedDuration: number | undefined;
 
       video.preload = "metadata";
       video.muted = true;
@@ -161,8 +163,9 @@ function extractVideoMetadata(file: File) {
         reject(new Error("Could not read video metadata."));
       };
 
-      video.onloadedmetadata = () => {
-        const seekTime = Math.min(0.5, Math.max(0, (video.duration || 1) / 4));
+      video.onloadedmetadata = async () => {
+        resolvedDuration = await resolveMediaDuration(video).catch(() => undefined);
+        const seekTime = Math.min(0.5, Math.max(0, (resolvedDuration || 1) / 4));
         video.currentTime = seekTime;
       };
 
@@ -177,8 +180,9 @@ function extractVideoMetadata(file: File) {
             cleanup();
             resolve({
               thumbnail: thumbnail ?? undefined,
-              durationSeconds:
-                Number.isFinite(video.duration) && video.duration > 0 ? video.duration : undefined,
+              durationSeconds: isUsableMediaDuration(video.duration)
+                ? video.duration
+                : resolvedDuration,
               width: video.videoWidth || undefined,
               height: video.videoHeight || undefined,
             });
@@ -227,11 +231,11 @@ function extractAudioMetadata(file: File) {
     const cleanup = () => URL.revokeObjectURL(url);
 
     audio.preload = "metadata";
-    audio.onloadedmetadata = () => {
+    audio.onloadedmetadata = async () => {
+      const duration = await resolveMediaDuration(audio).catch(() => undefined);
       cleanup();
       resolve({
-        durationSeconds:
-          Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : undefined,
+        durationSeconds: isUsableMediaDuration(duration) ? duration : undefined,
       });
     };
     audio.onerror = () => {

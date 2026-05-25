@@ -1,3 +1,5 @@
+import { resolveMediaDuration } from "@/lib/media-duration";
+
 export const DIRECT_TRANSCRIPTION_UPLOAD_LIMIT_BYTES = 3_500_000;
 export const MAX_TRANSCRIPTION_AUDIO_SECONDS = 180;
 
@@ -90,10 +92,7 @@ async function extractCompressedAudio({
   try {
     await waitForMediaEvent(element, "loadedmetadata");
 
-    const realDuration =
-      Number.isFinite(element.duration) && element.duration > 0
-        ? element.duration
-        : Math.max(1, durationSeconds);
+    const realDuration = await resolveMediaDuration(element, Math.max(1, durationSeconds));
     const clippedSeconds = Math.min(realDuration, Math.max(1, durationSeconds), MAX_TRANSCRIPTION_AUDIO_SECONDS);
     const context = new AudioContextConstructor();
     const source = context.createMediaElementSource(element);

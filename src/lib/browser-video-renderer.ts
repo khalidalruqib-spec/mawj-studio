@@ -1,4 +1,5 @@
 import type { EditPlan } from "@/lib/edit-plan";
+import { resolveMediaDuration } from "@/lib/media-duration";
 import type { AspectRatio, VideoStyle } from "@/lib/video-styles";
 
 const FPS = 30;
@@ -65,10 +66,7 @@ export async function renderEditedVideo({
 
   await waitForVideoEvent(video, "loadedmetadata");
 
-  const realDuration =
-    Number.isFinite(video.duration) && video.duration > 0
-      ? video.duration
-      : Math.max(1, sourceDurationSeconds);
+  const realDuration = await resolveMediaDuration(video, Math.max(1, sourceDurationSeconds));
   const playbackRate = getPlaybackRate(style.pace);
   const desiredSourceSeconds = Math.max(4, Math.min(plan?.targetDurationSeconds ?? realDuration, 60));
   const sourceSeconds = Math.min(realDuration, desiredSourceSeconds);

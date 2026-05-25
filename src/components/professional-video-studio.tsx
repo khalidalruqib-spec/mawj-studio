@@ -83,6 +83,7 @@ import {
   storeProjectSnapshot,
   type StoredMediaRecord,
 } from "@/lib/media-db";
+import { isUsableMediaDuration, resolveMediaDuration } from "@/lib/media-duration";
 import {
   FORMAT_PRESETS,
   PLATFORM_LABELS,
@@ -1235,11 +1236,22 @@ export function ProfessionalVideoStudio() {
     }
   }
 
-  function captureDuration() {
-    const duration = videoRef.current?.duration;
-    if (!studioFile || !duration || Number.isNaN(duration)) return;
-    const roundedDuration = Math.round(duration);
-    setStudioFile({ ...studioFile, durationSeconds: roundedDuration });
+  async function captureDuration() {
+    const video = videoRef.current;
+    if (!studioFile || !video) return;
+
+    const duration = await resolveMediaDuration(video, studioFile.durationSeconds);
+    if (!isUsableMediaDuration(duration)) return;
+
+    const roundedDuration = Math.max(1, Math.round(duration));
+    setStudioFile((currentFile) =>
+      currentFile ? { ...currentFile, durationSeconds: roundedDuration } : currentFile,
+    );
+    setMediaAssets((assets) =>
+      assets.map((asset) =>
+        asset.file === studioFile.file ? { ...asset, durationSeconds: roundedDuration } : asset,
+      ),
+    );
     commitTimeline((tracks) => syncPrimaryVideoDuration(tracks, studioFile.file.name, roundedDuration));
   }
 
@@ -3240,6 +3252,13 @@ function VideoPreview({
   onCreatorCommand: (commandOverride?: string) => void;
   onClearTemplateProject: () => void;
 }) {
+  const previewDurationSeconds = isUsableMediaDuration(studioFile?.durationSeconds)
+    ? studioFile.durationSeconds
+    : 0;
+  const previewProgress = previewDurationSeconds
+    ? Math.min(100, Math.max(0, (previewTime / previewDurationSeconds) * 100))
+    : 0;
+
   return (
     <div className="relative grid min-h-[520px] place-items-center overflow-hidden rounded-lg bg-black">
       {studioFile ? (
@@ -3343,15 +3362,11 @@ function VideoPreview({
         <div className="mx-3 h-2 flex-1 overflow-hidden rounded-full bg-white/15">
           <div
             className="h-full rounded-full bg-[var(--brand)] transition-[width]"
-            style={{
-              width: studioFile
-                ? `${Math.min(100, (previewTime / studioFile.durationSeconds) * 100)}%`
-                : "0%",
-            }}
+            style={{ width: `${previewProgress}%` }}
           />
         </div>
-        <span className="text-xs font-black text-white/70">
-          {studioFile ? `${formatDuration(previewTime)} / ${formatDuration(studioFile.durationSeconds)}` : "00:00"}
+        <span className="text-xs font-black text-white/70" dir="ltr">
+          {studioFile ? `${formatDuration(previewTime)} / ${formatDuration(previewDurationSeconds)}` : "00:00"}
         </span>
       </div>
     </div>
