@@ -1125,6 +1125,63 @@ export function ProfessionalVideoStudio() {
     clearRenderedOutput();
   }
 
+  function clearActiveTemplateProject() {
+    const templateName = templateProject?.name ?? "Template project";
+
+    videoRef.current?.pause();
+    setStudioFile(null);
+    setActiveProject(null);
+    setTemplateProject(null);
+    setActiveTemplateId(null);
+    setPlan(null);
+    setCaptions([]);
+    setIsPlaying(false);
+    setPreviewTime(0);
+    setAssistantEngineState(null);
+
+    const nextTracks = createDefaultTimeline();
+    commitTimeline(nextTracks);
+    setSelectedLayerId("clip-main");
+    selectEngineLayer("clip-main");
+    setProjectStatus(`${templateName} cleared from preview and timeline`);
+  }
+
+  function syncTemplateProjectTimeline(nextTracks: TimelineTrack[]) {
+    setTemplateProject((project) => {
+      if (!project) return project;
+
+      const editorLayers = new Map(
+        nextTracks.flatMap((track) => track.layers.map((layer) => [layer.id, layer] as const)),
+      );
+      const syncedTimeline = project.timeline.map((track) => ({
+        ...track,
+        layers: track.layers
+          .filter((layer) => editorLayers.has(layer.id))
+          .map((layer) => {
+            const editorLayer = editorLayers.get(layer.id);
+            if (!editorLayer) return layer;
+            const patch = toTemplateTimelinePatch(editorLayer);
+
+            return {
+              ...layer,
+              ...patch,
+              absoluteStart: editorLayer.start,
+            };
+          }),
+      }));
+
+      if (!syncedTimeline.some((track) => track.layers.length > 0)) {
+        return null;
+      }
+
+      return {
+        ...project,
+        timeline: syncedTimeline,
+        updatedAt: new Date().toISOString(),
+      };
+    });
+  }
+
   function deleteMediaAsset(asset: MediaAsset) {
     const isCurrentSource = studioFile?.url === asset.url || studioFile?.file.name === asset.name;
     const nextTracks = removeAssetFromTimeline(timelineTracks, asset, isCurrentSource);
@@ -1581,7 +1638,12 @@ export function ProfessionalVideoStudio() {
   }
 
   function deleteSelectedLayer() {
-    if (!selectedLayer) return;
+    if (!selectedLayer) {
+      if (templateProject) {
+        clearActiveTemplateProject();
+      }
+      return;
+    }
 
     const sourceAsset = findSourceAssetForLayer(selectedLayer, mediaAssets, studioFile);
     const deletesSourceVideo = selectedLayer.type === "video" && Boolean(sourceAsset || isPrimarySourceLayer(selectedLayer, studioFile));
@@ -1605,6 +1667,7 @@ export function ProfessionalVideoStudio() {
       }
     }
 
+    syncTemplateProjectTimeline(nextTracks);
     commitTimeline(nextTracks);
     setSelectedLayerId(nextLayer?.id ?? "");
     selectEngineLayer(nextLayer?.id ?? null);
@@ -2328,7 +2391,13 @@ export function ProfessionalVideoStudio() {
                     <ToolbarButton label="Merge" icon={Layers3} onClick={mergeVideoLayers} />
                     <ToolbarButton label="Text" icon={Type} onClick={addTextLayer} />
                     <ToolbarButton label="Update" icon={Save} onClick={saveProjectSnapshot} />
-                    <ToolbarButton label="Delete" icon={Trash2} onClick={deleteSelectedLayer} disabled={!selectedLayer} tone="danger" />
+                    <ToolbarButton
+                      label={selectedLayer ? "Delete" : "Clear"}
+                      icon={Trash2}
+                      onClick={deleteSelectedLayer}
+                      disabled={!selectedLayer && !templateProject}
+                      tone="danger"
+                    />
                     <ToolbarButton
                       label={isTranscribing ? "Captioning" : "Auto-caption"}
                       icon={isTranscribing ? Loader2 : Captions}
@@ -2375,6 +2444,7 @@ export function ProfessionalVideoStudio() {
                     onTogglePlayback={togglePlayback}
                     onUploadClick={() => inputRef.current?.click()}
                     onCreatorCommand={runAssistantCommand}
+                    onClearTemplateProject={clearActiveTemplateProject}
                   />
                   <ProjectMetrics
                     plan={plan}
@@ -2606,6 +2676,7 @@ function VideoPreview({
   onTogglePlayback,
   onUploadClick,
   onCreatorCommand,
+  onClearTemplateProject,
 }: {
   studioFile: StudioFile | null;
   templateProject: TemplateProject | null;
@@ -2624,6 +2695,7 @@ function VideoPreview({
   onTogglePlayback: () => void;
   onUploadClick: () => void;
   onCreatorCommand: (commandOverride?: string) => void;
+  onClearTemplateProject: () => void;
 }) {
   return (
     <div className="relative grid min-h-[520px] place-items-center overflow-hidden rounded-lg bg-black">
@@ -2659,7 +2731,25 @@ function VideoPreview({
           ) : null}
         </div>
       ) : templateProject ? (
-        <TemplateProjectPreview project={templateProject} />
+        <div
+          className={`relative w-full ${
+            templateProject.aspectRatio === "16:9"
+              ? "max-w-[920px]"
+              : templateProject.aspectRatio === "1:1"
+                ? "max-w-[540px]"
+                : "max-w-[370px]"
+          }`}
+        >
+          <TemplateProjectPreview project={templateProject} />
+          <button
+            type="button"
+            onClick={onClearTemplateProject}
+            className="absolute right-3 top-3 z-20 flex min-h-10 items-center gap-2 rounded-lg border border-red-300/30 bg-red-500/90 px-3 py-2 text-xs font-black text-white shadow-xl transition hover:bg-red-400"
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            حذف التمبلت
+          </button>
+        </div>
       ) : (
         <div className="grid w-full max-w-3xl place-items-center px-6 text-center">
           <div className="w-full space-y-4">
@@ -2858,7 +2948,12 @@ function TimelineEditor({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || typeof Worker === "undefined" || !("transferControlToOffscreen" in canvas)) {
+    if (
+      process.env.NODE_ENV !== "production" ||
+      !canvas ||
+      typeof Worker === "undefined" ||
+      !("transferControlToOffscreen" in canvas)
+    ) {
       return;
     }
 
@@ -2877,7 +2972,6 @@ function TimelineEditor({
       };
     } catch {
       workerRef.current = null;
-      transferredRef.current = false;
       return;
     }
   }, []);
