@@ -245,3 +245,5 @@ If this scenario fails, the product is still a UI mockup, not a real video edito
 - Lottie Web: https://github.com/airbnb/lottie-web
 - DesignCombo React Video Editor: https://github.com/designcombo/react-video-editor
 - Twick: https://github.com/ncounterspecialist/twick
+
+See [video-editor-library-lessons.md](./video-editor-library-lessons.md) for the practical implementation lessons learned from these libraries and repositories.
