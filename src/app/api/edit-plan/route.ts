@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createDemoEditPlan } from "@/lib/edit-plan";
 import { enhanceEditPlanWithOpenAI } from "@/lib/openai-edit";
+import { updateProjectPlan } from "@/lib/projects";
 import { editPlanRequestSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
@@ -16,9 +17,11 @@ export async function POST(request: Request) {
 
   const basePlan = createDemoEditPlan(parsed.data);
   const plan = await enhanceEditPlanWithOpenAI(basePlan, parsed.data);
+  const project = parsed.data.projectId ? await updateProjectPlan(parsed.data.projectId, plan) : null;
 
   return NextResponse.json({
     plan,
+    project,
     mode: process.env.OPENAI_API_KEY ? "ai-ready" : "demo-plan",
   });
 }

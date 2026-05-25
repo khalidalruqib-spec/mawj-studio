@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Activity,
   BadgeCheck,
@@ -26,6 +26,11 @@ import {
   Zap,
 } from "lucide-react";
 import type { EditPlan } from "@/lib/edit-plan";
+import type { StudioProject } from "@/lib/project-store";
+import {
+  createSupabaseBrowserClient,
+  hasSupabaseBrowserEnv,
+} from "@/lib/supabase/client";
 import {
   FORMAT_PRESETS,
   PLATFORM_LABELS,
@@ -51,6 +56,15 @@ type StudioFile = {
   durationSeconds: number;
 };
 
+type UploadUrlResponse = {
+  mode: "supabase" | "local-preview";
+  bucket: string;
+  path: string;
+  token: string | null;
+  project: StudioProject;
+  error?: string;
+};
+
 export function StudioWorkspace() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -62,14 +76,28 @@ export function StudioWorkspace() {
   const [goal, setGoal] = useState<Goal>("engagement");
   const [brandName, setBrandName] = useState("Mawj Studio");
   const [plan, setPlan] = useState<EditPlan | null>(null);
+  const [activeProject, setActiveProject] = useState<StudioProject | null>(null);
+  const [recentProjects, setRecentProjects] = useState<StudioProject[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState("");
+  const [storageStatus, setStorageStatus] = useState("No project saved yet");
 
   const activeStyle = useMemo(
     () => VIDEO_STYLES.find((style) => style.id === styleId) ?? VIDEO_STYLES[0],
     [styleId],
   );
+
+  const loadProjects = useCallback(async () => {
+    try {
+      const response = await fetch("/api/projects", { cache: "no-store" });
+      const data = await response.json();
+      setRecentProjects(data.projects ?? []);
+    } catch {
+      setRecentProjects([]);
+    }
+  }, []);
 
   async function handleFile(file?: File) {
     if (!file) return;
@@ -80,7 +108,9 @@ export function StudioWorkspace() {
 
     const url = URL.createObjectURL(file);
     setStudioFile({ file, url, durationSeconds: 60 });
+    setActiveProject(null);
     setPlan(null);
+    setStorageStatus("Ready to save source video");
     setError("");
   }
 
@@ -100,10 +130,12 @@ export function StudioWorkspace() {
     setError("");
 
     try {
+      const project = await ensureProjectUploaded();
       const response = await fetch("/api/edit-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          projectId: project.id,
           fileName: studioFile.file.name,
           durationSeconds: studioFile.durationSeconds,
           platform,
@@ -117,10 +149,86 @@ export function StudioWorkspace() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "تعذر توليد خطة المونتاج.");
       setPlan(data.plan);
+      if (data.project) setActiveProject(data.project);
+      await loadProjects();
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "صار خطأ غير متوقع.");
     } finally {
       setIsGenerating(false);
+    }
+  }
+
+  async function ensureProjectUploaded() {
+    if (!studioFile) throw new Error("ارفع الفيديو أولاً.");
+    if (activeProject?.status === "uploaded" || activeProject?.status === "planned") {
+      return activeProject;
+    }
+
+    setIsUploading(true);
+    setStorageStatus("Creating project...");
+
+    try {
+      const projectResponse = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `${brandName || "Untitled"} · ${activeStyle.arabicName}`,
+          styleId,
+          platform,
+          aspectRatio,
+          sourceFileName: studioFile.file.name,
+          sourceFileSize: studioFile.file.size,
+          sourceMimeType: studioFile.file.type || "video/mp4",
+          sourceDurationSeconds: studioFile.durationSeconds,
+        }),
+      });
+      const projectData = await projectResponse.json();
+      if (!projectResponse.ok) {
+        throw new Error(projectData.error ?? "تعذر إنشاء المشروع.");
+      }
+
+      let project = projectData.project as StudioProject;
+      setActiveProject(project);
+      setStorageStatus("Requesting upload URL...");
+
+      const uploadResponse = await fetch(`/api/projects/${project.id}/upload-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: studioFile.file.name,
+          contentType: studioFile.file.type || "video/mp4",
+        }),
+      });
+      const uploadData = (await uploadResponse.json()) as UploadUrlResponse;
+      if (!uploadResponse.ok) {
+        throw new Error(uploadData.error ?? "تعذر تجهيز رابط الرفع.");
+      }
+
+      if (uploadData.mode === "supabase") {
+        if (!uploadData.token || !hasSupabaseBrowserEnv()) {
+          throw new Error("أضف NEXT_PUBLIC_SUPABASE_* حتى يتم رفع الفيديو من المتصفح.");
+        }
+
+        setStorageStatus("Uploading source video to Supabase...");
+        const supabase = createSupabaseBrowserClient();
+        const { error: uploadError } = await supabase.storage
+          .from(uploadData.bucket)
+          .uploadToSignedUrl(uploadData.path, uploadData.token, studioFile.file, {
+            contentType: studioFile.file.type || "video/mp4",
+          });
+
+        if (uploadError) throw new Error(uploadError.message);
+        setStorageStatus("Source video stored in Supabase");
+      } else {
+        setStorageStatus("Local preview mode: project saved without cloud upload");
+      }
+
+      project = uploadData.project;
+      setActiveProject(project);
+      await loadProjects();
+      return project;
+    } finally {
+      setIsUploading(false);
     }
   }
 
@@ -160,15 +268,15 @@ export function StudioWorkspace() {
           <button
             type="button"
             onClick={generatePlan}
-            disabled={isGenerating}
+            disabled={isGenerating || isUploading}
             className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-black text-black transition hover:bg-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isGenerating ? (
+            {isGenerating || isUploading ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
               <WandSparkles className="h-4 w-4" aria-hidden="true" />
             )}
-            Generate edit
+            {isUploading ? "Saving..." : isGenerating ? "Generating..." : "Generate edit"}
           </button>
         </div>
       </header>
@@ -205,10 +313,20 @@ export function StudioWorkspace() {
               <span className="text-sm font-black">
                 {studioFile ? studioFile.file.name : "ارفع فيديو خام"}
               </span>
-              <span className="text-xs font-semibold text-[var(--muted)]">
-                MP4, MOV, M4V · حتى ساعتين في النسخة القادمة
-              </span>
+                <span className="text-xs font-semibold text-[var(--muted)]">
+                  MP4, MOV, M4V · حتى ساعتين في النسخة القادمة
+                </span>
             </button>
+
+            <div className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3">
+              <p className="text-xs font-black text-[var(--muted)]">Storage</p>
+              <p className="mt-1 text-sm font-bold leading-6">{storageStatus}</p>
+              {activeProject ? (
+                <p className="mt-2 text-xs font-semibold text-[var(--muted)]">
+                  Project: {activeProject.id.slice(0, 8)} · {activeProject.status}
+                </p>
+              ) : null}
+            </div>
 
             {error ? (
               <p className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-200">
@@ -336,6 +454,49 @@ export function StudioWorkspace() {
         </section>
 
         <aside className="space-y-4">
+          <section className="panel p-4">
+            <div className="mb-4 flex items-center gap-2">
+              <Layers3 className="h-4 w-4 text-[var(--brand)]" aria-hidden="true" />
+              <h2 className="text-sm font-black">Recent projects</h2>
+            </div>
+
+            {recentProjects.length ? (
+              <div className="space-y-2">
+                {recentProjects.slice(0, 5).map((project) => (
+                  <button
+                    key={project.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveProject(project);
+                      setPlan(project.editPlan ?? null);
+                      setStyleId(project.styleId);
+                      setPlatform(project.platform);
+                      setAspectRatio(project.aspectRatio);
+                      setStorageStatus(
+                        project.storagePath
+                          ? `Saved: ${project.storagePath}`
+                          : "Project exists without source upload",
+                      );
+                    }}
+                    className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3 text-right transition hover:border-[var(--brand)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="truncate text-sm font-black">{project.title}</p>
+                      <span className="rounded-md bg-white/10 px-2 py-1 text-xs font-black">
+                        {project.status}
+                      </span>
+                    </div>
+                    <p className="mt-2 truncate text-xs font-semibold text-[var(--muted)]">
+                      {project.sourceFileName}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <EmptyPanel compact />
+            )}
+          </section>
+
           <section className="panel p-4">
             <div className="mb-4 flex items-center gap-2">
               <Settings2 className="h-4 w-4 text-[var(--brand)]" aria-hidden="true" />

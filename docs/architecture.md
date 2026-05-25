@@ -11,7 +11,7 @@ The winning product surface is style-driven automation for Arabic/Saudi creators
 ## Target Flow
 
 1. User uploads source video.
-2. API creates a project and stores the original file.
+2. API creates a project and returns a signed Supabase Storage upload URL.
 3. Worker extracts audio, thumbnails, scene boundaries, and metadata.
 4. Transcription model produces word-level transcript.
 5. OpenAI creates a structured edit plan: hook, cuts, captions, b-roll, music, CTA, exports.
@@ -23,8 +23,8 @@ The winning product surface is style-driven automation for Arabic/Saudi creators
 
 - Web app: Next.js
 - API: Next.js route handlers initially, then NestJS/Fastify when render load grows
-- Database: Postgres
-- Storage: Cloudflare R2 or S3
+- Database: Supabase Postgres
+- Storage: Supabase Storage for MVP, Cloudflare R2/S3 if render cost or scale requires it later
 - Queue: BullMQ + Redis for MVP, Temporal for complex render orchestration
 - Workers: Python for CV/audio analysis, Node/Python for FFmpeg render execution
 - AI: OpenAI Responses API for edit decisions, transcription model for speech-to-text
@@ -72,8 +72,8 @@ Output:
 
 ## MVP Build Order
 
-1. Keep current web studio.
-2. Add auth, projects table, and storage uploads.
+1. Current: web studio, projects table, and source video signed uploads.
+2. Add auth and per-user RLS policies.
 3. Add transcript extraction.
 4. Add real FFmpeg preview render.
 5. Add final export variants.
