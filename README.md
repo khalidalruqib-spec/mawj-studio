@@ -11,6 +11,7 @@ Mawj Studio is a professional AI video editing platform for short-form content. 
 - Editing styles for Saudi viral clips, premium brand films, podcasts, products, education, and restaurants
 - `/api/edit-plan` route with local deterministic fallback
 - OpenAI Responses API enhancement when `OPENAI_API_KEY` is available
+- Optional Python/FastAPI AI processing service for heavier Arabic Whisper captions
 - Professional editor UI with settings, timeline, caption script, tool stack, and export variants
 
 ## Local Setup
@@ -28,6 +29,11 @@ Open [http://localhost:3000](http://localhost:3000).
 ```bash
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.4-mini
+OPENAI_TRANSCRIBE_MODEL=gpt-4o-mini-transcribe
+
+PYTHON_AI_SERVICE_URL=
+PYTHON_AI_SERVICE_TOKEN=
+PYTHON_WHISPER_MODEL=large-v3
 
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
@@ -40,7 +46,25 @@ VIDEO_WORKER_QUEUE=demo
 
 Without `OPENAI_API_KEY`, the platform still generates a demo edit plan. With the key, the API asks OpenAI to enhance the edit plan using structured JSON output.
 
+For automatic captions, the app uses this order:
+
+1. `PYTHON_AI_SERVICE_URL` when a FastAPI Whisper service is configured.
+2. `OPENAI_API_KEY` with `OPENAI_TRANSCRIBE_MODEL`.
+3. Demo captions when no transcription provider is configured.
+
 Without Supabase variables, projects use an in-memory local fallback. To enable real persistence and source video uploads, run the migration in `supabase/migrations/202605250001_projects_and_video_storage.sql` and set the Supabase environment variables above.
+
+## Optional Python AI Service
+
+```bash
+cd services/ai-processing
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Then set `PYTHON_AI_SERVICE_URL=http://localhost:8000` in `.env.local`. On production, deploy the service to a GPU host and add `PYTHON_AI_SERVICE_URL` and optional `PYTHON_AI_SERVICE_TOKEN` to Vercel.
 
 ## Supabase Setup
 

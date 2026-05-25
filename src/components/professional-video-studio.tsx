@@ -293,8 +293,10 @@ type UploadUrlResponse = {
   error?: string;
 };
 
+type TranscriptionMode = "python" | "openai" | "demo";
+
 type AutoTranscribeResponse = {
-  mode: "openai" | "demo";
+  mode: TranscriptionMode;
   model: string;
   text: string;
   transcript: TranscriptSegment[];
@@ -305,6 +307,7 @@ type AutoTranscribeResponse = {
 
 type TranscribeStatusResponse = {
   configured: boolean;
+  provider?: "python-fastapi" | "openai" | "demo";
   model: string;
   directUploadLimitBytes: number;
   maxClientAudioSeconds: number;
@@ -794,7 +797,7 @@ export function ProfessionalVideoStudio() {
   const [isRendering, setIsRendering] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isAdGenerating, setIsAdGenerating] = useState(false);
-  const [transcriptionMode, setTranscriptionMode] = useState<"openai" | "demo" | null>(null);
+  const [transcriptionMode, setTranscriptionMode] = useState<TranscriptionMode | null>(null);
   const [transcriptionNotice, setTranscriptionNotice] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [previewTime, setPreviewTime] = useState(0);
@@ -1377,9 +1380,9 @@ export function ProfessionalVideoStudio() {
         const demo = createClientDemoTranscription(targetFile.name, targetDuration, languageMode);
         applyTranscriptionResult(demo, targetDuration);
         setTranscriptionNotice(
-          "OpenAI key is not configured on Vercel yet. Showing demo captions until OPENAI_API_KEY is added.",
+          "No Python AI service or OpenAI key is configured yet. Showing demo captions until PYTHON_AI_SERVICE_URL or OPENAI_API_KEY is added.",
         );
-        setProjectStatus("Demo captions shown because OPENAI_API_KEY is missing on Vercel");
+        setProjectStatus("Demo captions shown because no transcription provider is configured");
         return;
       }
 
@@ -1410,16 +1413,20 @@ export function ProfessionalVideoStudio() {
 
       applyTranscriptionResult(data, targetDuration);
       setProjectStatus(
-        data.mode === "openai"
-          ? `Auto captions ready with ${data.model}`
-          : "Demo captions ready. Add OPENAI_API_KEY for real video transcription.",
+        data.mode === "python"
+          ? `Arabic captions ready with Python Whisper ${data.model}`
+          : data.mode === "openai"
+            ? `Auto captions ready with ${data.model}`
+            : "Demo captions ready. Add PYTHON_AI_SERVICE_URL or OPENAI_API_KEY for real video transcription.",
       );
       setAssistantMessages((messages) => [
         createAssistantMessage(
           "assistant",
-          data.mode === "openai"
-            ? `Auto-caption complete: ${data.captions.length} caption lines generated from the video audio.`
-            : "Demo captions generated. Add OPENAI_API_KEY on Vercel for real audio transcription.",
+          data.mode === "python"
+            ? `Whisper/Python captioning complete: ${data.captions.length} caption lines generated from the video audio.`
+            : data.mode === "openai"
+              ? `Auto-caption complete: ${data.captions.length} caption lines generated from the video audio.`
+              : "Demo captions generated. Add PYTHON_AI_SERVICE_URL or OPENAI_API_KEY on Vercel for real audio transcription.",
           [{ type: "ADD_ARABIC_CAPTIONS", label: "Captions generated" }],
         ),
         ...messages,
@@ -3595,7 +3602,7 @@ function TranscriptPanel({
   onAutoTranscribe: () => void;
   onGenerateCaptions: () => void;
   isTranscribing: boolean;
-  transcriptionMode: "openai" | "demo" | null;
+  transcriptionMode: TranscriptionMode | null;
   transcriptionNotice: string;
 }) {
   return (
@@ -3612,7 +3619,7 @@ function TranscriptPanel({
       </button>
       {transcriptionMode ? (
         <p className="mb-3 rounded-lg border border-[var(--line)] bg-black/20 p-2 text-xs font-bold text-[var(--muted)]">
-          Mode: {transcriptionMode === "openai" ? "real OpenAI transcription" : "demo fallback"}
+          Mode: {getTranscriptionModeLabel(transcriptionMode)}
         </p>
       ) : null}
       {transcriptionNotice ? (
@@ -3681,7 +3688,7 @@ function CaptionsPanel({
   onDownloadSrt: () => void;
   onBurnCaptions: () => void;
   isTranscribing: boolean;
-  transcriptionMode: "openai" | "demo" | null;
+  transcriptionMode: TranscriptionMode | null;
   transcriptionNotice: string;
 }) {
   return (
@@ -3698,9 +3705,7 @@ function CaptionsPanel({
       </button>
       {transcriptionMode ? (
         <p className="mb-3 rounded-lg border border-[var(--line)] bg-black/20 p-2 text-xs font-bold text-[var(--muted)]">
-          {transcriptionMode === "openai"
-            ? "Captions were generated from the uploaded video's audio."
-            : "Demo captions are active. Add OPENAI_API_KEY for real audio transcription."}
+          {getTranscriptionModeDescription(transcriptionMode)}
         </p>
       ) : null}
       {transcriptionNotice ? (
@@ -5121,6 +5126,22 @@ function getAICommandContext({
   };
 }
 
+function getTranscriptionModeLabel(mode: TranscriptionMode) {
+  if (mode === "python") return "Python Whisper service";
+  if (mode === "openai") return "real OpenAI transcription";
+  return "demo fallback";
+}
+
+function getTranscriptionModeDescription(mode: TranscriptionMode) {
+  if (mode === "python") {
+    return "Captions were generated by the Python Whisper service, which is best for heavier Arabic transcription.";
+  }
+  if (mode === "openai") {
+    return "Captions were generated from the uploaded video's audio.";
+  }
+  return "Demo captions are active. Add PYTHON_AI_SERVICE_URL or OPENAI_API_KEY for real audio transcription.";
+}
+
 function getEditorEngineLabel({
   plan,
   templateProject,
@@ -5130,10 +5151,11 @@ function getEditorEngineLabel({
 }: {
   plan: EditPlan | null;
   templateProject: TemplateProject | null;
-  transcriptionMode: "openai" | "demo" | null;
+  transcriptionMode: TranscriptionMode | null;
   mediaCount: number;
   engineProject: VideoProject | null;
 }) {
+  if (transcriptionMode === "python") return "Whisper Python captions";
   if (transcriptionMode === "openai") return "OpenAI captions";
   if (plan) return "AI edit planner";
   if (templateProject) return "Template engine";
@@ -5151,9 +5173,10 @@ function getEditorConfidence({
   plan: EditPlan | null;
   captionsCount: number;
   mediaCount: number;
-  transcriptionMode: "openai" | "demo" | null;
+  transcriptionMode: TranscriptionMode | null;
 }) {
   if (plan) return Math.round(plan.confidence);
+  if (transcriptionMode === "python") return 94;
   if (transcriptionMode === "openai") return 88;
   if (captionsCount) return 78;
   if (mediaCount) return 72;

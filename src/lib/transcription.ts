@@ -16,12 +16,21 @@ export type TranscriptionCaption = {
 };
 
 export type TranscriptionResult = {
-  mode: "openai" | "demo";
+  mode: "python" | "openai" | "demo";
   model: string;
   text: string;
   transcript: TranscriptionSegment[];
   captions: TranscriptionCaption[];
   srt: string;
+};
+
+type PythonTranscriptionResponse = {
+  mode?: "python";
+  model?: string;
+  text?: string;
+  transcript?: TranscriptionSegment[];
+  captions?: TranscriptionCaption[];
+  srt?: string;
 };
 
 type OpenAITranscriptionResponse = {
@@ -44,6 +53,13 @@ export async function transcribeMediaFile({
   language: TranscriptionLanguage;
   durationSeconds: number;
 }): Promise<TranscriptionResult> {
+  const pythonResult = await transcribeWithPythonService({
+    file,
+    language,
+    durationSeconds,
+  });
+  if (pythonResult) return pythonResult;
+
   const model = process.env.OPENAI_TRANSCRIBE_MODEL ?? "gpt-4o-mini-transcribe";
 
   if (!process.env.OPENAI_API_KEY) {
@@ -91,6 +107,80 @@ export async function transcribeMediaFile({
     captions: normalized.segments.map(segmentToCaption),
     srt: segmentsToSrt(normalized.segments),
   };
+}
+
+async function transcribeWithPythonService({
+  file,
+  language,
+  durationSeconds,
+}: {
+  file: File;
+  language: TranscriptionLanguage;
+  durationSeconds: number;
+}): Promise<TranscriptionResult | null> {
+  const baseUrl = process.env.PYTHON_AI_SERVICE_URL?.replace(/\/$/, "");
+  if (!baseUrl) return null;
+
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+  formData.append("language", language);
+  formData.append("durationSeconds", String(durationSeconds));
+
+  try {
+    const response = await fetch(`${baseUrl}/transcribe`, {
+      method: "POST",
+      headers: process.env.PYTHON_AI_SERVICE_TOKEN
+        ? { Authorization: `Bearer ${process.env.PYTHON_AI_SERVICE_TOKEN}` }
+        : undefined,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      console.warn("Python AI transcription failed:", await response.text());
+      return null;
+    }
+
+    const data = (await response.json()) as PythonTranscriptionResponse;
+    const transcript = normalizeExternalTranscript(data.transcript ?? [], durationSeconds);
+    const captions = data.captions?.length
+      ? data.captions.map((caption, index) => ({
+          id: caption.id ?? `cap-tr-${index + 1}`,
+          start: clampTime(caption.start, durationSeconds),
+          end: clampTime(Math.max(caption.end, caption.start + 0.75), durationSeconds),
+          text: cleanText(caption.text),
+        }))
+      : transcript.map(segmentToCaption);
+    const text = cleanText(data.text ?? transcript.map((segment) => segment.text).join(" "));
+
+    if (!text && !transcript.length) return null;
+
+    return {
+      mode: "python",
+      model: data.model ?? process.env.PYTHON_WHISPER_MODEL ?? "whisper-large-v3",
+      text,
+      transcript,
+      captions,
+      srt: data.srt ?? segmentsToSrt(transcript),
+    };
+  } catch (error) {
+    console.warn("Python AI transcription unavailable:", error);
+    return null;
+  }
+}
+
+function normalizeExternalTranscript(
+  transcript: TranscriptionSegment[],
+  durationSeconds: number,
+): TranscriptionSegment[] {
+  return transcript
+    .filter((segment) => cleanText(segment.text))
+    .map((segment, index) => ({
+      id: segment.id ?? `tr-${index + 1}`,
+      start: clampTime(segment.start ?? index * 4, durationSeconds),
+      end: clampTime(Math.max(segment.end ?? index * 4 + 4, (segment.start ?? 0) + 0.75), durationSeconds),
+      speaker: segment.speaker ?? "Speaker 1",
+      text: cleanText(segment.text),
+    }));
 }
 
 function normalizeOpenAITranscription(data: OpenAITranscriptionResponse, durationSeconds: number) {

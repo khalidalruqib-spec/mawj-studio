@@ -4,9 +4,15 @@ import { transcribeMediaFile, type TranscriptionLanguage } from "@/lib/transcrip
 const SUPPORTED_LANGUAGES = new Set(["ar", "en", "auto"]);
 
 export async function GET() {
+  const hasPythonService = Boolean(process.env.PYTHON_AI_SERVICE_URL);
+  const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
+
   return NextResponse.json({
-    configured: Boolean(process.env.OPENAI_API_KEY),
-    model: process.env.OPENAI_TRANSCRIBE_MODEL ?? "gpt-4o-mini-transcribe",
+    configured: hasPythonService || hasOpenAI,
+    provider: hasPythonService ? "python-fastapi" : hasOpenAI ? "openai" : "demo",
+    model: hasPythonService
+      ? process.env.PYTHON_WHISPER_MODEL ?? "large-v3"
+      : process.env.OPENAI_TRANSCRIBE_MODEL ?? "gpt-4o-mini-transcribe",
     directUploadLimitBytes: 3_500_000,
     maxClientAudioSeconds: 180,
   });
