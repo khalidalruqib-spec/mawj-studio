@@ -42,6 +42,8 @@ The winning product surface is style-driven automation for Arabic/Saudi creators
 - `style_presets`
 - `billing_credits`
 
+The editing engine data model is now defined in [capcut-engine-blueprint.md](./capcut-engine-blueprint.md). The key decision is that Mawj must model `Assets`, `Scenes`, `Tracks`, `Layers`, `TimelineItems`, `Keyframes`, `Effects`, and `Transitions` explicitly instead of keeping editor state as hardcoded React UI.
+
 ## Render Worker Contract
 
 Input:
