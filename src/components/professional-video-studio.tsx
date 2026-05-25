@@ -112,6 +112,13 @@ import {
 } from "@/lib/video-project-bridge";
 import type { VideoProject } from "@/lib/video-project-model";
 import { useVideoProjectStore } from "@/lib/video-project-store";
+import {
+  getTimelineCanvasHeight,
+  getTimelineCanvasWidth,
+  hitTestTimeline,
+  renderTimelineCanvas,
+  type TimelineCanvasRenderPayload,
+} from "@/lib/timeline-canvas-renderer";
 
 type Goal = "engagement" | "sales" | "education" | "awareness";
 type PanelId =
@@ -2447,6 +2454,94 @@ function TimelineEditor({
   totalSeconds: number;
   onSelectLayer: (id: string) => void;
 }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const transferredRef = useRef(false);
+  const canvasWidth = useMemo(
+    () => getTimelineCanvasWidth(totalSeconds, zoom),
+    [totalSeconds, zoom],
+  );
+  const canvasHeight = useMemo(
+    () => getTimelineCanvasHeight(tracks.length),
+    [tracks.length],
+  );
+  const renderPayload = useMemo<TimelineCanvasRenderPayload>(
+    () => ({
+      tracks,
+      selectedLayerId,
+      totalSeconds,
+      zoom,
+      width: canvasWidth,
+      height: canvasHeight,
+      dpr: typeof window === "undefined" ? 1 : window.devicePixelRatio || 1,
+    }),
+    [canvasHeight, canvasWidth, selectedLayerId, totalSeconds, tracks, zoom],
+  );
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || typeof Worker === "undefined" || !("transferControlToOffscreen" in canvas)) {
+      return;
+    }
+
+    try {
+      const worker = new Worker(new URL("../workers/timeline.worker.ts", import.meta.url), {
+        type: "module",
+      });
+      const offscreen = canvas.transferControlToOffscreen();
+      transferredRef.current = true;
+      workerRef.current = worker;
+      worker.postMessage({ type: "INIT", canvas: offscreen }, [offscreen]);
+
+      return () => {
+        worker.terminate();
+        workerRef.current = null;
+      };
+    } catch {
+      workerRef.current = null;
+      transferredRef.current = false;
+      return;
+    }
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.style.width = `${canvasWidth}px`;
+    canvas.style.height = `${canvasHeight}px`;
+
+    if (workerRef.current) {
+      workerRef.current.postMessage({ type: "RENDER", payload: renderPayload });
+      return;
+    }
+
+    if (transferredRef.current) return;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    renderTimelineCanvas(context, renderPayload);
+  }, [canvasHeight, canvasWidth, renderPayload]);
+
+  const handleTimelineClick = useCallback(
+    (event: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const point = {
+        x: (event.clientX - rect.left) * (canvasWidth / rect.width),
+        y: (event.clientY - rect.top) * (canvasHeight / rect.height),
+      };
+      const hit = hitTestTimeline(renderPayload, point);
+      if (hit) onSelectLayer(hit.layerId);
+    },
+    [canvasHeight, canvasWidth, onSelectLayer, renderPayload],
+  );
+
+  const selectedLayer = tracks
+    .flatMap((track) => track.layers)
+    .find((layer) => layer.id === selectedLayerId);
+
   return (
     <section className="panel overflow-hidden">
       <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-4 py-3">
@@ -2455,53 +2550,29 @@ function TimelineEditor({
           <h2 className="text-sm font-black">Multi-track timeline</h2>
         </div>
         <div className="flex items-center gap-2 text-xs font-bold text-[var(--muted)]">
+          <span className="rounded-md border border-[var(--line)] bg-[var(--panel-soft)] px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--brand)]">
+            Worker Canvas
+          </span>
           <Clock3 className="h-4 w-4" aria-hidden="true" />
           {formatDuration(totalSeconds)}
         </div>
       </div>
       <div className="overflow-x-auto p-4">
-        <div className="min-w-[780px] space-y-2" style={{ width: `${Math.max(780, totalSeconds * 18 * zoom)}px` }}>
-          <div className="grid grid-cols-[130px_minmax(0,1fr)] gap-3 text-[11px] font-black text-[var(--muted)]">
-            <span>Track</span>
-            <div className="grid" style={{ gridTemplateColumns: `repeat(${Math.ceil(totalSeconds / 5)}, minmax(42px, 1fr))` }}>
-              {Array.from({ length: Math.ceil(totalSeconds / 5) }, (_, index) => (
-                <span key={index}>{index * 5}s</span>
-              ))}
-            </div>
-          </div>
-
-          {tracks.map((track) => (
-            <div key={track.id} className="grid grid-cols-[130px_minmax(0,1fr)] gap-3">
-              <div className="flex min-h-14 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3">
-                <TrackIcon kind={track.kind} />
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-black">{track.name}</p>
-                  <p className="text-[11px] font-semibold text-[var(--muted)]">{track.layers.length} layers</p>
-                </div>
-              </div>
-              <div className="relative min-h-14 rounded-lg border border-[var(--line)] bg-black/20">
-                {track.layers.map((layer) => {
-                  const left = (layer.start / totalSeconds) * 100;
-                  const width = Math.max(4, (layer.duration / totalSeconds) * 100);
-                  const selected = selectedLayerId === layer.id;
-                  return (
-                    <button
-                      key={layer.id}
-                      type="button"
-                      onClick={() => onSelectLayer(layer.id)}
-                      className={`absolute top-2 flex h-10 min-w-12 items-center justify-center overflow-hidden rounded-md border px-2 text-xs font-black transition ${
-                        selected ? "border-white shadow-[0_0_0_2px_rgba(142,247,194,0.35)]" : "border-white/10"
-                      }`}
-                      style={{ left: `${left}%`, width: `${width}%`, backgroundColor: layer.color }}
-                    >
-                      <span className="truncate text-black">{layer.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+        <div className="min-w-[820px]" style={{ width: `${canvasWidth}px` }}>
+          <canvas
+            ref={canvasRef}
+            width={canvasWidth}
+            height={canvasHeight}
+            onClick={handleTimelineClick}
+            tabIndex={0}
+            role="img"
+            aria-label="Canvas timeline. Click a clip to select and edit it in the inspector."
+            className="block cursor-pointer rounded-lg border border-[var(--line)] bg-black/20 outline-none transition focus:border-[var(--brand)]"
+          />
         </div>
+      </div>
+      <div className="border-t border-[var(--line)] px-4 py-2 text-xs font-bold text-[var(--muted)]">
+        Selected: <span className="text-[var(--foreground)]">{selectedLayer?.name ?? "None"}</span>
       </div>
     </section>
   );
@@ -3541,17 +3612,6 @@ function DashboardCard({ label, value, icon: Icon }: { label: string; value: str
 
 function AssetIcon({ kind }: { kind: MediaAsset["kind"] }) {
   const Icon = kind === "audio" ? FileAudio2 : kind === "image" ? ImageIcon : Film;
-  return <Icon className="h-4 w-4 shrink-0 text-[var(--brand)]" aria-hidden="true" />;
-}
-
-function TrackIcon({ kind }: { kind: TimelineTrack["kind"] }) {
-  const Icon =
-    kind === "audio" ? FileAudio2 :
-    kind === "overlay" || kind === "image" ? ImageIcon :
-    kind === "text" ? Type :
-    kind === "caption" ? Captions :
-    kind === "effects" || kind === "shape" || kind === "background" || kind === "waveform" ? Sparkles :
-    Film;
   return <Icon className="h-4 w-4 shrink-0 text-[var(--brand)]" aria-hidden="true" />;
 }
 
