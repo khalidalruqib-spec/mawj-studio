@@ -321,6 +321,29 @@ const PANELS: Array<{ id: PanelId; label: string; description: string; icon: Luc
   { id: "exports", label: "Export", description: "MP4/SRT", icon: MonitorUp },
 ];
 
+const CREATOR_STARTERS = [
+  {
+    label: "فكرة إلى فيديو",
+    detail: "اكتب فكرة وسيجهز مقاس وكابشن وهوك",
+    command: "حوّل فكرة إلى فيديو قصير للتيك توك مع عنوان جذاب وكابشن عربي",
+  },
+  {
+    label: "صور منتج إلى إعلان",
+    detail: "ارفع صور المنتج ثم ابنِ إعلان 30 ثانية",
+    command: "أنشئ نسخة إعلانية 30 ثانية من صور المنتج مع CTA وكابشن عربي",
+  },
+  {
+    label: "فيديو طويل إلى مقاطع",
+    detail: "استخرج أفضل لحظات للسوشال",
+    command: "استخرج أفضل 5 لحظات من الفيديو الطويل للريلز والشورتس",
+  },
+  {
+    label: "تنظيف + كابشن",
+    detail: "جهّز صوت واضح وترجمة عربية",
+    command: "نظف الصوت وأضف كابشن عربي واحذف الصمت",
+  },
+];
+
 const SAMPLE_TRANSCRIPT: TranscriptSegment[] = [
   {
     id: "tr-1",
@@ -2196,6 +2219,8 @@ export function ProfessionalVideoStudio() {
                     onTimeUpdate={handlePreviewTimeUpdate}
                     onEnded={() => setIsPlaying(false)}
                     onTogglePlayback={togglePlayback}
+                    onUploadClick={() => inputRef.current?.click()}
+                    onCreatorCommand={runAssistantCommand}
                   />
                   <ProjectMetrics
                     plan={plan}
@@ -2425,6 +2450,8 @@ function VideoPreview({
   onTimeUpdate,
   onEnded,
   onTogglePlayback,
+  onUploadClick,
+  onCreatorCommand,
 }: {
   studioFile: StudioFile | null;
   templateProject: TemplateProject | null;
@@ -2441,6 +2468,8 @@ function VideoPreview({
   onTimeUpdate: () => void;
   onEnded: () => void;
   onTogglePlayback: () => void;
+  onUploadClick: () => void;
+  onCreatorCommand: (commandOverride?: string) => void;
 }) {
   return (
     <div className="relative grid min-h-[520px] place-items-center overflow-hidden rounded-lg bg-black">
@@ -2478,17 +2507,38 @@ function VideoPreview({
       ) : templateProject ? (
         <TemplateProjectPreview project={templateProject} />
       ) : (
-        <div className="grid place-items-center px-6 text-center">
-          <div className="space-y-4">
+        <div className="grid w-full max-w-3xl place-items-center px-6 text-center">
+          <div className="w-full space-y-4">
             <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg bg-white/8 text-[var(--brand)]">
               <Film className="h-8 w-8" aria-hidden="true" />
             </span>
             <div>
-              <p className="text-2xl font-black">Upload raw footage</p>
+              <p className="text-2xl font-black">ابدأ فيديو AI كامل</p>
               <p className="mt-2 text-sm font-semibold text-white/55">
-                Build clips, captions, ads, background edits, and branded exports.
+                اختر مسار سريع أو ارفع ملفاتك، وبعدها يتحول كل شيء إلى مشروع قابل للتعديل.
               </p>
             </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {CREATOR_STARTERS.map((starter) => (
+                <button
+                  key={starter.label}
+                  type="button"
+                  onClick={() => onCreatorCommand(starter.command)}
+                  className="rounded-lg border border-white/10 bg-white/[0.06] p-3 text-right transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)]"
+                >
+                  <span className="block text-sm font-black">{starter.label}</span>
+                  <span className="mt-1 block text-xs font-semibold leading-5 text-white/55">{starter.detail}</span>
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={onUploadClick}
+              className="mx-auto flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 py-2 text-sm font-black text-black transition hover:bg-white"
+            >
+              <UploadCloud className="h-4 w-4" aria-hidden="true" />
+              ارفع فيديو أو صور
+            </button>
           </div>
         </div>
       )}
@@ -3651,13 +3701,6 @@ function AssistantPanel({
   onCommandChange: (command: string) => void;
   onRunCommand: (commandOverride?: string) => void;
 }) {
-  const quickCommands = [
-    { label: "كابشن عربي", command: "أضف كابشن عربي للفيديو" },
-    { label: "احذف الصمت", command: "احذف كل الصمت والوقفات الطويلة" },
-    { label: "أفضل 5 لحظات", command: "استخرج أفضل 5 لحظات للريلز" },
-    { label: "نسخة إعلانية", command: "أنشئ نسخة إعلانية 30 ثانية" },
-  ];
-
   return (
     <section className="panel p-4">
       <PanelHeading icon={Bot} title="AI assistant" />
@@ -3683,7 +3726,7 @@ function AssistantPanel({
         </button>
       </div>
       <div className="mb-3 flex flex-wrap gap-1.5">
-        {quickCommands.map((quickCommand) => (
+        {CREATOR_STARTERS.map((quickCommand) => (
           <button
             key={quickCommand.label}
             type="button"

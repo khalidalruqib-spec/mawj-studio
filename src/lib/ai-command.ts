@@ -142,7 +142,7 @@ function normalizeCommandText(message: string) {
 }
 
 function matchesAny(text: string, terms: string[]) {
-  return terms.some((term) => text.includes(term.toLowerCase()));
+  return terms.some((term) => text.includes(normalizeCommandText(term)));
 }
 
 function getLocalTargetCut(context: AICommandContext) {
