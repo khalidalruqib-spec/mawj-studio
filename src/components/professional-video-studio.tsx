@@ -94,6 +94,15 @@ import type {
   TemplateProject,
   TemplateTimelineTrack,
 } from "@/lib/video-template-engine";
+import {
+  createBlankVideoProject,
+  createVideoProjectFromEditorTimeline,
+  createVideoProjectFromMediaAssets,
+  createVideoProjectFromTemplateProject,
+  type MediaAssetInput,
+} from "@/lib/video-project-bridge";
+import type { VideoProject } from "@/lib/video-project-model";
+import { useVideoProjectStore } from "@/lib/video-project-store";
 
 type Goal = "engagement" | "sales" | "education" | "awareness";
 type PanelId =
@@ -590,6 +599,13 @@ export function ProfessionalVideoStudio() {
   const [renderResult, setRenderResult] = useState<BrowserRenderResult | null>(null);
   const [error, setError] = useState("");
   const [projectStatus, setProjectStatus] = useState("Autosave ready");
+  const engineProject = useVideoProjectStore((state) => state.currentProject);
+  const setEngineProject = useVideoProjectStore((state) => state.setCurrentProject);
+  const selectEngineLayer = useVideoProjectStore((state) => state.selectLayer);
+  const setEnginePlayhead = useVideoProjectStore((state) => state.setPlayhead);
+  const setEngineZoom = useVideoProjectStore((state) => state.setZoom);
+  const undoEngineProject = useVideoProjectStore((state) => state.undo);
+  const redoEngineProject = useVideoProjectStore((state) => state.redo);
 
   const activeStyle = useMemo(
     () => VIDEO_STYLES.find((style) => style.id === styleId) ?? VIDEO_STYLES[0],
@@ -628,6 +644,21 @@ export function ProfessionalVideoStudio() {
   );
 
   useEffect(() => {
+    if (useVideoProjectStore.getState().currentProject) return;
+
+    setEngineProject(
+      createVideoProjectFromEditorTimeline({
+        baseProject: createBlankVideoProject({ name: brandName, aspectRatio }),
+        name: brandName,
+        aspectRatio,
+        tracks: timelineTracks,
+        durationSeconds: totalTimelineSeconds,
+      }),
+      { resetHistory: true },
+    );
+  }, [aspectRatio, brandName, setEngineProject, timelineTracks, totalTimelineSeconds]);
+
+  useEffect(() => {
     return () => {
       if (renderResult?.url) URL.revokeObjectURL(renderResult.url);
     };
@@ -647,6 +678,7 @@ export function ProfessionalVideoStudio() {
       captions,
       brandKit,
       templateProject,
+      engineProject,
       savedAt: new Date().toISOString(),
     };
     window.localStorage.setItem("mawj-studio-autosave", JSON.stringify(snapshot));
@@ -658,6 +690,7 @@ export function ProfessionalVideoStudio() {
     goal,
     languageMode,
     platform,
+    engineProject,
     styleId,
     templateProject,
     timelineTracks,
@@ -681,9 +714,22 @@ export function ProfessionalVideoStudio() {
 
   function commitTimeline(nextTracks: TimelineTrack[] | ((current: TimelineTrack[]) => TimelineTrack[])) {
     const resolvedTracks = typeof nextTracks === "function" ? nextTracks(timelineTracks) : nextTracks;
+    const currentEngineProject = useVideoProjectStore.getState().currentProject;
+    const syncedProject = createVideoProjectFromEditorTimeline({
+      baseProject: currentEngineProject,
+      name: brandName || currentEngineProject?.name || "Mawj Studio",
+      aspectRatio,
+      tracks: resolvedTracks,
+      durationSeconds: Math.max(
+        24,
+        ...resolvedTracks.flatMap((track) => track.layers.map((layer) => layer.start + layer.duration)),
+      ),
+    });
+
     setTimelineUndo((history) => [timelineTracks, ...history].slice(0, 25));
     setTimelineRedo([]);
     setTimelineTracks(resolvedTracks);
+    useVideoProjectStore.getState().setCurrentProject(syncedProject);
     clearRenderedOutput();
     setProjectStatus("Autosaved timeline changes");
   }
@@ -694,6 +740,7 @@ export function ProfessionalVideoStudio() {
     setTimelineRedo((history) => [timelineTracks, ...history].slice(0, 25));
     setTimelineUndo(rest);
     setTimelineTracks(previous);
+    undoEngineProject();
     setProjectStatus("Undo applied");
   }
 
@@ -703,6 +750,7 @@ export function ProfessionalVideoStudio() {
     setTimelineUndo((history) => [timelineTracks, ...history].slice(0, 25));
     setTimelineRedo(rest);
     setTimelineTracks(next);
+    redoEngineProject();
     setProjectStatus("Redo applied");
   }
 
@@ -739,9 +787,10 @@ export function ProfessionalVideoStudio() {
               ),
             })),
             updatedAt: new Date().toISOString(),
-          }
+        }
         : project,
     );
+
   }
 
   const applyTemplateProject = useCallback((project: TemplateProject) => {
@@ -755,6 +804,8 @@ export function ProfessionalVideoStudio() {
       .find((layer) => layer.type === "video" && layer.src && !layer.src.includes("{{"));
 
     setTemplateProject(project);
+    setEngineProject(createVideoProjectFromTemplateProject(project), { resetHistory: true });
+    selectEngineLayer(firstEditableLayer?.id ?? null);
     setTimelineTracks(tracks);
     setTimelineUndo([]);
     setTimelineRedo([]);
@@ -781,7 +832,7 @@ export function ProfessionalVideoStudio() {
       `Template project loaded: ${project.name}. ${project.timeline.reduce((sum, track) => sum + track.layers.length, 0)} editable layers are now on the timeline.`,
       ...messages,
     ]);
-  }, []);
+  }, [selectEngineLayer, setEngineProject]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -824,6 +875,16 @@ export function ProfessionalVideoStudio() {
       setStudioFile({ file: firstVideoAsset.file, url: firstVideoAsset.url, durationSeconds: 60 });
       setActiveProject(null);
       setTemplateProject(null);
+      setEngineProject(
+        createVideoProjectFromMediaAssets({
+          name: firstVideoAsset.name,
+          aspectRatio,
+          assets: [...incomingAssets, ...mediaAssets].map(mediaAssetToBridgeAsset),
+          primaryVideoAssetId: firstVideoAsset.id,
+          durationSeconds: 60,
+        }),
+        { resetHistory: true },
+      );
       setPlan(null);
       setPreviewTime(0);
       clearRenderedOutput();
@@ -861,6 +922,16 @@ export function ProfessionalVideoStudio() {
     setStudioFile({ file: asset.file, url: asset.url, durationSeconds: 60 });
     setActiveProject(null);
     setTemplateProject(null);
+    setEngineProject(
+      createVideoProjectFromMediaAssets({
+        name: asset.name,
+        aspectRatio,
+        assets: mediaAssets.map(mediaAssetToBridgeAsset),
+        primaryVideoAssetId: asset.id,
+        durationSeconds: 60,
+      }),
+      { resetHistory: true },
+    );
     setPlan(null);
     setPreviewTime(0);
     clearRenderedOutput();
@@ -1081,6 +1152,17 @@ export function ProfessionalVideoStudio() {
       video.pause();
       setIsPlaying(false);
     }
+  }
+
+  function handlePreviewTimeUpdate() {
+    const nextTime = videoRef.current?.currentTime ?? 0;
+    setPreviewTime(nextTime);
+    setEnginePlayhead(nextTime);
+  }
+
+  function selectTimelineLayer(layerId: string) {
+    setSelectedLayerId(layerId);
+    selectEngineLayer(layerId);
   }
 
   async function renderVideo() {
@@ -1344,6 +1426,7 @@ export function ProfessionalVideoStudio() {
         transcript,
         captions,
         brandKit,
+        engineProject,
         savedAt: new Date().toISOString(),
       }),
     );
@@ -1367,6 +1450,7 @@ export function ProfessionalVideoStudio() {
       transcript?: TranscriptSegment[];
       captions?: CaptionLine[];
       brandKit?: BrandKitState;
+      engineProject?: VideoProject;
     };
     if (snapshot.brandName) setBrandName(snapshot.brandName);
     if (snapshot.styleId) setStyleId(snapshot.styleId);
@@ -1376,6 +1460,7 @@ export function ProfessionalVideoStudio() {
     if (snapshot.transcript) setTranscript(snapshot.transcript);
     if (snapshot.captions) setCaptions(snapshot.captions);
     if (snapshot.brandKit) setBrandKit(snapshot.brandKit);
+    if (snapshot.engineProject) setEngineProject(snapshot.engineProject, { resetHistory: true });
     setProjectStatus("Local project snapshot loaded");
   }
 
@@ -1765,7 +1850,11 @@ export function ProfessionalVideoStudio() {
                       max="2.4"
                       step="0.1"
                       value={timelineZoom}
-                      onChange={(event) => setTimelineZoom(Number(event.target.value))}
+                      onChange={(event) => {
+                        const nextZoom = Number(event.target.value);
+                        setTimelineZoom(nextZoom);
+                        setEngineZoom(nextZoom);
+                      }}
                       className="w-28 accent-[var(--brand)]"
                       aria-label="Timeline zoom"
                     />
@@ -1787,7 +1876,7 @@ export function ProfessionalVideoStudio() {
                     isPlaying={isPlaying}
                     previewTime={previewTime}
                     onLoadedMetadata={captureDuration}
-                    onTimeUpdate={() => setPreviewTime(videoRef.current?.currentTime ?? 0)}
+                    onTimeUpdate={handlePreviewTimeUpdate}
                     onEnded={() => setIsPlaying(false)}
                     onTogglePlayback={togglePlayback}
                   />
@@ -1797,6 +1886,7 @@ export function ProfessionalVideoStudio() {
                     activePanel={activePanel}
                     projectStatus={projectStatus}
                     studioFile={studioFile}
+                    engineProject={engineProject}
                   />
                 </div>
               </section>
@@ -1806,7 +1896,7 @@ export function ProfessionalVideoStudio() {
                 selectedLayerId={selectedLayerId}
                 zoom={timelineZoom}
                 totalSeconds={totalTimelineSeconds}
-                onSelectLayer={setSelectedLayerId}
+                onSelectLayer={selectTimelineLayer}
               />
             </>
           )}
@@ -2281,16 +2371,22 @@ function ProjectMetrics({
   activePanel,
   projectStatus,
   studioFile,
+  engineProject,
 }: {
   plan: EditPlan | null;
   activeStyle: VideoStyle;
   activePanel: PanelId;
   projectStatus: string;
   studioFile: StudioFile | null;
+  engineProject: VideoProject | null;
 }) {
+  const timelineItemCount =
+    engineProject?.tracks.reduce((sum, track) => sum + track.items.length, 0) ?? 0;
+
   return (
     <div className="space-y-3">
       <Metric label="Mode" value={activePanel} icon={Command} />
+      <Metric label="Engine" value={engineProject ? `${engineProject.layers.length} layers / ${timelineItemCount} items` : "--"} icon={Layers3} />
       <Metric label="AI confidence" value={plan ? `${plan.confidence}%` : "--"} icon={Gauge} />
       <Metric label="Target cut" value={plan ? `${plan.targetDurationSeconds}s` : studioFile ? formatDuration(studioFile.durationSeconds) : "--"} icon={Clock3} />
       <Metric label="Captions" value={activeStyle.captionPreset} icon={Captions} />
@@ -4056,6 +4152,17 @@ function getAssetKind(file: File): MediaAsset["kind"] {
   if (file.type.startsWith("audio/")) return "audio";
   if (file.type.startsWith("image/")) return "image";
   return "video";
+}
+
+function mediaAssetToBridgeAsset(asset: MediaAsset): MediaAssetInput {
+  return {
+    id: asset.id,
+    name: asset.name,
+    url: asset.url,
+    kind: asset.kind,
+    size: asset.size,
+    mimeType: asset.file.type,
+  };
 }
 
 function downloadTextFile(fileName: string, content: string, type: string) {
