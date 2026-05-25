@@ -102,3 +102,127 @@ button:disabled {
   background: var(--brand);
   color: #050608;
 }
+
+.template-motion-layer {
+  animation-duration: 820ms;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.2, 1);
+  will-change: transform, opacity, filter;
+}
+
+.template-delay-0 { animation-delay: 40ms; }
+.template-delay-1 { animation-delay: 130ms; }
+.template-delay-2 { animation-delay: 220ms; }
+.template-delay-3 { animation-delay: 310ms; }
+.template-delay-4 { animation-delay: 400ms; }
+.template-delay-5 { animation-delay: 490ms; }
+
+.template-anim-fade { animation-name: templateFadeIn; }
+.template-anim-slide-up { animation-name: templateSlideUp; }
+.template-anim-slide-down { animation-name: templateSlideDown; }
+.template-anim-slide-left { animation-name: templateSlideLeft; }
+.template-anim-slide-right { animation-name: templateSlideRight; }
+.template-anim-zoom { animation-name: templateZoomIn; }
+.template-anim-pop { animation-name: templatePop; }
+.template-anim-bounce { animation-name: templateBounce; animation-duration: 980ms; }
+.template-anim-type { animation-name: templateTypeReveal; animation-duration: 1100ms; }
+.template-anim-blur { animation-name: templateBlurReveal; }
+.template-anim-rotate { animation-name: templateRotateIn; }
+
+.template-bg-drift {
+  background-size: 160% 160%;
+  animation: templateBgDrift 7s ease-in-out infinite alternate;
+}
+
+.template-media-sheen {
+  animation: templateMediaSheen 2.4s ease-in-out infinite alternate;
+}
+
+.template-wave-bar {
+  animation: templateWave 920ms ease-in-out infinite alternate;
+}
+
+.template-wave-bar:nth-child(2n) { animation-delay: 110ms; }
+.template-wave-bar:nth-child(3n) { animation-delay: 220ms; }
+.template-wave-bar:nth-child(5n) { animation-delay: 330ms; }
+
+@keyframes templateFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes templateSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes templateSlideDown {
+  from { opacity: 0; transform: translateY(-24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes templateSlideLeft {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes templateSlideRight {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes templateZoomIn {
+  from { opacity: 0; transform: scale(0.86); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes templatePop {
+  0% { opacity: 0; transform: scale(0.78); }
+  70% { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes templateBounce {
+  0% { opacity: 0; transform: translateY(28px) scale(0.88); }
+  58% { opacity: 1; transform: translateY(-7px) scale(1.03); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes templateTypeReveal {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); }
+  to { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+@keyframes templateBlurReveal {
+  from { opacity: 0; filter: blur(16px); transform: translateY(14px) scale(0.97); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); }
+}
+
+@keyframes templateRotateIn {
+  from { opacity: 0; transform: rotate(-8deg) scale(0.88); }
+  to { opacity: 1; transform: rotate(0) scale(1); }
+}
+
+@keyframes templateBgDrift {
+  from { transform: scale(1); background-position: 0% 0%; }
+  to { transform: scale(1.045); background-position: 100% 100%; }
+}
+
+@keyframes templateMediaSheen {
+  from { transform: translateX(-8%) scale(1); opacity: 0.72; }
+  to { transform: translateX(8%) scale(1.08); opacity: 1; }
+}
+
+@keyframes templateWave {
+  from { transform: scaleY(0.45); opacity: 0.58; }
+  to { transform: scaleY(1.12); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .template-motion-layer,
+  .template-bg-drift,
+  .template-media-sheen,
+  .template-wave-bar {
+    animation: none !important;
+  }
+}
