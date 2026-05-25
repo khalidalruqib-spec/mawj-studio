@@ -269,6 +269,21 @@ type TemplatePreset = {
   }>;
 };
 
+type AiToolCategory = "create" | "captions" | "cleanup" | "clips" | "visual" | "business";
+
+type AiToolItem = {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: AiToolCategory;
+  badge: string;
+  icon: LucideIcon;
+  command?: string;
+  actionId?: string;
+  openPanel?: PanelId;
+  needsMedia?: boolean;
+};
+
 type UploadUrlResponse = {
   mode: "supabase" | "local-preview";
   bucket: string;
@@ -343,6 +358,150 @@ const CREATOR_STARTERS = [
     label: "تنظيف + كابشن",
     detail: "جهّز صوت واضح وترجمة عربية",
     command: "نظف الصوت وأضف كابشن عربي واحذف الصمت",
+  },
+];
+
+const AI_TOOL_CATEGORIES: Array<{ id: "all" | AiToolCategory; label: string; icon: LucideIcon }> = [
+  { id: "all", label: "All", icon: Sparkles },
+  { id: "create", label: "Create", icon: WandSparkles },
+  { id: "captions", label: "Captions", icon: Captions },
+  { id: "cleanup", label: "Clean", icon: ShieldCheck },
+  { id: "clips", label: "Clips", icon: Scissors },
+  { id: "visual", label: "Visual", icon: Replace },
+  { id: "business", label: "Business", icon: BadgeDollarSign },
+];
+
+const AI_TOOLS: AiToolItem[] = [
+  {
+    id: "idea-to-video",
+    title: "Idea to video",
+    subtitle: "Prompt, hook, scenes, captions",
+    category: "create",
+    badge: "Agent",
+    icon: Brain,
+    command: "حوّل الفكرة الحالية إلى فيديو قصير للتيك توك مع هوك عربي وكابشن وخطة مشاهد",
+  },
+  {
+    id: "auto-captions",
+    title: "Auto subtitles",
+    subtitle: "Arabic / English captions",
+    category: "captions",
+    badge: "STT",
+    icon: Captions,
+    command: "أضف كابشن عربي للفيديو مع أسلوب تيك توك واضح",
+    openPanel: "captions",
+    needsMedia: true,
+  },
+  {
+    id: "dynamic-captions",
+    title: "Dynamic captions",
+    subtitle: "Karaoke, highlights, SRT",
+    category: "captions",
+    badge: "RTL",
+    icon: MessagesSquare,
+    openPanel: "captions",
+  },
+  {
+    id: "edit-by-script",
+    title: "Edit by transcript",
+    subtitle: "Delete words, fillers, pauses",
+    category: "cleanup",
+    badge: "Text",
+    icon: Mic2,
+    command: "افتح تحرير الفيديو بالنص واحذف الحشو والسكتات الطويلة",
+    openPanel: "transcript",
+    needsMedia: true,
+  },
+  {
+    id: "clean-audio",
+    title: "Clean audio",
+    subtitle: "Noise, echo, volume leveling",
+    category: "cleanup",
+    badge: "Voice",
+    icon: Volume2,
+    command: "حسن الصوت وأزل الضوضاء واضبط مستوى الصوت",
+    openPanel: "audio",
+    needsMedia: true,
+  },
+  {
+    id: "remove-silence",
+    title: "Remove silence",
+    subtitle: "Tight pacing for shorts",
+    category: "cleanup",
+    badge: "Fast",
+    icon: Scissors,
+    command: "احذف كل فترات الصمت الطويلة ورتب الإيقاع للمقطع",
+    actionId: "moments",
+    openPanel: "transcript",
+    needsMedia: true,
+  },
+  {
+    id: "magic-clips",
+    title: "AI clips",
+    subtitle: "15s, 30s, 60s versions",
+    category: "clips",
+    badge: "Social",
+    icon: ListVideo,
+    command: "استخرج أفضل 5 لحظات وأنشئ نسخ 15 ثانية و30 ثانية و60 ثانية",
+    actionId: "shorts",
+    needsMedia: true,
+  },
+  {
+    id: "social-resize",
+    title: "Resize for social",
+    subtitle: "TikTok, Reels, Shorts",
+    category: "clips",
+    badge: "9:16",
+    icon: Crop,
+    command: "حوّل المشروع إلى مقاس تيك توك 9:16 مع كابشن آمن عن الحواف",
+  },
+  {
+    id: "remove-background",
+    title: "Remove background",
+    subtitle: "Blur, studio, office, color",
+    category: "visual",
+    badge: "AI",
+    icon: Replace,
+    command: "أزل خلفية الفيديو واستبدلها بخلفية ستوديو نظيفة",
+    openPanel: "background",
+    needsMedia: true,
+  },
+  {
+    id: "titles-and-hashtags",
+    title: "Titles + hashtags",
+    subtitle: "Hooks, captions, CTA",
+    category: "create",
+    badge: "Copy",
+    icon: WandSparkles,
+    actionId: "titles",
+  },
+  {
+    id: "video-summary",
+    title: "Content brief",
+    subtitle: "Summary and best angle",
+    category: "create",
+    badge: "Brief",
+    icon: BadgeCheck,
+    actionId: "summary",
+  },
+  {
+    id: "ad-maker",
+    title: "AI ad maker",
+    subtitle: "Product ad, CTA, 3 lengths",
+    category: "business",
+    badge: "Ads",
+    icon: BadgeDollarSign,
+    command: "أنشئ نسخة إعلانية للمنتج مع هوك وCTA وكابشن عربي",
+    openPanel: "ad-maker",
+  },
+  {
+    id: "brand-kit",
+    title: "Brand kit",
+    subtitle: "Logo, colors, fonts, style",
+    category: "business",
+    badge: "Brand",
+    icon: Palette,
+    openPanel: "brand",
   },
 ];
 
@@ -526,33 +685,6 @@ const TEMPLATE_PRESETS: TemplatePreset[] = [
       { trackKind: "effects", type: "effect", name: "Clean corporate grade", start: 0, duration: 45, color: "#a78bfa" },
       { trackKind: "overlay", type: "text", name: "Proof card", start: 12, duration: 10, color: "#8ef7c2" },
     ],
-  },
-];
-
-const AI_ACTIONS = [
-  {
-    id: "shorts",
-    title: "Extract best clips",
-    detail: "Detect highlights and create 15s, 30s, 60s versions.",
-    icon: Scissors,
-  },
-  {
-    id: "titles",
-    title: "Generate titles",
-    detail: "Titles, descriptions, hooks, CTAs, and hashtags.",
-    icon: WandSparkles,
-  },
-  {
-    id: "summary",
-    title: "Summarize video",
-    detail: "Creator brief, ad angle, and platform recommendations.",
-    icon: BadgeCheck,
-  },
-  {
-    id: "moments",
-    title: "Suggest moments",
-    detail: "Best moments for TikTok, Reels, and Shorts.",
-    icon: Gauge,
   },
 ];
 
@@ -2490,7 +2622,15 @@ export function ProfessionalVideoStudio() {
 
   function renderSidePanel() {
     if (activePanel === "ai") {
-      return <AiStudioPanel plan={plan} onRun={handleAiAction} />;
+      return (
+        <AiStudioPanel
+          plan={plan}
+          mediaCount={mediaAssets.length}
+          hasSource={Boolean(studioFile || templateProject)}
+          isRunning={isAssistantRunning}
+          onRunTool={runAiTool}
+        />
+      );
     }
 
     if (activePanel === "transcript") {
@@ -2654,6 +2794,25 @@ export function ProfessionalVideoStudio() {
         ),
         ...messages,
       ].slice(0, 12));
+    }
+  }
+
+  function runAiTool(tool: AiToolItem) {
+    if (tool.openPanel) {
+      setActivePanel(tool.openPanel);
+    }
+
+    if (tool.actionId) {
+      handleAiAction(tool.actionId);
+    }
+
+    if (tool.command) {
+      void runAssistantCommand(tool.command);
+      return;
+    }
+
+    if (tool.openPanel && !tool.actionId) {
+      setProjectStatus(`${tool.title} ready`);
     }
   }
 }
@@ -3080,33 +3239,165 @@ function ProjectMetrics({
   );
 }
 
-function AiStudioPanel({ plan, onRun }: { plan: EditPlan | null; onRun: (id: string) => void }) {
+function AiStudioPanel({
+  plan,
+  mediaCount,
+  hasSource,
+  isRunning,
+  onRunTool,
+}: {
+  plan: EditPlan | null;
+  mediaCount: number;
+  hasSource: boolean;
+  isRunning: boolean;
+  onRunTool: (tool: AiToolItem) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<"all" | AiToolCategory>("all");
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredTools = AI_TOOLS.filter((tool) => {
+    const matchesCategory = category === "all" || tool.category === category;
+    const matchesQuery =
+      !normalizedQuery ||
+      [tool.title, tool.subtitle, tool.badge, tool.category].some((value) =>
+        value.toLowerCase().includes(normalizedQuery),
+      );
+
+    return matchesCategory && matchesQuery;
+  });
+  const recommendedTools = AI_TOOLS.filter((tool) =>
+    hasSource
+      ? ["auto-captions", "magic-clips", "clean-audio", "remove-silence"].includes(tool.id)
+      : ["idea-to-video", "ad-maker", "titles-and-hashtags", "brand-kit"].includes(tool.id),
+  );
+
   return (
-    <section className="panel p-4">
-      <PanelHeading icon={Brain} title="AI video tools" />
-      <div className="space-y-2">
-        {AI_ACTIONS.map((action) => {
-          const Icon = action.icon;
+    <section className="panel max-h-[calc(100dvh-112px)] overflow-auto p-4">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <PanelHeading icon={Brain} title="AI tools" />
+          <p className="mt-1 text-xs font-bold text-[var(--muted)]">
+            {hasSource ? `${mediaCount} media assets ready` : "Start with media or a prompt"}
+          </p>
+        </div>
+        <span className="rounded-md border border-[var(--line)] bg-black/25 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--brand)]">
+          Agent
+        </span>
+      </div>
+
+      <div className="rounded-lg border border-[var(--line)] bg-[radial-gradient(circle_at_top_left,rgba(142,247,194,0.18),transparent_38%),var(--panel-soft)] p-3">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--brand)] text-black">
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-black">Mawj AI Agent</p>
+            <p className="truncate text-xs font-bold text-[var(--muted)]">اكتب أمر أو شغل أداة جاهزة</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => onRunTool(AI_TOOLS[0])}
+          disabled={isRunning}
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-black text-black transition hover:bg-[var(--brand)] disabled:opacity-60"
+        >
+          {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <WandSparkles className="h-4 w-4" />}
+          Generate with AI
+        </button>
+      </div>
+
+      <div className="mt-4">
+        <p className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-[var(--muted)]">Recommended</p>
+        <div className="grid grid-cols-2 gap-2">
+          {recommendedTools.slice(0, 4).map((tool) => {
+            const Icon = tool.icon;
+            return (
+              <button
+                key={tool.id}
+                type="button"
+                onClick={() => onRunTool(tool)}
+                className="min-h-24 rounded-lg border border-[var(--line)] bg-black/20 p-2 text-left transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)]"
+              >
+                <Icon className="mb-2 h-4 w-4 text-[var(--brand)]" aria-hidden="true" />
+                <span className="block text-xs font-black">{tool.title}</span>
+                <span className="mt-1 line-clamp-2 block text-[11px] font-semibold leading-4 text-[var(--muted)]">
+                  {tool.subtitle}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-lg border border-[var(--line)] bg-black/20 p-2">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search AI tools"
+            className="control-input pl-9"
+          />
+        </div>
+        <div className="mt-2 flex gap-1 overflow-x-auto pb-1">
+          {AI_TOOL_CATEGORIES.map((item) => {
+            const Icon = item.icon;
+            const active = category === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setCategory(item.id)}
+                className={`flex min-h-9 shrink-0 items-center gap-1.5 rounded-md border px-2 text-[11px] font-black transition ${
+                  active
+                    ? "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]"
+                    : "border-[var(--line)] bg-[var(--panel-soft)] text-[var(--muted)] hover:text-white"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {filteredTools.map((tool) => {
+          const Icon = tool.icon;
+          const needsMedia = tool.needsMedia && !hasSource && mediaCount === 0;
           return (
             <button
-              key={action.id}
+              key={tool.id}
               type="button"
-              onClick={() => onRun(action.id)}
+              onClick={() => onRunTool(tool)}
               className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3 text-left transition hover:border-[var(--brand)]"
             >
               <div className="flex items-start gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
                   <Icon className="h-5 w-5" aria-hidden="true" />
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-black">{action.title}</span>
-                  <span className="mt-1 block text-xs font-semibold leading-5 text-[var(--muted)]">{action.detail}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-black">{tool.title}</span>
+                    <span className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-black ${
+                      needsMedia ? "bg-amber-400/15 text-amber-100" : "bg-[var(--brand-soft)] text-[var(--brand)]"
+                    }`}>
+                      {needsMedia ? "Needs media" : tool.badge}
+                    </span>
+                  </span>
+                  <span className="mt-1 block text-xs font-semibold leading-5 text-[var(--muted)]">{tool.subtitle}</span>
+                  <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-black text-white/70">
+                    Run
+                    <Rocket className="h-3 w-3" aria-hidden="true" />
+                  </span>
                 </span>
               </div>
             </button>
           );
         })}
       </div>
+
       {plan ? (
         <div className="mt-4 rounded-lg border border-[var(--line)] bg-black/20 p-3">
           <p className="text-xs font-bold text-[var(--muted)]">Current AI brief</p>
