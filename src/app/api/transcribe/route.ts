@@ -3,6 +3,15 @@ import { transcribeMediaFile, type TranscriptionLanguage } from "@/lib/transcrip
 
 const SUPPORTED_LANGUAGES = new Set(["ar", "en", "auto"]);
 
+export async function GET() {
+  return NextResponse.json({
+    configured: Boolean(process.env.OPENAI_API_KEY),
+    model: process.env.OPENAI_TRANSCRIBE_MODEL ?? "gpt-4o-mini-transcribe",
+    directUploadLimitBytes: 3_500_000,
+    maxClientAudioSeconds: 180,
+  });
+}
+
 export async function POST(request: Request) {
   const formData = await request.formData();
   const file = formData.get("file");

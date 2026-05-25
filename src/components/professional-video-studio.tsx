@@ -67,6 +67,10 @@ import {
   type BrowserRenderResult,
 } from "@/lib/browser-video-renderer";
 import {
+  prepareMediaForTranscription,
+  type PreparedTranscriptionFile,
+} from "@/lib/browser-transcription-audio";
+import {
   createSupabaseBrowserClient,
   hasSupabaseBrowserEnv,
 } from "@/lib/supabase/client";
@@ -171,6 +175,13 @@ type AutoTranscribeResponse = {
   captions: CaptionLine[];
   srt: string;
   error?: string;
+};
+
+type TranscribeStatusResponse = {
+  configured: boolean;
+  model: string;
+  directUploadLimitBytes: number;
+  maxClientAudioSeconds: number;
 };
 
 const GOAL_LABELS: Record<Goal, string> = {
@@ -365,6 +376,7 @@ export function ProfessionalVideoStudio() {
   const [isRendering, setIsRendering] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionMode, setTranscriptionMode] = useState<"openai" | "demo" | null>(null);
+  const [transcriptionNotice, setTranscriptionNotice] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [previewTime, setPreviewTime] = useState(0);
   const [renderProgress, setRenderProgress] = useState<BrowserRenderProgress | null>(null);
@@ -551,11 +563,35 @@ export function ProfessionalVideoStudio() {
 
     setIsTranscribing(true);
     setError("");
+    setTranscriptionNotice("");
     setProjectStatus("Reading video audio and generating captions...");
 
     try {
+      const statusResponse = await fetch("/api/transcribe", { cache: "no-store" });
+      const status = (await statusResponse.json()) as TranscribeStatusResponse;
+
+      if (!status.configured) {
+        const demo = createClientDemoTranscription(targetFile.name, targetDuration, languageMode);
+        applyTranscriptionResult(demo, targetDuration);
+        setTranscriptionNotice(
+          "OpenAI key is not configured on Vercel yet. Showing demo captions until OPENAI_API_KEY is added.",
+        );
+        setProjectStatus("Demo captions shown because OPENAI_API_KEY is missing on Vercel");
+        return;
+      }
+
+      const preparedFile = await prepareMediaForTranscription({
+        file: targetFile,
+        durationSeconds: targetDuration,
+        onProgress: (progress) => {
+          setProjectStatus(`Preparing audio for captions ${progress}%`);
+        },
+      });
+
+      setTranscriptionNotice(getPreparedFileNotice(preparedFile));
+
       const formData = new FormData();
-      formData.append("file", targetFile, targetFile.name);
+      formData.append("file", preparedFile.file, preparedFile.file.name);
       formData.append("durationSeconds", String(targetDuration));
       formData.append(
         "language",
@@ -569,12 +605,7 @@ export function ProfessionalVideoStudio() {
       const data = (await response.json()) as AutoTranscribeResponse;
       if (!response.ok) throw new Error(data.error ?? "Could not generate automatic captions.");
 
-      setTranscript(data.transcript);
-      setCaptions(data.captions);
-      setTranscriptionMode(data.mode);
-      setActivePanel("captions");
-      clearRenderedOutput();
-      commitTimeline((tracks) => ensureCaptionLayer(tracks, data.captions, targetDuration));
+      applyTranscriptionResult(data, targetDuration);
       setProjectStatus(
         data.mode === "openai"
           ? `Auto captions ready with ${data.model}`
@@ -591,6 +622,15 @@ export function ProfessionalVideoStudio() {
     } finally {
       setIsTranscribing(false);
     }
+  }
+
+  function applyTranscriptionResult(data: AutoTranscribeResponse, targetDuration: number) {
+    setTranscript(data.transcript);
+    setCaptions(data.captions);
+    setTranscriptionMode(data.mode);
+    setActivePanel("captions");
+    clearRenderedOutput();
+    commitTimeline((tracks) => ensureCaptionLayer(tracks, data.captions, targetDuration));
   }
 
   async function generatePlan() {
@@ -1336,6 +1376,7 @@ export function ProfessionalVideoStudio() {
           onGenerateCaptions={generateCaptionsFromTranscript}
           isTranscribing={isTranscribing}
           transcriptionMode={transcriptionMode}
+          transcriptionNotice={transcriptionNotice}
         />
       );
     }
@@ -1352,6 +1393,7 @@ export function ProfessionalVideoStudio() {
           onBurnCaptions={renderVideo}
           isTranscribing={isTranscribing}
           transcriptionMode={transcriptionMode}
+          transcriptionNotice={transcriptionNotice}
         />
       );
     }
@@ -1726,6 +1768,7 @@ function TranscriptPanel({
   onGenerateCaptions,
   isTranscribing,
   transcriptionMode,
+  transcriptionNotice,
 }: {
   transcript: TranscriptSegment[];
   query: string;
@@ -1737,6 +1780,7 @@ function TranscriptPanel({
   onGenerateCaptions: () => void;
   isTranscribing: boolean;
   transcriptionMode: "openai" | "demo" | null;
+  transcriptionNotice: string;
 }) {
   return (
     <section className="panel p-4">
@@ -1753,6 +1797,11 @@ function TranscriptPanel({
       {transcriptionMode ? (
         <p className="mb-3 rounded-lg border border-[var(--line)] bg-black/20 p-2 text-xs font-bold text-[var(--muted)]">
           Mode: {transcriptionMode === "openai" ? "real OpenAI transcription" : "demo fallback"}
+        </p>
+      ) : null}
+      {transcriptionNotice ? (
+        <p className="mb-3 rounded-lg border border-amber-400/40 bg-amber-400/10 p-2 text-xs font-bold leading-5 text-amber-100">
+          {transcriptionNotice}
         </p>
       ) : null}
       <div className="relative mb-3">
@@ -1806,6 +1855,7 @@ function CaptionsPanel({
   onBurnCaptions,
   isTranscribing,
   transcriptionMode,
+  transcriptionNotice,
 }: {
   captions: CaptionLine[];
   template: string;
@@ -1816,6 +1866,7 @@ function CaptionsPanel({
   onBurnCaptions: () => void;
   isTranscribing: boolean;
   transcriptionMode: "openai" | "demo" | null;
+  transcriptionNotice: string;
 }) {
   return (
     <section className="panel p-4">
@@ -1834,6 +1885,11 @@ function CaptionsPanel({
           {transcriptionMode === "openai"
             ? "Captions were generated from the uploaded video's audio."
             : "Demo captions are active. Add OPENAI_API_KEY for real audio transcription."}
+        </p>
+      ) : null}
+      {transcriptionNotice ? (
+        <p className="mb-3 rounded-lg border border-amber-400/40 bg-amber-400/10 p-2 text-xs font-bold leading-5 text-amber-100">
+          {transcriptionNotice}
         </p>
       ) : null}
       <div className="mb-3 grid grid-cols-1 gap-2">
@@ -2673,8 +2729,63 @@ function planToCaptions(plan: EditPlan): CaptionLine[] {
   }));
 }
 
+function createClientDemoTranscription(
+  fileName: string,
+  durationSeconds: number,
+  languageMode: LanguageMode,
+): AutoTranscribeResponse {
+  const arabic = languageMode !== "english";
+  const text = arabic
+    ? `هذا كبشن تجريبي من ${fileName}. أضف مفتاح OpenAI في Vercel حتى يقرأ النظام صوت الفيديو الحقيقي ويولد الكابشن تلقائياً.`
+    : `This is a demo caption for ${fileName}. Add the OpenAI key in Vercel so the system can read the real video audio.`;
+  const transcript = roughClientTranscript(text, durationSeconds);
+
+  return {
+    mode: "demo",
+    model: "missing-openai-key",
+    text,
+    transcript,
+    captions: transcript.map((segment) => ({
+      id: `cap-${segment.id}`,
+      start: segment.start,
+      end: segment.end,
+      text: segment.text,
+    })),
+    srt: "",
+  };
+}
+
+function roughClientTranscript(text: string, durationSeconds: number): TranscriptSegment[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const chunkSize = 9;
+  const chunks: string[] = [];
+
+  for (let index = 0; index < words.length; index += chunkSize) {
+    chunks.push(words.slice(index, index + chunkSize).join(" "));
+  }
+
+  const duration = Math.max(6, durationSeconds);
+  const segmentLength = duration / Math.max(1, chunks.length);
+
+  return chunks.map((chunk, index) => ({
+    id: `demo-tr-${index + 1}`,
+    start: Number((index * segmentLength).toFixed(2)),
+    end: Number(Math.min(duration, (index + 1) * segmentLength).toFixed(2)),
+    speaker: "Speaker 1",
+    text: chunk,
+  }));
+}
+
 function getCaptionLineForTime(captions: CaptionLine[], time: number) {
   return captions.find((caption) => time >= caption.start && time <= caption.end) ?? null;
+}
+
+function getPreparedFileNotice(preparedFile: PreparedTranscriptionFile) {
+  if (preparedFile.usedAudioExtraction) {
+    return `${preparedFile.note} Original: ${formatBytes(preparedFile.originalSize)}, upload: ${formatBytes(preparedFile.file.size)}.`;
+  }
+
+  return preparedFile.note;
 }
 
 function createCaptionRenderPlan({
