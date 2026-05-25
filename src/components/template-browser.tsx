@@ -4,15 +4,22 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  BadgeCheck,
   Check,
   Clock3,
+  Code2,
+  Database,
   Eye,
   FileVideo2,
+  Film,
+  Globe2,
   ImageIcon,
   Layers3,
   Search,
+  ShieldCheck,
   SlidersHorizontal,
   Sparkles,
+  Tags,
   UploadCloud,
   X,
 } from "lucide-react";
@@ -45,6 +52,55 @@ const CATEGORIES = [
   "Personal Branding",
 ];
 
+const CATEGORY_LABELS: Record<string, string> = {
+  All: "الكل",
+  "Product Ads": "إعلانات المنتجات",
+  "TikTok / Reels": "تيك توك / ريلز",
+  "YouTube Shorts": "يوتيوب شورتس",
+  "Podcast Clips": "بودكاست",
+  "Educational Videos": "تعليمي",
+  "Lecture Summaries": "ملخص محاضرة",
+  "Real Estate": "عقار",
+  Restaurants: "مطاعم",
+  "Legal Services": "خدمات قانونية",
+  "Event Announcements": "فعاليات",
+  "News Style": "أخبار",
+  "Course Announcements": "إعلان دورة",
+  "Before / After": "قبل وبعد",
+  "Personal Branding": "براند شخصي",
+};
+
+function countTemplateLayers(template: VideoTemplate) {
+  return template.scenes.reduce((total, scene) => total + scene.layers.length, 0);
+}
+
+function countEditableLayers(template: VideoTemplate) {
+  return template.scenes.reduce(
+    (total, scene) => total + scene.layers.filter((layer) => layer.editable !== false).length,
+    0,
+  );
+}
+
+function countLayersByType(template: VideoTemplate, type: TemplateLayer["type"]) {
+  return template.scenes.reduce(
+    (total, scene) => total + scene.layers.filter((layer) => layer.type === type).length,
+    0,
+  );
+}
+
+function countMotionTypes(template: VideoTemplate) {
+  const motionTypes = new Set<TemplateAnimationType>(template.animations ?? []);
+
+  for (const scene of template.scenes) {
+    for (const layer of scene.layers) {
+      if (layer.animationIn?.type) motionTypes.add(layer.animationIn.type);
+      if (layer.animationOut?.type) motionTypes.add(layer.animationOut.type);
+    }
+  }
+
+  return motionTypes.size;
+}
+
 export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -62,11 +118,44 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
         !normalizedQuery ||
         template.name.toLowerCase().includes(normalizedQuery) ||
         template.description.toLowerCase().includes(normalizedQuery) ||
-        template.category.toLowerCase().includes(normalizedQuery);
+        template.category.toLowerCase().includes(normalizedQuery) ||
+        (CATEGORY_LABELS[template.category] ?? "").toLowerCase().includes(normalizedQuery);
 
       return matchesCategory && matchesQuery;
     });
   }, [category, query, templates]);
+
+  const categoryOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    for (const template of templates) {
+      counts.set(template.category, (counts.get(template.category) ?? 0) + 1);
+    }
+
+    const knownCategories = CATEGORIES.filter((item) => item === "All" || counts.has(item));
+    const customCategories = Array.from(counts.keys()).filter((item) => !CATEGORIES.includes(item));
+
+    return [...knownCategories, ...customCategories].map((item) => ({
+      value: item,
+      label: CATEGORY_LABELS[item] ?? item,
+      count: item === "All" ? templates.length : counts.get(item) ?? 0,
+    }));
+  }, [templates]);
+
+  const marketplaceStats = useMemo(() => {
+    const sceneCount = templates.reduce((total, template) => total + template.scenes.length, 0);
+    const layerCount = templates.reduce((total, template) => total + countTemplateLayers(template), 0);
+    const inputCount = templates.reduce((total, template) => total + template.requiredInputs.length, 0);
+    const categoryCount = new Set(templates.map((template) => template.category)).size;
+
+    return [
+      { label: "قوالب JSON", value: templates.length, icon: Code2 },
+      { label: "فئات", value: categoryCount, icon: Tags },
+      { label: "مشاهد", value: sceneCount, icon: Film },
+      { label: "طبقات قابلة للتعديل", value: layerCount, icon: Layers3 },
+      { label: "مدخلات ديناميكية", value: inputCount, icon: Database },
+    ];
+  }, [templates]);
 
   function openTemplateForm(template: VideoTemplate) {
     setSelectedTemplate(template);
@@ -97,7 +186,7 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
   }
 
   return (
-    <main className="min-h-dvh bg-[var(--background)] text-[var(--foreground)]">
+    <main dir="rtl" lang="ar" className="min-h-dvh bg-[var(--background)] text-[var(--foreground)]">
       <header className="border-b border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3">
@@ -105,9 +194,9 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
               <Layers3 className="h-5 w-5" aria-hidden="true" />
             </span>
             <div>
-              <h1 className="text-xl font-black">Video Template Engine</h1>
+              <p className="text-xl font-black">Mawj Studio</p>
               <p className="text-sm font-semibold text-[var(--muted)]">
-                JSON templates that hydrate into editable Mawj Studio projects
+                قوالب فيديو تتحول إلى مشاريع مونتاج قابلة للتعديل
               </p>
             </div>
           </div>
@@ -117,36 +206,102 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
             className="flex min-h-11 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-sm font-black transition hover:border-[var(--brand)]"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Back to editor
+            العودة للمحرر
           </button>
         </div>
       </header>
 
       <section className="mx-auto max-w-[1680px] px-4 py-5 sm:px-6">
+        <div className="mb-5 overflow-hidden rounded-lg border border-[var(--line)] bg-[radial-gradient(circle_at_20%_10%,rgba(142,247,194,0.18),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.075),rgba(255,255,255,0.02))]">
+          <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] lg:items-end">
+            <div className="max-w-4xl">
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-black">
+                <span className="inline-flex min-h-8 items-center gap-2 rounded-md border border-[var(--brand)]/35 bg-[var(--brand-soft)] px-2.5 text-[var(--brand)]">
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                  Template Marketplace
+                </span>
+                <span dir="ltr" className="inline-flex min-h-8 items-center rounded-md border border-white/10 bg-black/25 px-2.5 text-white/75">
+                  /api/templates
+                </span>
+                <span className="inline-flex min-h-8 items-center gap-2 rounded-md border border-white/10 bg-black/25 px-2.5 text-white/75">
+                  <Globe2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  RTL + English
+                </span>
+              </div>
+              <h1 className="max-w-4xl text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
+                سوق قوالب حي: كل قالب مشاهد وطبقات وحركات، مو صورة وخلاص.
+              </h1>
+              <p className="mt-3 max-w-3xl text-sm font-semibold leading-7 text-[var(--muted)] sm:text-base">
+                اختر قالب، عبئ بيانات المنتج أو الفيديو، وبعدها Mawj يحوله إلى مشروع عادي داخل المحرر:
+                النصوص، الصور، الفيديو، الكابشن، التوقيت، الألوان، والحركات كلها قابلة للتعديل.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
+              {marketplaceStats.map((stat) => {
+                const Icon = stat.icon;
+
+                return (
+                  <div
+                    key={stat.label}
+                    className="min-h-24 rounded-lg border border-white/10 bg-black/28 p-3"
+                  >
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <Icon className="h-4 w-4 text-[var(--brand)]" aria-hidden="true" />
+                      <span className="text-2xl font-black text-white">{stat.value}</span>
+                    </div>
+                    <p className="text-xs font-black leading-5 text-[var(--muted)]">{stat.label}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+          {categoryOptions.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setCategory(item.value)}
+              className={`flex min-h-10 shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-black transition ${
+                category === item.value
+                  ? "border-[var(--brand)] bg-[var(--brand)] text-black"
+                  : "border-[var(--line)] bg-[var(--panel-soft)] text-[var(--muted)] hover:border-[var(--brand)] hover:text-white"
+              }`}
+            >
+              <span>{item.label}</span>
+              <span className={category === item.value ? "text-black/70" : "text-white/50"}>
+                {item.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
         <div className="mb-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_260px]">
           <div className="panel p-3">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
+              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search templates by name, category, or use case"
-                className="control-input pl-9"
+                placeholder="ابحث باسم القالب، الفئة، أو الاستخدام"
+                className="control-input pr-9"
               />
             </div>
           </div>
           <div className="panel p-3">
             <div className="relative">
-              <SlidersHorizontal className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
+              <SlidersHorizontal className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
               <select
                 value={category}
                 onChange={(event) => setCategory(event.target.value)}
-                className="control-select pl-9"
-                aria-label="Filter templates by category"
+                className="control-select pr-9"
+                aria-label="فلترة القوالب حسب الفئة"
               >
-                {CATEGORIES.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
+                {categoryOptions.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label} ({item.count})
                   </option>
                 ))}
               </select>
@@ -169,9 +324,9 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
           <div className="panel mt-6 grid min-h-48 place-items-center p-6 text-center">
             <div>
               <Sparkles className="mx-auto mb-3 h-8 w-8 text-[var(--brand)]" aria-hidden="true" />
-              <p className="text-base font-black">No templates found</p>
+              <p className="text-base font-black">ما حصلنا قوالب مطابقة</p>
               <p className="mt-2 text-sm font-semibold text-[var(--muted)]">
-                Try another category or search term.
+                جرّب فئة ثانية أو كلمة بحث مختلفة.
               </p>
             </div>
           </div>
@@ -205,13 +360,19 @@ function TemplateCard({
   onPreview: () => void;
   onUse: () => void;
 }) {
+  const categoryLabel = CATEGORY_LABELS[template.category] ?? template.category;
+  const layerCount = countTemplateLayers(template);
+  const editableLayerCount = countEditableLayers(template);
+  const captionCount = countLayersByType(template, "captions");
+  const motionCount = countMotionTypes(template);
+
   return (
     <article className="panel overflow-hidden">
       <div className="relative bg-black">
         <TemplateMotionPreview template={template} compact />
         <div className="absolute inset-x-3 top-3 flex items-center justify-between gap-2">
           <span className="rounded-md bg-black/65 px-2 py-1 text-xs font-black text-white backdrop-blur">
-            {template.category}
+            {categoryLabel}
           </span>
           <span className="rounded-md bg-black/65 px-2 py-1 text-xs font-black text-white backdrop-blur">
             {template.aspectRatio}
@@ -231,8 +392,17 @@ function TemplateCard({
             {template.duration}s
           </span>
         </div>
+        <TemplateSceneStrip template={template} />
+        <div className="mb-3 flex flex-wrap gap-1.5 text-[11px] font-black">
+          <TemplateBadge icon={Code2} label="JSON" />
+          <TemplateBadge icon={BadgeCheck} label={`${editableLayerCount} editable`} />
+          <TemplateBadge icon={Layers3} label={`${layerCount} layers`} />
+          <TemplateBadge icon={Sparkles} label={`${motionCount} motion`} />
+          {captionCount > 0 ? <TemplateBadge icon={Globe2} label="Captions" /> : null}
+          <TemplateBadge icon={ShieldCheck} label="RTL safe" />
+        </div>
         <div className="mb-4 grid grid-cols-3 gap-2 text-center text-[11px] font-black text-[var(--muted)]">
-          <span className="rounded-md border border-[var(--line)] bg-black/20 px-2 py-2">
+          <span dir="ltr" className="rounded-md border border-[var(--line)] bg-black/20 px-2 py-2">
             {template.width}x{template.height}
           </span>
           <span className="rounded-md border border-[var(--line)] bg-black/20 px-2 py-2">
@@ -249,7 +419,7 @@ function TemplateCard({
             className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-sm font-black transition hover:border-[var(--brand)]"
           >
             <Eye className="h-4 w-4" aria-hidden="true" />
-            Preview
+            معاينة
           </button>
           <button
             type="button"
@@ -257,7 +427,7 @@ function TemplateCard({
             className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 py-2 text-sm font-black text-black transition hover:bg-white"
           >
             <Check className="h-4 w-4" aria-hidden="true" />
-            Use Template
+            استخدام
           </button>
         </div>
       </div>
@@ -266,6 +436,9 @@ function TemplateCard({
 }
 
 function PreviewModal({ template, onClose }: { template: VideoTemplate; onClose: () => void }) {
+  const layerCount = countTemplateLayers(template);
+  const motionCount = countMotionTypes(template);
+
   return (
     <ModalFrame title={template.name} onClose={onClose}>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -276,6 +449,12 @@ function PreviewModal({ template, onClose }: { template: VideoTemplate; onClose:
             <p className="mt-2 text-sm font-bold leading-6 text-[var(--muted)]">
               {template.description}
             </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-[11px] font-black">
+            <TemplateMetric label="Scenes" value={template.scenes.length} />
+            <TemplateMetric label="Layers" value={layerCount} />
+            <TemplateMetric label="Inputs" value={template.requiredInputs.length} />
+            <TemplateMetric label="Motion" value={motionCount} />
           </div>
           <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3">
             <p className="mb-2 text-xs font-black text-[var(--brand)]">Scenes</p>
@@ -364,6 +543,56 @@ function TemplateFormModal({
         </div>
       </div>
     </ModalFrame>
+  );
+}
+
+function TemplateBadge({
+  icon: Icon,
+  label,
+}: {
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  label: string;
+}) {
+  return (
+    <span className="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-white/10 bg-black/25 px-2 text-[var(--muted)]">
+      <Icon className="h-3.5 w-3.5 text-[var(--brand)]" aria-hidden={true} />
+      {label}
+    </span>
+  );
+}
+
+function TemplateMetric({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3">
+      <p className="text-lg font-black text-white">{value}</p>
+      <p className="mt-1 text-[11px] font-black text-[var(--muted)]">{label}</p>
+    </div>
+  );
+}
+
+function TemplateSceneStrip({ template }: { template: VideoTemplate }) {
+  const palette = ["#8ef7c2", "#a78bfa", "#fbbf24", "#60a5fa", "#fb7185", "#34d399"];
+
+  return (
+    <div className="mb-3">
+      <div className="mb-1.5 flex items-center justify-between text-[10px] font-black text-[var(--muted)]">
+        <span>مشاهد القالب</span>
+        <span>{template.duration}s</span>
+      </div>
+      <div className="flex h-2 overflow-hidden rounded-full bg-black/35">
+        {template.scenes.map((scene, index) => (
+          <span
+            key={scene.id}
+            className="h-full"
+            style={{
+              flexGrow: Math.max(scene.duration, 1),
+              background: palette[index % palette.length],
+            }}
+            title={scene.name}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
