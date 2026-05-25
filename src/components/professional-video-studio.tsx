@@ -92,8 +92,10 @@ import {
 } from "@/lib/ad-maker";
 import type {
   TemplateProject,
+  TemplateScene,
   TemplateTimelineTrack,
 } from "@/lib/video-template-engine";
+import { convertScenesToTimeline } from "@/lib/video-template-engine";
 import {
   createBlankVideoProject,
   createVideoProjectFromEditorTimeline,
@@ -793,7 +795,15 @@ export function ProfessionalVideoStudio() {
 
   }
 
-  const applyTemplateProject = useCallback((project: TemplateProject) => {
+  const applyTemplateProject = useCallback((
+    project: TemplateProject,
+    options?: {
+      plan?: EditPlan;
+      captions?: CaptionLine[];
+      status?: string;
+      message?: string;
+    },
+  ) => {
     const tracks = templateTimelineToEditorTracks(project.timeline);
     const firstEditableLayer =
       tracks.flatMap((track) => track.layers).find((layer) => layer.type === "text") ??
@@ -810,8 +820,8 @@ export function ProfessionalVideoStudio() {
     setTimelineUndo([]);
     setTimelineRedo([]);
     setSelectedLayerId(firstEditableLayer?.id ?? "clip-main");
-    setCaptions(templateProjectToCaptions(project));
-    setPlan(templateProjectToEditPlan(project));
+    setCaptions(options?.captions ?? templateProjectToCaptions(project));
+    setPlan(options?.plan ?? templateProjectToEditPlan(project));
     setBrandName(project.inputs.brandName || project.inputs.productName || project.name);
     setAspectRatio(project.aspectRatio === "4:5" ? "9:16" : project.aspectRatio);
     setActivePanel("editor");
@@ -827,9 +837,10 @@ export function ProfessionalVideoStudio() {
       setStudioFile(null);
     }
 
-    setProjectStatus(`${project.name} opened as an editable template project`);
+    setProjectStatus(options?.status ?? `${project.name} opened as an editable template project`);
     setAssistantMessages((messages) => [
-      `Template project loaded: ${project.name}. ${project.timeline.reduce((sum, track) => sum + track.layers.length, 0)} editable layers are now on the timeline.`,
+      options?.message ??
+        `Template project loaded: ${project.name}. ${project.timeline.reduce((sum, track) => sum + track.layers.length, 0)} editable layers are now on the timeline.`,
       ...messages,
     ]);
   }, [selectEngineLayer, setEngineProject]);
@@ -1021,8 +1032,15 @@ export function ProfessionalVideoStudio() {
   }
 
   async function generatePlan() {
+    const imageAssets = mediaAssets.filter((asset) => asset.kind === "image");
+
+    if (!studioFile && imageAssets.length) {
+      await generateImageStoryboard(imageAssets);
+      return;
+    }
+
     if (!studioFile) {
-      setError("Upload a source video first.");
+      setError("Upload a source video or images first.");
       return;
     }
 
@@ -1067,8 +1085,59 @@ export function ProfessionalVideoStudio() {
     }
   }
 
+  async function generateImageStoryboard(imageAssets: MediaAsset[]) {
+    const durationSeconds = getImageStoryboardDuration(imageAssets.length);
+
+    setIsGenerating(true);
+    setError("");
+    setTemplateProject(null);
+    setProjectStatus("AI is turning uploaded images into an editable video storyboard...");
+
+    try {
+      const response = await fetch("/api/edit-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: imageAssets.map((asset) => asset.name).join(", "),
+          durationSeconds,
+          platform,
+          aspectRatio,
+          languageMode,
+          styleId,
+          brandName,
+          goal,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not generate image video plan.");
+
+      const nextPlan = data.plan as EditPlan;
+      const nextCaptions = planToCaptions(nextPlan);
+      const storyboardProject = createImageStoryboardTemplateProject({
+        assets: imageAssets,
+        plan: nextPlan,
+        brandName,
+        aspectRatio,
+        styleName: activeStyle.arabicName,
+        goal,
+      });
+
+      applyTemplateProject(storyboardProject, {
+        plan: nextPlan,
+        captions: nextCaptions,
+        status: `Generated ${imageAssets.length} images into an editable video storyboard`,
+        message: `Image video generated: ${imageAssets.length} uploaded images became ${storyboardProject.scenes.length} scenes with editable text, image layers, captions, and export-ready timing.`,
+      });
+      setActiveProject(null);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Unexpected image video generation error.");
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
   async function ensureProjectUploaded() {
-    if (!studioFile) throw new Error("Upload a source video first.");
+    if (!studioFile) throw new Error("Upload a source video first, or use Generate to turn images into a storyboard.");
     if (activeProject?.status === "uploaded" || activeProject?.status === "planned") {
       return activeProject;
     }
@@ -1167,7 +1236,7 @@ export function ProfessionalVideoStudio() {
 
   async function renderVideo() {
     if (!studioFile && !templateProject) {
-      setError("Upload a source video first.");
+      setError("Upload a source video or generate an image storyboard first.");
       return;
     }
 
@@ -1200,7 +1269,7 @@ export function ProfessionalVideoStudio() {
     }
 
     if (!studioFile) {
-      setError("Upload a source video first.");
+      setError("Upload a source video or generate an image storyboard first.");
       return;
     }
 
@@ -1642,7 +1711,7 @@ export function ProfessionalVideoStudio() {
           </div>
 
           <div className="hidden items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 text-xs font-bold xl:flex">
-            <StatusPill label="Upload" active={Boolean(studioFile)} />
+            <StatusPill label="Upload" active={Boolean(studioFile || mediaAssets.length || templateProject)} />
             <StatusPill label="Timeline" active={timelineTracks.some((track) => track.layers.length)} />
             <StatusPill label="AI" active={Boolean(plan)} />
             <StatusPill label="Render" active={Boolean(renderResult)} />
@@ -3415,6 +3484,198 @@ function TrackIcon({ kind }: { kind: TimelineTrack["kind"] }) {
 
 function createDefaultTimeline(): TimelineTrack[] {
   return createTimelineForVideo("Source video", 36);
+}
+
+function createImageStoryboardTemplateProject({
+  assets,
+  plan,
+  brandName,
+  aspectRatio,
+  styleName,
+  goal,
+}: {
+  assets: MediaAsset[];
+  plan: EditPlan;
+  brandName: string;
+  aspectRatio: AspectRatio;
+  styleName: string;
+  goal: Goal;
+}): TemplateProject {
+  const now = new Date().toISOString();
+  const dimensions = getTemplateDimensions(aspectRatio);
+  const duration = getImageStoryboardDuration(assets.length, plan.targetDurationSeconds);
+  const sceneDuration = duration / Math.max(1, assets.length);
+  const safe = getStoryboardSafeMargins(aspectRatio);
+  const textWidth = dimensions.width - safe.left - safe.right;
+  const captionLines = plan.captions.length
+    ? plan.captions
+    : [{ at: 0, text: plan.hook, emphasis: [] }];
+  const scenes: TemplateScene[] = assets.map((asset, index) => {
+    const start = roundTime(index * sceneDuration);
+    const end = index === assets.length - 1 ? duration : roundTime((index + 1) * sceneDuration);
+    const caption = captionLines[index % captionLines.length]?.text ?? plan.hook;
+    const isLast = index === assets.length - 1;
+
+    return {
+      id: `image-scene-${index + 1}`,
+      name: isLast ? "CTA / Closing" : `Image scene ${index + 1}`,
+      start,
+      duration: Math.max(1, roundTime(end - start)),
+      background: {
+        type: "color",
+        value: index % 2 === 0 ? "#050608" : "#111827",
+      },
+      transition: {
+        type: index === 0 ? "fade" : "slide",
+        duration: 0.45,
+      },
+      layers: [
+        {
+          id: `image-${asset.id}`,
+          type: "image",
+          name: asset.name,
+          src: asset.url,
+          x: 0,
+          y: 0,
+          width: dimensions.width,
+          height: dimensions.height,
+          fit: "cover",
+          animationIn: {
+            type: index % 2 === 0 ? "zoomIn" : "slideUp",
+            duration: 0.6,
+          },
+          animationOut: {
+            type: "fadeOut",
+            duration: 0.35,
+          },
+        },
+        {
+          id: `wash-${index + 1}`,
+          type: "shape",
+          name: "Readable overlay",
+          x: 0,
+          y: 0,
+          width: dimensions.width,
+          height: dimensions.height,
+          color: "#050608",
+          opacity: 0.28,
+          editable: true,
+        },
+        {
+          id: `brand-${index + 1}`,
+          type: "text",
+          content: `${brandName.trim() || "Mawj Studio"} · ${styleName}`,
+          x: safe.left,
+          y: Math.max(36, safe.top - 98),
+          width: textWidth,
+          height: 72,
+          fontSize: aspectRatio === "16:9" ? 34 : 42,
+          fontWeight: "800",
+          color: "#ffffff",
+          align: "center",
+          direction: "auto",
+          animationIn: {
+            type: "fadeIn",
+            duration: 0.35,
+          },
+        },
+        {
+          id: `caption-${index + 1}`,
+          type: "captions",
+          content: caption,
+          x: safe.left,
+          y: dimensions.height - safe.bottom - (aspectRatio === "16:9" ? 132 : 210),
+          width: textWidth,
+          height: aspectRatio === "16:9" ? 128 : 200,
+          fontSize: aspectRatio === "16:9" ? 44 : 58,
+          fontWeight: "900",
+          color: "#ffffff",
+          highlightColor: "#8ef7c2",
+          align: "center",
+          direction: "auto",
+          style: "karaoke",
+          animationIn: {
+            type: "slideUp",
+            duration: 0.45,
+          },
+        },
+        ...(isLast
+          ? [
+              {
+                id: "image-storyboard-cta",
+                type: "text" as const,
+                content: goal === "sales" ? "اطلب الآن" : "احفظ المقطع",
+                x: safe.left,
+                y: dimensions.height - safe.bottom - (aspectRatio === "16:9" ? 34 : 72),
+                width: textWidth,
+                height: 72,
+                fontSize: aspectRatio === "16:9" ? 40 : 54,
+                fontWeight: "950",
+                color: "#8ef7c2",
+                align: "center" as const,
+                direction: "auto" as const,
+                animationIn: {
+                  type: "pop" as const,
+                  duration: 0.45,
+                },
+              },
+            ]
+          : []),
+      ],
+    };
+  });
+
+  return {
+    id: `image-storyboard-${Date.now()}`,
+    name: `${brandName.trim() || "Mawj"} Image Storyboard`,
+    templateId: "image-storyboard-generated",
+    width: dimensions.width,
+    height: dimensions.height,
+    aspectRatio,
+    duration,
+    scenes,
+    timeline: convertScenesToTimeline(scenes),
+    audio: {
+      music: null,
+      volume: 1,
+    },
+    export: {
+      format: "mp4",
+      fps: 30,
+      quality: "1080p",
+    },
+    inputs: {
+      brandName: brandName.trim() || "Mawj Studio",
+      sourceType: "images",
+      imageCount: String(assets.length),
+    },
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function getImageStoryboardDuration(imageCount: number, preferredDuration?: number) {
+  if (preferredDuration && Number.isFinite(preferredDuration)) {
+    return Math.max(8, Math.min(60, Math.round(preferredDuration)));
+  }
+
+  return Math.max(10, Math.min(45, imageCount * 4 + 4));
+}
+
+function getTemplateDimensions(aspectRatio: AspectRatio) {
+  if (aspectRatio === "16:9") return { width: 1920, height: 1080 };
+  if (aspectRatio === "1:1") return { width: 1080, height: 1080 };
+  return { width: 1080, height: 1920 };
+}
+
+function getStoryboardSafeMargins(aspectRatio: AspectRatio) {
+  if (aspectRatio === "9:16") return { top: 160, bottom: 260, left: 70, right: 70 };
+  if (aspectRatio === "1:1") return { top: 90, bottom: 120, left: 80, right: 80 };
+  return { top: 84, bottom: 104, left: 120, right: 120 };
+}
+
+function roundTime(seconds: number) {
+  return Math.round(seconds * 100) / 100;
 }
 
 function createTimelineForAssets(assets: MediaAsset[], primaryVideoAssetId: string): TimelineTrack[] {
