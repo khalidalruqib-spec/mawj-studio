@@ -119,6 +119,12 @@ import {
   renderTimelineCanvas,
   type TimelineCanvasRenderPayload,
 } from "@/lib/timeline-canvas-renderer";
+import {
+  resolveLocalAICommand,
+  type AICommandAction,
+  type AICommandContext,
+  type AICommandResponse,
+} from "@/lib/ai-command";
 
 type Goal = "engagement" | "sales" | "education" | "awareness";
 type PanelId =
@@ -146,6 +152,21 @@ type MediaAsset = {
   width?: number;
   height?: number;
   persisted?: boolean;
+};
+
+type AssistantMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  actions?: AICommandAction[];
+  timestamp: number;
+};
+
+type AIEngineState = {
+  engine: string;
+  confidence: number;
+  targetCut: string;
+  mode: string;
 };
 
 type StudioFile = {
@@ -601,9 +622,14 @@ export function ProfessionalVideoStudio() {
   const [adOutput, setAdOutput] = useState("");
   const [adCampaign, setAdCampaign] = useState<AdCampaign | null>(null);
   const [assistantCommand, setAssistantCommand] = useState("");
-  const [assistantMessages, setAssistantMessages] = useState([
-    "Ready. Try: Add Arabic captions, Remove silence, Extract best 5 clips, or Create an ad version.",
+  const [assistantMessages, setAssistantMessages] = useState<AssistantMessage[]>(() => [
+    createAssistantMessage(
+      "assistant",
+      "جاهز. جرب: أضف كابشن عربي، احذف الصمت، استخرج أفضل 5 لحظات، أو أنشئ نسخة إعلانية.",
+    ),
   ]);
+  const [isAssistantRunning, setIsAssistantRunning] = useState(false);
+  const [assistantEngineState, setAssistantEngineState] = useState<AIEngineState | null>(null);
   const [exportTier, setExportTier] = useState("Creator");
   const [exportFormat, setExportFormat] = useState("MP4");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -662,6 +688,46 @@ export function ProfessionalVideoStudio() {
         .find((layer) => layer.id === selectedLayerId) ?? null,
     [selectedLayerId, timelineTracks],
   );
+
+  const computedEngineState = useMemo<AIEngineState>(
+    () => ({
+      engine: getEditorEngineLabel({
+        plan,
+        templateProject,
+        transcriptionMode,
+        mediaCount: mediaAssets.length,
+        engineProject,
+      }),
+      confidence: getEditorConfidence({
+        plan,
+        captionsCount: captions.length,
+        mediaCount: mediaAssets.length,
+        transcriptionMode,
+      }),
+      targetCut: getSuggestedTargetCut({
+        plan,
+        platform,
+        goal,
+        durationSeconds: studioFile?.durationSeconds ?? totalTimelineSeconds,
+      }),
+      mode: activePanel,
+    }),
+    [
+      activePanel,
+      captions.length,
+      engineProject,
+      goal,
+      mediaAssets.length,
+      plan,
+      platform,
+      studioFile?.durationSeconds,
+      templateProject,
+      totalTimelineSeconds,
+      transcriptionMode,
+    ],
+  );
+
+  const displayedEngineState = assistantEngineState ?? computedEngineState;
 
   useEffect(() => {
     if (useVideoProjectStore.getState().currentProject) return;
@@ -884,10 +950,13 @@ export function ProfessionalVideoStudio() {
 
     setProjectStatus(options?.status ?? `${project.name} opened as an editable template project`);
     setAssistantMessages((messages) => [
-      options?.message ??
-        `Template project loaded: ${project.name}. ${project.timeline.reduce((sum, track) => sum + track.layers.length, 0)} editable layers are now on the timeline.`,
+      createAssistantMessage(
+        "assistant",
+        options?.message ??
+          `Template project loaded: ${project.name}. ${project.timeline.reduce((sum, track) => sum + track.layers.length, 0)} editable layers are now on the timeline.`,
+      ),
       ...messages,
-    ]);
+    ].slice(0, 12));
   }, [selectEngineLayer, setEngineProject]);
 
   useEffect(() => {
@@ -923,13 +992,13 @@ export function ProfessionalVideoStudio() {
       size: file.size,
     }));
 
-    setMediaAssets((assets) => [...incomingAssets, ...assets]);
-    void persistUploadedMedia(incomingAssets);
-
     const firstVideoAsset = incomingAssets.find((asset) => asset.kind === "video") ?? null;
+    setMediaAssets((assets) => [...incomingAssets, ...assets]);
+    void persistUploadedMedia(incomingAssets, firstVideoAsset?.id ?? null);
 
     if (firstVideoAsset) {
-      setStudioFile({ file: firstVideoAsset.file, url: firstVideoAsset.url, durationSeconds: 60 });
+      const initialDuration = firstVideoAsset.durationSeconds ?? 60;
+      setStudioFile({ file: firstVideoAsset.file, url: firstVideoAsset.url, durationSeconds: initialDuration });
       setActiveProject(null);
       setTemplateProject(null);
       setEngineProject(
@@ -938,7 +1007,7 @@ export function ProfessionalVideoStudio() {
           aspectRatio,
           assets: [...incomingAssets, ...mediaAssets].map(mediaAssetToBridgeAsset),
           primaryVideoAssetId: firstVideoAsset.id,
-          durationSeconds: 60,
+          durationSeconds: initialDuration,
         }),
         { resetHistory: true },
       );
@@ -961,7 +1030,7 @@ export function ProfessionalVideoStudio() {
     setError("");
   }
 
-  async function persistUploadedMedia(assets: MediaAsset[]) {
+  async function persistUploadedMedia(assets: MediaAsset[], primaryVideoAssetId: string | null) {
     try {
       const records = await Promise.all(
         assets.map((asset) => storeMediaFile(asset.file, { id: asset.id })),
@@ -981,6 +1050,19 @@ export function ProfessionalVideoStudio() {
           };
         }),
       );
+      const primaryRecord = primaryVideoAssetId
+        ? records.find((record) => record.id === primaryVideoAssetId && record.durationSeconds)
+        : null;
+
+      if (primaryRecord?.durationSeconds) {
+        setStudioFile((currentFile) =>
+          currentFile && currentFile.file.name === primaryRecord.name
+            ? { ...currentFile, durationSeconds: Math.round(primaryRecord.durationSeconds ?? currentFile.durationSeconds) }
+            : currentFile,
+        );
+      }
+
+      commitTimeline((tracks) => applyStoredMediaMetadataToTimeline(tracks, records, primaryVideoAssetId));
       setProjectStatus(`${records.length} media assets saved in browser storage`);
     } catch {
       setProjectStatus("Media loaded. Browser storage is unavailable for this session.");
@@ -1002,7 +1084,8 @@ export function ProfessionalVideoStudio() {
 
   function selectVideoAssetAsSource(asset: MediaAsset) {
     if (asset.kind !== "video") return;
-    setStudioFile({ file: asset.file, url: asset.url, durationSeconds: 60 });
+    const durationSeconds = Math.round(asset.durationSeconds ?? 60);
+    setStudioFile({ file: asset.file, url: asset.url, durationSeconds });
     setActiveProject(null);
     setTemplateProject(null);
     setEngineProject(
@@ -1011,20 +1094,20 @@ export function ProfessionalVideoStudio() {
         aspectRatio,
         assets: mediaAssets.map(mediaAssetToBridgeAsset),
         primaryVideoAssetId: asset.id,
-        durationSeconds: 60,
+        durationSeconds,
       }),
       { resetHistory: true },
     );
     setPlan(null);
     setPreviewTime(0);
     clearRenderedOutput();
-    commitTimeline((tracks) => syncPrimaryVideoDuration(tracks, asset.name, 60));
+    commitTimeline((tracks) => syncPrimaryVideoDuration(tracks, asset.name, durationSeconds));
     setProjectStatus(`${asset.name} is now the preview source`);
   }
 
   async function transcribeVideo(asset?: MediaAsset) {
     const targetFile = asset?.file ?? studioFile?.file;
-    const targetDuration = asset ? 60 : studioFile?.durationSeconds ?? 60;
+    const targetDuration = asset?.durationSeconds ?? studioFile?.durationSeconds ?? 60;
 
     if (!targetFile || (!targetFile.type.startsWith("video/") && !targetFile.type.startsWith("audio/"))) {
       setError("Upload a video or audio file first.");
@@ -1082,11 +1165,15 @@ export function ProfessionalVideoStudio() {
           : "Demo captions ready. Add OPENAI_API_KEY for real video transcription.",
       );
       setAssistantMessages((messages) => [
-        data.mode === "openai"
-          ? `Auto-caption complete: ${data.captions.length} caption lines generated from the video audio.`
-          : "Demo captions generated. Add OPENAI_API_KEY on Vercel for real audio transcription.",
+        createAssistantMessage(
+          "assistant",
+          data.mode === "openai"
+            ? `Auto-caption complete: ${data.captions.length} caption lines generated from the video audio.`
+            : "Demo captions generated. Add OPENAI_API_KEY on Vercel for real audio transcription.",
+          [{ type: "ADD_ARABIC_CAPTIONS", label: "Captions generated" }],
+        ),
         ...messages,
-      ]);
+      ].slice(0, 12));
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Could not transcribe this file.");
     } finally {
@@ -1145,9 +1232,13 @@ export function ProfessionalVideoStudio() {
       clearRenderedOutput();
       setProjectStatus("AI edit plan ready");
       setAssistantMessages((messages) => [
-        `Generated: ${data.plan.title}. Suggested ${data.plan.targetDurationSeconds}s output.`,
+        createAssistantMessage(
+          "assistant",
+          `Generated: ${data.plan.title}. Suggested ${data.plan.targetDurationSeconds}s output.`,
+          [{ type: "EXTRACT_CLIPS", label: "Edit plan generated" }],
+        ),
         ...messages,
-      ]);
+      ].slice(0, 12));
       if (data.project) setActiveProject(data.project);
       await loadProjects();
     } catch (caughtError) {
@@ -1636,9 +1727,12 @@ export function ProfessionalVideoStudio() {
     setActivePanel("editor");
     setProjectStatus(`${template.name} applied to timeline, captions, format, audio, and render plan`);
     setAssistantMessages((messages) => [
-      `Template applied: ${template.name}. Format ${template.aspectRatio}, style ${template.captionTemplate}, ${template.audioTools.length} audio tools enabled.`,
+      createAssistantMessage(
+        "assistant",
+        `Template applied: ${template.name}. Format ${template.aspectRatio}, style ${template.captionTemplate}, ${template.audioTools.length} audio tools enabled.`,
+      ),
       ...messages,
-    ]);
+    ].slice(0, 12));
   }
 
   async function generateAdVersion() {
@@ -1684,9 +1778,13 @@ export function ProfessionalVideoStudio() {
       applyAdCampaignToProject(campaign);
       setProjectStatus(`AI Ad Maker generated and applied using ${data.model ?? "OpenAI"}`);
       setAssistantMessages((messages) => [
-        `AI Ad Maker: ${campaign.title}. Applied 30s version to timeline with captions and CTA.`,
+        createAssistantMessage(
+          "assistant",
+          `AI Ad Maker: ${campaign.title}. Applied 30s version to timeline with captions and CTA.`,
+          [{ type: "CREATE_AD_VERSION", label: "Ad timeline applied" }],
+        ),
         ...messages,
-      ]);
+      ].slice(0, 12));
     } catch (caughtError) {
       setError(caughtError instanceof Error ? cleanOpenAIError(caughtError.message) : "Could not generate AI ad campaign.");
     } finally {
@@ -1720,54 +1818,124 @@ export function ProfessionalVideoStudio() {
     setActivePanel("editor");
   }
 
-  function runAssistantCommand() {
-    const command = assistantCommand.trim();
+  async function runAssistantCommand(commandOverride?: string) {
+    const command = (commandOverride ?? assistantCommand).trim();
     if (!command) return;
 
-    const normalized = command.toLowerCase();
-    let response = "Done. I prepared the editor for that command.";
-
-    if (normalized.includes("tiktok")) {
-      setPlatform("tiktok");
-      setAspectRatio("9:16");
-      setStyleId("viral-saudi");
-      setActivePanel("editor");
-      response = "Set the project to TikTok 9:16 with a fast viral Saudi pacing preset.";
-    } else if (normalized.includes("arabic") || normalized.includes("captions")) {
-      void transcribeVideo();
-      response = "I started reading the video audio and will generate editable Arabic captions.";
-    } else if (normalized.includes("silence")) {
-      removeLongPauses();
-      response = "Marked long pauses on the effects track for automatic removal.";
-    } else if (normalized.includes("best") || normalized.includes("clips")) {
-      setActivePanel("ai");
-      response = "Prepared highlight extraction and 15s, 30s, 60s clip versions.";
-    } else if (normalized.includes("audio")) {
-      setActivePanel("audio");
-      setActiveAudioTools((tools) => ({
-        ...tools,
-        "Noise reduction": true,
-        "Voice enhancement": true,
-        "Auto volume leveling": true,
-      }));
-      response = "Enabled noise reduction, voice enhancement, and auto volume leveling.";
-    } else if (normalized.includes("background")) {
-      setActivePanel("background");
-      setBackgroundMode("Studio gradient");
-      response = "Background remover is set to replace the original with a studio background.";
-    } else if (normalized.includes("ad")) {
-      setActivePanel("ad-maker");
-      void generateAdVersion();
-      response = "Generated ad hooks, script structure, captions, CTA, and three durations.";
-    } else if (normalized.includes("professional")) {
-      setStyleId("premium-brand");
-      setCaptionTemplate("Luxury Minimal");
-      setActivePanel("brand");
-      response = "Applied a premium brand preset with cleaner captions and a cinematic direction.";
-    }
-
-    setAssistantMessages((messages) => [`You: ${command}`, response, ...messages].slice(0, 8));
     setAssistantCommand("");
+    setIsAssistantRunning(true);
+    setError("");
+    setAssistantMessages((messages) => [createAssistantMessage("user", command), ...messages].slice(0, 12));
+
+    const context = getAICommandContext({
+      platform,
+      aspectRatio,
+      languageMode,
+      goal,
+      studioFile,
+      mediaAssets,
+      captions,
+      activePanel,
+      selectedLayer,
+      totalTimelineSeconds,
+    });
+
+    try {
+      const response = await fetch("/api/ai-command", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: command, context }),
+      });
+      const data = (await response.json()) as AICommandResponse & { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "AI command failed.");
+
+      await executeAssistantActions(data.actions);
+      setAssistantEngineState({
+        engine: data.engine,
+        confidence: data.confidence,
+        targetCut: data.targetCut,
+        mode: data.mode,
+      });
+      setAssistantMessages((messages) => [
+        createAssistantMessage("assistant", data.message, data.actions),
+        ...messages,
+      ].slice(0, 12));
+      setProjectStatus(`AI assistant executed ${data.actions.length} action${data.actions.length === 1 ? "" : "s"}`);
+    } catch (caughtError) {
+      const fallback = resolveLocalAICommand(command, context);
+      await executeAssistantActions(fallback.actions);
+      setAssistantEngineState({
+        engine: fallback.engine,
+        confidence: fallback.confidence,
+        targetCut: fallback.targetCut,
+        mode: fallback.mode,
+      });
+      setAssistantMessages((messages) => [
+        createAssistantMessage(
+          "assistant",
+          `${fallback.message} ${caughtError instanceof Error ? cleanOpenAIError(caughtError.message) : ""}`.trim(),
+          fallback.actions,
+        ),
+        ...messages,
+      ].slice(0, 12));
+      setProjectStatus("AI assistant used local command engine");
+    } finally {
+      setIsAssistantRunning(false);
+    }
+  }
+
+  async function executeAssistantActions(actions: AICommandAction[]) {
+    for (const action of actions) {
+      if (action.type === "SET_TIKTOK_FORMAT") {
+        setPlatform(action.params?.platform === "shorts" ? "shorts" : "tiktok");
+        setAspectRatio("9:16");
+        setStyleId("viral-saudi");
+        setActivePanel("editor");
+      }
+
+      if (action.type === "ADD_ARABIC_CAPTIONS") {
+        await transcribeVideo();
+      }
+
+      if (action.type === "REMOVE_SILENCE") {
+        removeLongPauses();
+      }
+
+      if (action.type === "EXTRACT_CLIPS") {
+        handleAiAction("shorts");
+        handleAiAction("moments");
+      }
+
+      if (action.type === "IMPROVE_AUDIO") {
+        setActivePanel("audio");
+        setActiveAudioTools((tools) => ({
+          ...tools,
+          "Noise reduction": true,
+          "Voice enhancement": true,
+          "Auto volume leveling": true,
+        }));
+      }
+
+      if (action.type === "REMOVE_BACKGROUND") {
+        setActivePanel("background");
+        setBackgroundMode("Studio gradient");
+      }
+
+      if (action.type === "CREATE_AD_VERSION") {
+        setActivePanel("ad-maker");
+        await generateAdVersion();
+      }
+
+      if (action.type === "APPLY_PRO_STYLE") {
+        setStyleId("premium-brand");
+        setCaptionTemplate("Luxury Minimal");
+        setActivePanel("brand");
+      }
+
+      if (action.type === "ADD_TEXT_HOOK") {
+        addTextLayer();
+      }
+    }
   }
 
   return (
@@ -2036,6 +2204,7 @@ export function ProfessionalVideoStudio() {
                     projectStatus={projectStatus}
                     studioFile={studioFile}
                     engineProject={engineProject}
+                    engineState={displayedEngineState}
                   />
                 </div>
               </section>
@@ -2055,6 +2224,7 @@ export function ProfessionalVideoStudio() {
           <AssistantPanel
             command={assistantCommand}
             messages={assistantMessages}
+            isRunning={isAssistantRunning}
             onCommandChange={setAssistantCommand}
             onRunCommand={runAssistantCommand}
           />
@@ -2213,24 +2383,28 @@ export function ProfessionalVideoStudio() {
 
     if (actionId === "titles") {
       setAssistantMessages((messages) => [
-        "Titles: لا تفوّت أول 3 ثواني | From raw footage to pro ad | Save this editing trick",
-        "Hashtags: #صناعة_المحتوى #مونتاج #ريلز #تيك_توك",
+        createAssistantMessage("assistant", "Titles: لا تفوّت أول 3 ثواني | From raw footage to pro ad | Save this editing trick"),
+        createAssistantMessage("assistant", "Hashtags: #صناعة_المحتوى #مونتاج #ريلز #تيك_توك"),
         ...messages,
-      ]);
+      ].slice(0, 12));
     }
 
     if (actionId === "summary") {
       setAssistantMessages((messages) => [
-        "Summary: The strongest angle is a fast before/after transformation with Arabic captions and a direct CTA.",
+        createAssistantMessage("assistant", "Summary: The strongest angle is a fast before/after transformation with Arabic captions and a direct CTA."),
         ...messages,
-      ]);
+      ].slice(0, 12));
     }
 
     if (actionId === "moments") {
       setAssistantMessages((messages) => [
-        "Best moments: 0-3s hook, 9-16s value proof, 18-23s CTA. Suggested for TikTok/Reels/Shorts.",
+        createAssistantMessage(
+          "assistant",
+          "Best moments: 0-3s hook, 9-16s value proof, 18-23s CTA. Suggested for TikTok/Reels/Shorts.",
+          [{ type: "EXTRACT_CLIPS", label: "Best moments marked" }],
+        ),
         ...messages,
-      ]);
+      ].slice(0, 12));
     }
   }
 }
@@ -2579,12 +2753,11 @@ function TimelineEditor({
 }
 
 function ProjectMetrics({
-  plan,
   activeStyle,
   activePanel,
   projectStatus,
-  studioFile,
   engineProject,
+  engineState,
 }: {
   plan: EditPlan | null;
   activeStyle: VideoStyle;
@@ -2592,6 +2765,7 @@ function ProjectMetrics({
   projectStatus: string;
   studioFile: StudioFile | null;
   engineProject: VideoProject | null;
+  engineState: AIEngineState;
 }) {
   const timelineItemCount =
     engineProject?.tracks.reduce((sum, track) => sum + track.items.length, 0) ?? 0;
@@ -2599,9 +2773,9 @@ function ProjectMetrics({
   return (
     <div className="space-y-3">
       <Metric label="Mode" value={activePanel} icon={Command} />
-      <Metric label="Engine" value={engineProject ? `${engineProject.layers.length} layers / ${timelineItemCount} items` : "--"} icon={Layers3} />
-      <Metric label="AI confidence" value={plan ? `${plan.confidence}%` : "--"} icon={Gauge} />
-      <Metric label="Target cut" value={plan ? `${plan.targetDurationSeconds}s` : studioFile ? formatDuration(studioFile.durationSeconds) : "--"} icon={Clock3} />
+      <Metric label="Engine" value={`${engineState.engine} · ${engineProject?.layers.length ?? 0}/${timelineItemCount}`} icon={Layers3} />
+      <Metric label="AI confidence" value={`${engineState.confidence}%`} icon={Gauge} />
+      <Metric label="Target cut" value={engineState.targetCut} icon={Clock3} />
       <Metric label="Captions" value={activeStyle.captionPreset} icon={Captions} />
       <Metric label="Status" value={projectStatus} icon={Cloud} />
     </div>
@@ -3467,14 +3641,23 @@ function NumberField({
 function AssistantPanel({
   command,
   messages,
+  isRunning,
   onCommandChange,
   onRunCommand,
 }: {
   command: string;
-  messages: string[];
+  messages: AssistantMessage[];
+  isRunning: boolean;
   onCommandChange: (command: string) => void;
-  onRunCommand: () => void;
+  onRunCommand: (commandOverride?: string) => void;
 }) {
+  const quickCommands = [
+    { label: "كابشن عربي", command: "أضف كابشن عربي للفيديو" },
+    { label: "احذف الصمت", command: "احذف كل الصمت والوقفات الطويلة" },
+    { label: "أفضل 5 لحظات", command: "استخرج أفضل 5 لحظات للريلز" },
+    { label: "نسخة إعلانية", command: "أنشئ نسخة إعلانية 30 ثانية" },
+  ];
+
   return (
     <section className="panel p-4">
       <PanelHeading icon={Bot} title="AI assistant" />
@@ -3485,18 +3668,63 @@ function AssistantPanel({
           onKeyDown={(event) => {
             if (event.key === "Enter") onRunCommand();
           }}
-          placeholder="Make this video for TikTok..."
+          placeholder="اكتب أمراً للـ AI..."
+          dir="auto"
           className="control-input"
         />
-        <button type="button" onClick={onRunCommand} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand)] text-black" aria-label="Run AI command">
-          <WandSparkles className="h-4 w-4" aria-hidden="true" />
+        <button
+          type="button"
+          onClick={() => onRunCommand()}
+          disabled={isRunning || !command.trim()}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand)] text-black disabled:opacity-50"
+          aria-label="Run AI command"
+        >
+          {isRunning ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <WandSparkles className="h-4 w-4" aria-hidden="true" />}
         </button>
       </div>
-      <div className="max-h-48 space-y-2 overflow-auto pr-1">
-        {messages.map((message, index) => (
-          <p key={`${message}-${index}`} className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-2 text-xs font-semibold leading-5 text-[var(--muted)]">
-            {message}
-          </p>
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {quickCommands.map((quickCommand) => (
+          <button
+            key={quickCommand.label}
+            type="button"
+            onClick={() => onRunCommand(quickCommand.command)}
+            disabled={isRunning}
+            className="rounded-full border border-[var(--line)] bg-[var(--panel-soft)] px-2.5 py-1 text-[11px] font-black text-[var(--muted)] transition hover:border-[var(--brand)] hover:text-white disabled:opacity-50"
+          >
+            {quickCommand.label}
+          </button>
+        ))}
+      </div>
+      <div className="max-h-64 space-y-2 overflow-auto pr-1">
+        {isRunning ? (
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-2 text-xs font-black text-[var(--brand)]">
+            يفهم الأمر ويجهز الأكشنات...
+          </div>
+        ) : null}
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`rounded-lg border p-2 text-xs font-semibold leading-5 ${
+              message.role === "user"
+                ? "border-[var(--brand)] bg-[var(--brand-soft)] text-white"
+                : "border-[var(--line)] bg-[var(--panel-soft)] text-[var(--muted)]"
+            }`}
+            dir="auto"
+          >
+            <p>{message.role === "user" ? `You: ${message.content}` : message.content}</p>
+            {message.actions?.length ? (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {message.actions.map((action) => (
+                  <span
+                    key={`${message.id}-${action.type}`}
+                    className="rounded-md border border-[var(--brand)] bg-black/25 px-1.5 py-0.5 text-[10px] font-black text-[var(--brand)]"
+                  >
+                    ✓ {action.label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
         ))}
       </div>
     </section>
@@ -3813,19 +4041,23 @@ function roundTime(seconds: number) {
 
 function createTimelineForAssets(assets: MediaAsset[], primaryVideoAssetId: string): TimelineTrack[] {
   const primaryVideo = assets.find((asset) => asset.id === primaryVideoAssetId && asset.kind === "video");
-  const base = createTimelineForVideo(primaryVideo?.name ?? "Source video", 60);
+  const base = createTimelineForVideo(
+    primaryVideo?.name ?? "Source video",
+    primaryVideo?.durationSeconds ?? 60,
+    primaryVideo?.url,
+  );
   const extraAssets = assets.filter((asset) => asset.id !== primaryVideoAssetId);
   return addAssetsToTimeline(base, extraAssets);
 }
 
-function createTimelineForVideo(name: string, duration: number): TimelineTrack[] {
+function createTimelineForVideo(name: string, duration: number, sourceUrl?: string): TimelineTrack[] {
   const resolvedDuration = Math.max(12, Math.min(120, duration));
   return [
     {
       id: "track-video",
       name: "Video",
       kind: "video",
-      layers: [{ id: "clip-main", type: "video", name, start: 0, duration: resolvedDuration, color: "#8ef7c2" }],
+      layers: [{ id: "clip-main", type: "video", name, start: 0, duration: resolvedDuration, color: "#8ef7c2", src: sourceUrl }],
     },
     {
       id: "track-audio",
@@ -3879,12 +4111,61 @@ function addAssetsToTimeline(tracks: TimelineTrack[], assets: MediaAsset[]): Tim
           type: asset.kind as TimelineLayer["type"],
           name: asset.name,
           start: track.kind === "video" || track.kind === "audio" ? trackEnd + index * 2 : index * 2,
-          duration: asset.kind === "video" ? 12 : asset.kind === "audio" ? 20 : 8,
+          duration:
+            asset.kind === "video" || asset.kind === "audio"
+              ? Math.max(1, Math.min(360, Math.round(asset.durationSeconds ?? (asset.kind === "video" ? 12 : 20))))
+              : 8,
           color: asset.kind === "video" ? "#8ef7c2" : asset.kind === "audio" ? "#7dd3fc" : "#c084fc",
+          src: asset.url,
+          x: asset.kind === "image" ? 120 : 0,
+          y: asset.kind === "image" ? 220 : 0,
+          width: asset.kind === "image" ? 840 : undefined,
+          height: asset.kind === "image" ? 840 : undefined,
         })),
       ],
     };
   });
+}
+
+function applyStoredMediaMetadataToTimeline(
+  tracks: TimelineTrack[],
+  records: StoredMediaRecord[],
+  primaryVideoAssetId: string | null,
+): TimelineTrack[] {
+  const recordById = new Map(records.map((record) => [record.id, record]));
+  const primaryRecord = primaryVideoAssetId ? recordById.get(primaryVideoAssetId) : null;
+
+  return tracks.map((track) => ({
+    ...track,
+    layers: track.layers.map((layer) => {
+      const record = recordById.get(layer.id);
+
+      if (record) {
+        return {
+          ...layer,
+          duration:
+            record.durationSeconds && (record.type === "video" || record.type === "audio")
+              ? Math.max(1, Math.min(360, Math.round(record.durationSeconds)))
+              : layer.duration,
+          width: record.width ?? layer.width,
+          height: record.height ?? layer.height,
+        };
+      }
+
+      if (
+        primaryRecord?.durationSeconds &&
+        ["clip-main", "audio-main", "caption-main", "effect-color", "brand-bug"].includes(layer.id)
+      ) {
+        return {
+          ...layer,
+          name: layer.id === "clip-main" ? primaryRecord.name : layer.name,
+          duration: Math.max(1, Math.min(360, Math.round(primaryRecord.durationSeconds))),
+        };
+      }
+
+      return layer;
+    }),
+  }));
 }
 
 function syncPrimaryVideoDuration(tracks: TimelineTrack[], sourceName: string, duration: number): TimelineTrack[] {
@@ -3930,6 +4211,114 @@ function ensureCaptionLayer(tracks: TimelineTrack[], captions: CaptionLine[], du
 
 function getTrackEnd(track: TimelineTrack) {
   return track.layers.reduce((end, layer) => Math.max(end, layer.start + layer.duration), 0);
+}
+
+function createAssistantMessage(
+  role: AssistantMessage["role"],
+  content: string,
+  actions?: AICommandAction[],
+): AssistantMessage {
+  return {
+    id: crypto.randomUUID(),
+    role,
+    content,
+    actions,
+    timestamp: Date.now(),
+  };
+}
+
+function getAICommandContext({
+  platform,
+  aspectRatio,
+  languageMode,
+  goal,
+  studioFile,
+  mediaAssets,
+  captions,
+  activePanel,
+  selectedLayer,
+  totalTimelineSeconds,
+}: {
+  platform: Platform;
+  aspectRatio: AspectRatio;
+  languageMode: LanguageMode;
+  goal: Goal;
+  studioFile: StudioFile | null;
+  mediaAssets: MediaAsset[];
+  captions: CaptionLine[];
+  activePanel: PanelId;
+  selectedLayer: TimelineLayer | null;
+  totalTimelineSeconds: number;
+}): AICommandContext {
+  return {
+    platform,
+    aspectRatio,
+    languageMode,
+    goal,
+    durationSeconds: studioFile?.durationSeconds ?? totalTimelineSeconds,
+    hasVideo: Boolean(studioFile),
+    mediaCount: mediaAssets.length,
+    captionCount: captions.length,
+    activePanel,
+    selectedLayerName: selectedLayer?.name ?? null,
+  };
+}
+
+function getEditorEngineLabel({
+  plan,
+  templateProject,
+  transcriptionMode,
+  mediaCount,
+  engineProject,
+}: {
+  plan: EditPlan | null;
+  templateProject: TemplateProject | null;
+  transcriptionMode: "openai" | "demo" | null;
+  mediaCount: number;
+  engineProject: VideoProject | null;
+}) {
+  if (transcriptionMode === "openai") return "OpenAI captions";
+  if (plan) return "AI edit planner";
+  if (templateProject) return "Template engine";
+  if (engineProject) return "Timeline engine";
+  if (mediaCount) return "Media ingest";
+  return "Ready";
+}
+
+function getEditorConfidence({
+  plan,
+  captionsCount,
+  mediaCount,
+  transcriptionMode,
+}: {
+  plan: EditPlan | null;
+  captionsCount: number;
+  mediaCount: number;
+  transcriptionMode: "openai" | "demo" | null;
+}) {
+  if (plan) return Math.round(plan.confidence);
+  if (transcriptionMode === "openai") return 88;
+  if (captionsCount) return 78;
+  if (mediaCount) return 72;
+  return 64;
+}
+
+function getSuggestedTargetCut({
+  plan,
+  platform,
+  goal,
+  durationSeconds,
+}: {
+  plan: EditPlan | null;
+  platform: Platform;
+  goal: Goal;
+  durationSeconds: number;
+}) {
+  if (plan) return `${plan.targetDurationSeconds}s ${goal}`;
+  if (goal === "sales") return durationSeconds >= 30 ? "30s ad cut" : "15s ad cut";
+  if (platform === "tiktok" || platform === "instagram") return "15s/30s social cuts";
+  if (platform === "shorts") return "30s Shorts cut";
+  return `${Math.max(15, Math.min(Math.round(durationSeconds), 45))}s creator cut`;
 }
 
 function transcriptToCaptions(transcript: TranscriptSegment[]): CaptionLine[] {
