@@ -75,6 +75,13 @@ import {
   hasSupabaseBrowserEnv,
 } from "@/lib/supabase/client";
 import {
+  getLatestProjectSnapshot,
+  listMediaRecords,
+  storeMediaFile,
+  storeProjectSnapshot,
+  type StoredMediaRecord,
+} from "@/lib/media-db";
+import {
   FORMAT_PRESETS,
   PLATFORM_LABELS,
   VIDEO_STYLES,
@@ -128,6 +135,10 @@ type MediaAsset = {
   url: string;
   kind: "video" | "audio" | "image";
   size: number;
+  durationSeconds?: number;
+  width?: number;
+  height?: number;
+  persisted?: boolean;
 };
 
 type StudioFile = {
@@ -667,8 +678,28 @@ export function ProfessionalVideoStudio() {
   }, [renderResult?.url]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    listMediaRecords()
+      .then((records) => {
+        if (cancelled || !records.length) return;
+
+        setMediaAssets((assets) => {
+          if (assets.length) return assets;
+          return records.slice(0, 12).map(storedMediaRecordToAsset);
+        });
+        setProjectStatus(`${records.length} media assets restored from browser storage`);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
-    const snapshot = {
+    const snapshot: Record<string, unknown> = {
       brandName,
       styleId,
       platform,
@@ -684,6 +715,13 @@ export function ProfessionalVideoStudio() {
       savedAt: new Date().toISOString(),
     };
     window.localStorage.setItem("mawj-studio-autosave", JSON.stringify(snapshot));
+
+    void storeProjectSnapshot({
+      id: engineProject?.id ?? "mawj-local-autosave",
+      name: brandName || engineProject?.name || "Mawj Studio",
+      data: snapshot,
+      updatedAt: Date.now(),
+    }).catch(() => undefined);
   }, [
     aspectRatio,
     brandKit,
@@ -879,6 +917,7 @@ export function ProfessionalVideoStudio() {
     }));
 
     setMediaAssets((assets) => [...incomingAssets, ...assets]);
+    void persistUploadedMedia(incomingAssets);
 
     const firstVideoAsset = incomingAssets.find((asset) => asset.kind === "video") ?? null;
 
@@ -913,6 +952,32 @@ export function ProfessionalVideoStudio() {
     );
 
     setError("");
+  }
+
+  async function persistUploadedMedia(assets: MediaAsset[]) {
+    try {
+      const records = await Promise.all(
+        assets.map((asset) => storeMediaFile(asset.file, { id: asset.id })),
+      );
+
+      setMediaAssets((currentAssets) =>
+        currentAssets.map((asset) => {
+          const record = records.find((item) => item.id === asset.id);
+          if (!record) return asset;
+
+          return {
+            ...asset,
+            durationSeconds: record.durationSeconds,
+            width: record.width,
+            height: record.height,
+            persisted: true,
+          };
+        }),
+      );
+      setProjectStatus(`${records.length} media assets saved in browser storage`);
+    } catch {
+      setProjectStatus("Media loaded. Browser storage is unavailable for this session.");
+    }
   }
 
   function captureDuration() {
@@ -1502,15 +1567,19 @@ export function ProfessionalVideoStudio() {
     setProjectStatus("Project snapshot saved locally");
   }
 
-  function loadProjectSnapshot() {
+  async function loadProjectSnapshot() {
     if (typeof window === "undefined") return;
     const raw = window.localStorage.getItem("mawj-studio-manual-save");
-    if (!raw) {
-      setProjectStatus("No local snapshot found");
+    const snapshot = raw
+      ? JSON.parse(raw)
+      : ((await getLatestProjectSnapshot().catch(() => null))?.data ?? null);
+
+    if (!snapshot) {
+      setProjectStatus("No local or browser-stored snapshot found");
       return;
     }
 
-    const snapshot = JSON.parse(raw) as {
+    const saved = snapshot as {
       brandName?: string;
       styleId?: VideoStyleId;
       platform?: Platform;
@@ -1521,15 +1590,15 @@ export function ProfessionalVideoStudio() {
       brandKit?: BrandKitState;
       engineProject?: VideoProject;
     };
-    if (snapshot.brandName) setBrandName(snapshot.brandName);
-    if (snapshot.styleId) setStyleId(snapshot.styleId);
-    if (snapshot.platform) setPlatform(snapshot.platform);
-    if (snapshot.aspectRatio) setAspectRatio(snapshot.aspectRatio);
-    if (snapshot.timelineTracks) setTimelineTracks(snapshot.timelineTracks);
-    if (snapshot.transcript) setTranscript(snapshot.transcript);
-    if (snapshot.captions) setCaptions(snapshot.captions);
-    if (snapshot.brandKit) setBrandKit(snapshot.brandKit);
-    if (snapshot.engineProject) setEngineProject(snapshot.engineProject, { resetHistory: true });
+    if (saved.brandName) setBrandName(saved.brandName);
+    if (saved.styleId) setStyleId(saved.styleId);
+    if (saved.platform) setPlatform(saved.platform);
+    if (saved.aspectRatio) setAspectRatio(saved.aspectRatio);
+    if (saved.timelineTracks) setTimelineTracks(saved.timelineTracks);
+    if (saved.transcript) setTranscript(saved.transcript);
+    if (saved.captions) setCaptions(saved.captions);
+    if (saved.brandKit) setBrandKit(saved.brandKit);
+    if (saved.engineProject) setEngineProject(saved.engineProject, { resetHistory: true });
     setProjectStatus("Local project snapshot loaded");
   }
 
@@ -1840,7 +1909,11 @@ export function ProfessionalVideoStudio() {
                     <AssetIcon kind={asset.kind} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-black">{asset.name}</p>
-                      <p className="text-[11px] font-semibold text-[var(--muted)]">{asset.kind} · {formatBytes(asset.size)}</p>
+                      <p className="text-[11px] font-semibold text-[var(--muted)]">
+                        {asset.kind} · {formatBytes(asset.size)}
+                        {asset.durationSeconds ? ` · ${formatDuration(asset.durationSeconds)}` : ""}
+                        {asset.persisted ? " · saved" : ""}
+                      </p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -4423,6 +4496,22 @@ function mediaAssetToBridgeAsset(asset: MediaAsset): MediaAssetInput {
     kind: asset.kind,
     size: asset.size,
     mimeType: asset.file.type,
+    duration: asset.durationSeconds,
+  };
+}
+
+function storedMediaRecordToAsset(record: StoredMediaRecord): MediaAsset {
+  return {
+    id: record.id,
+    name: record.name,
+    file: new File([record.blob], record.name, { type: record.mimeType }),
+    url: URL.createObjectURL(record.blob),
+    kind: record.type,
+    size: record.size,
+    durationSeconds: record.durationSeconds,
+    width: record.width,
+    height: record.height,
+    persisted: true,
   };
 }
 
