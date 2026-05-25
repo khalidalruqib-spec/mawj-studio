@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BadgeCheck,
@@ -64,6 +65,7 @@ import {
   type BrowserRenderProgress,
   type BrowserRenderResult,
 } from "@/lib/browser-video-renderer";
+import { renderTemplateProject } from "@/lib/browser-template-renderer";
 import {
   prepareMediaForTranscription,
   type PreparedTranscriptionFile,
@@ -88,6 +90,10 @@ import {
   type AdTone,
   type AdVariant,
 } from "@/lib/ad-maker";
+import type {
+  TemplateProject,
+  TemplateTimelineTrack,
+} from "@/lib/video-template-engine";
 
 type Goal = "engagement" | "sales" | "education" | "awareness";
 type PanelId =
@@ -121,18 +127,42 @@ type StudioFile = {
 
 type TimelineLayer = {
   id: string;
-  type: "video" | "audio" | "text" | "image" | "caption" | "effect";
+  type: "video" | "audio" | "text" | "image" | "caption" | "effect" | "shape" | "background" | "waveform";
   name: string;
   start: number;
   duration: number;
   color: string;
   muted?: boolean;
+  content?: string;
+  src?: string;
+  sceneId?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  fontSize?: number;
+  fontWeight?: string;
+  textColor?: string;
+  backgroundColor?: string;
+  borderRadius?: number;
+  opacity?: number;
 };
 
 type TimelineTrack = {
   id: string;
   name: string;
-  kind: "video" | "audio" | "overlay" | "caption" | "effects";
+  kind:
+    | "video"
+    | "audio"
+    | "overlay"
+    | "caption"
+    | "effects"
+    | "scenes"
+    | "text"
+    | "image"
+    | "shape"
+    | "background"
+    | "waveform";
   layers: TimelineLayer[];
 };
 
@@ -513,6 +543,7 @@ export function ProfessionalVideoStudio() {
   const [goal, setGoal] = useState<Goal>("engagement");
   const [brandName, setBrandName] = useState("Mawj Studio");
   const [plan, setPlan] = useState<EditPlan | null>(null);
+  const [templateProject, setTemplateProject] = useState<TemplateProject | null>(null);
   const [activeProject, setActiveProject] = useState<StudioProject | null>(null);
   const [recentProjects, setRecentProjects] = useState<StudioProject[]>([]);
   const [timelineTracks, setTimelineTracks] = useState<TimelineTrack[]>(() => createDefaultTimeline());
@@ -588,6 +619,14 @@ export function ProfessionalVideoStudio() {
     [timelineTracks],
   );
 
+  const selectedLayer = useMemo(
+    () =>
+      timelineTracks
+        .flatMap((track) => track.layers)
+        .find((layer) => layer.id === selectedLayerId) ?? null,
+    [selectedLayerId, timelineTracks],
+  );
+
   useEffect(() => {
     return () => {
       if (renderResult?.url) URL.revokeObjectURL(renderResult.url);
@@ -607,6 +646,7 @@ export function ProfessionalVideoStudio() {
       transcript,
       captions,
       brandKit,
+      templateProject,
       savedAt: new Date().toISOString(),
     };
     window.localStorage.setItem("mawj-studio-autosave", JSON.stringify(snapshot));
@@ -619,6 +659,7 @@ export function ProfessionalVideoStudio() {
     languageMode,
     platform,
     styleId,
+    templateProject,
     timelineTracks,
     transcript,
   ]);
@@ -665,6 +706,103 @@ export function ProfessionalVideoStudio() {
     setProjectStatus("Redo applied");
   }
 
+  function updateSelectedLayer(patch: Partial<TimelineLayer>) {
+    if (!selectedLayer) return;
+    const templatePatch = toTemplateTimelinePatch(patch);
+
+    commitTimeline((tracks) =>
+      tracks.map((track) => ({
+        ...track,
+        layers: track.layers.map((layer) =>
+          layer.id === selectedLayer.id ? { ...layer, ...patch } : layer,
+        ),
+      })),
+    );
+
+    setTemplateProject((project) =>
+      project
+        ? {
+            ...project,
+            timeline: project.timeline.map((track) => ({
+              ...track,
+              layers: track.layers.map((layer) =>
+                layer.id === selectedLayer.id
+                  ? {
+                      ...layer,
+                      ...templatePatch,
+                      absoluteStart:
+                        patch.start !== undefined
+                          ? patch.start
+                          : layer.absoluteStart,
+                    }
+                  : layer,
+              ),
+            })),
+            updatedAt: new Date().toISOString(),
+          }
+        : project,
+    );
+  }
+
+  const applyTemplateProject = useCallback((project: TemplateProject) => {
+    const tracks = templateTimelineToEditorTracks(project.timeline);
+    const firstEditableLayer =
+      tracks.flatMap((track) => track.layers).find((layer) => layer.type === "text") ??
+      tracks.flatMap((track) => track.layers)[0] ??
+      null;
+    const firstVideoLayer = project.timeline
+      .flatMap((track) => track.layers)
+      .find((layer) => layer.type === "video" && layer.src && !layer.src.includes("{{"));
+
+    setTemplateProject(project);
+    setTimelineTracks(tracks);
+    setTimelineUndo([]);
+    setTimelineRedo([]);
+    setSelectedLayerId(firstEditableLayer?.id ?? "clip-main");
+    setCaptions(templateProjectToCaptions(project));
+    setPlan(templateProjectToEditPlan(project));
+    setBrandName(project.inputs.brandName || project.inputs.productName || project.name);
+    setAspectRatio(project.aspectRatio === "4:5" ? "9:16" : project.aspectRatio);
+    setActivePanel("editor");
+    clearRenderedOutput();
+
+    if (firstVideoLayer?.src) {
+      setStudioFile({
+        file: new File([""], `${project.name}.mp4`, { type: "video/mp4" }),
+        url: firstVideoLayer.src,
+        durationSeconds: project.duration,
+      });
+    } else {
+      setStudioFile(null);
+    }
+
+    setProjectStatus(`${project.name} opened as an editable template project`);
+    setAssistantMessages((messages) => [
+      `Template project loaded: ${project.name}. ${project.timeline.reduce((sum, track) => sum + track.layers.length, 0)} editable layers are now on the timeline.`,
+      ...messages,
+    ]);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const raw =
+      window.sessionStorage.getItem("mawj-template-project-draft") ??
+      window.localStorage.getItem("mawj-template-project-draft");
+
+    if (!raw) return;
+
+    window.setTimeout(() => {
+      try {
+        const project = JSON.parse(raw) as TemplateProject;
+        applyTemplateProject(project);
+        window.sessionStorage.removeItem("mawj-template-project-draft");
+      } catch {
+        setProjectStatus("Could not load template project");
+      }
+    }, 0);
+  }, [applyTemplateProject]);
+
   async function handleFiles(files?: FileList | File[]) {
     if (!files?.length) return;
 
@@ -685,6 +823,7 @@ export function ProfessionalVideoStudio() {
     if (firstVideoAsset) {
       setStudioFile({ file: firstVideoAsset.file, url: firstVideoAsset.url, durationSeconds: 60 });
       setActiveProject(null);
+      setTemplateProject(null);
       setPlan(null);
       setPreviewTime(0);
       clearRenderedOutput();
@@ -721,6 +860,7 @@ export function ProfessionalVideoStudio() {
     if (asset.kind !== "video") return;
     setStudioFile({ file: asset.file, url: asset.url, durationSeconds: 60 });
     setActiveProject(null);
+    setTemplateProject(null);
     setPlan(null);
     setPreviewTime(0);
     clearRenderedOutput();
@@ -944,6 +1084,39 @@ export function ProfessionalVideoStudio() {
   }
 
   async function renderVideo() {
+    if (!studioFile && !templateProject) {
+      setError("Upload a source video first.");
+      return;
+    }
+
+    if (templateProject) {
+      setIsRendering(true);
+      setError("");
+      setRenderResult(null);
+      setRenderProgress({
+        percent: 0,
+        label: "Preparing template render",
+        elapsedSeconds: 0,
+        outputSeconds: templateProject.duration,
+      });
+      setProjectStatus("Rendering template export...");
+
+      try {
+        const result = await renderTemplateProject({
+          project: templateProject,
+          onProgress: setRenderProgress,
+        });
+        setRenderResult(result);
+        setProjectStatus(`${templateProject.name} template export ready`);
+        setActivePanel("exports");
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : "Could not render template video.");
+      } finally {
+        setIsRendering(false);
+      }
+      return;
+    }
+
     if (!studioFile) {
       setError("Upload a source video first.");
       return;
@@ -956,7 +1129,7 @@ export function ProfessionalVideoStudio() {
         style: activeStyle,
         aspectRatio,
         brandName,
-        durationSeconds: studioFile.durationSeconds,
+        durationSeconds: studioFile?.durationSeconds ?? 0,
       });
 
     if (!renderPlan) {
@@ -1391,6 +1564,10 @@ export function ProfessionalVideoStudio() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link href="/templates" className="hidden min-h-11 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-sm font-black transition hover:border-[var(--brand)] md:flex">
+              <LayoutTemplate className="h-4 w-4" aria-hidden="true" />
+              Templates
+            </Link>
             <button type="button" onClick={saveProjectSnapshot} className="icon-button" aria-label="Save project">
               <Save className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -1415,7 +1592,7 @@ export function ProfessionalVideoStudio() {
             <button
               type="button"
               onClick={renderVideo}
-              disabled={!studioFile || isRendering || isGenerating || isUploading}
+              disabled={(!studioFile && !templateProject) || isRendering || isGenerating || isUploading}
               className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 py-2 text-sm font-black text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
             >
               {isRendering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
@@ -1584,6 +1761,7 @@ export function ProfessionalVideoStudio() {
                 <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_240px]">
                   <VideoPreview
                     studioFile={studioFile}
+                    templateProject={templateProject}
                     videoRef={videoRef}
                     aspectRatio={aspectRatio}
                     previewFilter={previewFilter}
@@ -1738,21 +1916,24 @@ export function ProfessionalVideoStudio() {
     }
 
     return (
-      <ProjectSettingsPanel
-        brandName={brandName}
-        styleId={styleId}
-        platform={platform}
-        aspectRatio={aspectRatio}
-        languageMode={languageMode}
-        goal={goal}
-        activeStyle={activeStyle}
-        onBrandNameChange={setBrandName}
-        onStyleChange={setStyleId}
-        onPlatformChange={setPlatform}
-        onAspectRatioChange={setAspectRatio}
-        onLanguageChange={setLanguageMode}
-        onGoalChange={setGoal}
-      />
+      <>
+        <ProjectSettingsPanel
+          brandName={brandName}
+          styleId={styleId}
+          platform={platform}
+          aspectRatio={aspectRatio}
+          languageMode={languageMode}
+          goal={goal}
+          activeStyle={activeStyle}
+          onBrandNameChange={setBrandName}
+          onStyleChange={setStyleId}
+          onPlatformChange={setPlatform}
+          onAspectRatioChange={setAspectRatio}
+          onLanguageChange={setLanguageMode}
+          onGoalChange={setGoal}
+        />
+        <LayerInspector layer={selectedLayer} onChange={updateSelectedLayer} />
+      </>
     );
   }
 
@@ -1802,6 +1983,7 @@ export function ProfessionalVideoStudio() {
 
 function VideoPreview({
   studioFile,
+  templateProject,
   videoRef,
   aspectRatio,
   previewFilter,
@@ -1817,6 +1999,7 @@ function VideoPreview({
   onTogglePlayback,
 }: {
   studioFile: StudioFile | null;
+  templateProject: TemplateProject | null;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   aspectRatio: AspectRatio;
   previewFilter: string;
@@ -1864,6 +2047,8 @@ function VideoPreview({
             </div>
           ) : null}
         </div>
+      ) : templateProject ? (
+        <TemplateProjectPreview project={templateProject} />
       ) : (
         <div className="grid place-items-center px-6 text-center">
           <div className="space-y-4">
@@ -1905,6 +2090,100 @@ function VideoPreview({
         </span>
       </div>
     </div>
+  );
+}
+
+function TemplateProjectPreview({ project }: { project: TemplateProject }) {
+  const firstScene = project.scenes[0];
+  const activeLayers = project.timeline
+    .flatMap((track) => track.layers)
+    .filter((layer) => layer.absoluteStart <= (firstScene?.duration ?? project.duration))
+    .slice(0, 12);
+
+  return (
+    <div
+      className={`relative max-h-[660px] w-full overflow-hidden rounded-lg bg-black shadow-2xl ${
+        project.aspectRatio === "16:9"
+          ? "aspect-video max-w-[920px]"
+          : project.aspectRatio === "1:1"
+            ? "aspect-square max-w-[540px]"
+            : "aspect-[9/16] max-w-[370px]"
+      }`}
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(145deg,#111827,#050608)]" />
+      {activeLayers.map((layer) => (
+        <TemplatePreviewLayer key={layer.id} layer={layer} project={project} />
+      ))}
+      <div className="absolute inset-x-4 top-4 flex justify-center">
+        <span className="max-w-full truncate rounded-full border border-white/15 bg-black/55 px-3 py-1.5 text-xs font-black text-white shadow-lg backdrop-blur">
+          {project.name}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function TemplatePreviewLayer({
+  layer,
+  project,
+}: {
+  layer: TemplateTimelineTrack["layers"][number];
+  project: TemplateProject;
+}) {
+  const style = {
+    left: `${((layer.x ?? 0) / project.width) * 100}%`,
+    top: `${((layer.y ?? 0) / project.height) * 100}%`,
+    width: `${((layer.width ?? project.width) / project.width) * 100}%`,
+    height: `${((layer.height ?? project.height) / project.height) * 100}%`,
+  };
+
+  if (layer.type === "text" || layer.type === "captions") {
+    return (
+      <div
+        className="absolute grid place-items-center overflow-hidden px-2 text-center font-black leading-tight"
+        style={{
+          ...style,
+          color: normalizeHexColor(layer.color),
+          fontSize: `${Math.max(11, (layer.fontSize ?? 44) * 0.2)}px`,
+          direction: layer.direction === "ltr" ? "ltr" : "rtl",
+        }}
+      >
+        {layer.content ?? layer.name}
+      </div>
+    );
+  }
+
+  if (layer.type === "image" || layer.type === "video") {
+    const src = layer.src && !layer.src.includes("{{") ? layer.src : "";
+
+    return src && layer.type === "image" ? (
+      <img src={src} alt={layer.name ?? layer.id} className="absolute object-cover" style={style} />
+    ) : (
+      <div className="absolute grid place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70" style={style}>
+        {layer.type.toUpperCase()}
+      </div>
+    );
+  }
+
+  if (layer.type === "background") {
+    return (
+      <div
+        className="absolute inset-0"
+        style={{ background: normalizeHexColor(layer.backgroundColor ?? layer.color) }}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="absolute"
+      style={{
+        ...style,
+        background: normalizeHexColor(layer.color),
+        borderRadius: `${Math.min(28, (layer.borderRadius ?? 18) / 2)}px`,
+        opacity: layer.opacity ?? 0.75,
+      }}
+    />
   );
 }
 
@@ -2757,6 +3036,110 @@ function ProjectSettingsPanel({
   );
 }
 
+function LayerInspector({
+  layer,
+  onChange,
+}: {
+  layer: TimelineLayer | null;
+  onChange: (patch: Partial<TimelineLayer>) => void;
+}) {
+  if (!layer) {
+    return (
+      <section className="panel p-4">
+        <PanelHeading icon={Layers3} title="Layer inspector" />
+        <EmptyMini label="Select a layer on the timeline to edit text, timing, size, color, or media." />
+      </section>
+    );
+  }
+
+  return (
+    <section className="panel p-4">
+      <PanelHeading icon={Layers3} title="Layer inspector" />
+      <Field label="Layer name">
+        <input value={layer.name} onChange={(event) => onChange({ name: event.target.value })} className="control-input" />
+      </Field>
+      {layer.type === "text" || layer.type === "caption" ? (
+        <Field label="Text content">
+          <textarea
+            value={layer.content ?? layer.name}
+            onChange={(event) => onChange({ content: event.target.value, name: event.target.value.slice(0, 42) || layer.name })}
+            dir="auto"
+            className="min-h-24 w-full resize-none rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3 text-sm font-bold leading-6 outline-none focus:border-[var(--brand)]"
+          />
+        </Field>
+      ) : null}
+      {layer.type === "image" || layer.type === "video" ? (
+        <Field label="Replace media">
+          <label className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--line-strong)] bg-[var(--panel-soft)] p-3 text-center transition hover:border-[var(--brand)]">
+            <UploadCloud className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
+            <span className="text-xs font-black">{layer.src ? "Media attached" : "Upload replacement"}</span>
+            <input
+              type="file"
+              accept={layer.type === "image" ? "image/*" : "video/*"}
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) onChange({ src: URL.createObjectURL(file), name: file.name });
+              }}
+            />
+          </label>
+        </Field>
+      ) : null}
+      <div className="grid grid-cols-2 gap-2">
+        <NumberField label="Start" value={layer.start} onChange={(start) => onChange({ start })} />
+        <NumberField label="Duration" value={layer.duration} onChange={(duration) => onChange({ duration })} />
+        <NumberField label="X" value={layer.x ?? 0} onChange={(x) => onChange({ x })} />
+        <NumberField label="Y" value={layer.y ?? 0} onChange={(y) => onChange({ y })} />
+        <NumberField label="Width" value={layer.width ?? 0} onChange={(width) => onChange({ width })} />
+        <NumberField label="Height" value={layer.height ?? 0} onChange={(height) => onChange({ height })} />
+      </div>
+      {layer.type === "text" || layer.type === "caption" ? (
+        <div className="grid grid-cols-2 gap-2">
+          <NumberField label="Font size" value={layer.fontSize ?? 48} onChange={(fontSize) => onChange({ fontSize })} />
+          <Field label="Text color">
+            <input
+              type="color"
+              value={layer.textColor ?? layer.color}
+              onChange={(event) => onChange({ textColor: event.target.value, color: event.target.value })}
+              className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1"
+            />
+          </Field>
+        </div>
+      ) : (
+        <Field label="Layer color">
+          <input
+            type="color"
+            value={normalizeHexColor(layer.color)}
+            onChange={(event) => onChange({ color: event.target.value })}
+            className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1"
+          />
+        </Field>
+      )}
+    </section>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <Field label={label}>
+      <input
+        type="number"
+        value={Number.isFinite(value) ? value : 0}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="control-input"
+      />
+    </Field>
+  );
+}
+
 function AssistantPanel({
   command,
   messages,
@@ -2909,7 +3292,13 @@ function AssetIcon({ kind }: { kind: MediaAsset["kind"] }) {
 }
 
 function TrackIcon({ kind }: { kind: TimelineTrack["kind"] }) {
-  const Icon = kind === "audio" ? FileAudio2 : kind === "overlay" ? ImageIcon : kind === "caption" ? Captions : kind === "effects" ? Sparkles : Film;
+  const Icon =
+    kind === "audio" ? FileAudio2 :
+    kind === "overlay" || kind === "image" ? ImageIcon :
+    kind === "text" ? Type :
+    kind === "caption" ? Captions :
+    kind === "effects" || kind === "shape" || kind === "background" || kind === "waveform" ? Sparkles :
+    Film;
   return <Icon className="h-4 w-4 shrink-0 text-[var(--brand)]" aria-hidden="true" />;
 }
 
@@ -3462,6 +3851,164 @@ function cleanOpenAIError(message: string) {
   }
 
   return message.replace(/sk-[A-Za-z0-9_-]+/g, "sk-***");
+}
+
+function templateTimelineToEditorTracks(templateTracks: TemplateTimelineTrack[]): TimelineTrack[] {
+  return templateTracks.map((track) => ({
+    id: track.id,
+    name: track.name,
+    kind: mapTemplateTrackKind(track.kind),
+    layers: track.layers.map((layer): TimelineLayer => ({
+      id: layer.id,
+      type: mapTemplateLayerType(layer.type),
+      name: layer.content || layer.name || layer.id,
+      start: layer.absoluteStart,
+      duration: layer.duration,
+      color: normalizeHexColor(layer.color ?? layer.backgroundColor ?? colorForTemplateLayer(layer.type)),
+      content: layer.content,
+      src: layer.src,
+      sceneId: layer.sceneId,
+      x: layer.x,
+      y: layer.y,
+      width: layer.width,
+      height: layer.height,
+      fontSize: layer.fontSize,
+      fontWeight: layer.fontWeight,
+      textColor: layer.color,
+      backgroundColor: layer.backgroundColor,
+      borderRadius: layer.borderRadius,
+      opacity: layer.opacity,
+    })),
+  }));
+}
+
+function toTemplateTimelinePatch(patch: Partial<TimelineLayer>): Partial<TemplateTimelineTrack["layers"][number]> {
+  const nextPatch: Partial<TemplateTimelineTrack["layers"][number]> = {
+    name: patch.name,
+    content: patch.content,
+    src: patch.src,
+    start: patch.start,
+    duration: patch.duration,
+    color: patch.color ?? patch.textColor,
+    backgroundColor: patch.backgroundColor,
+    x: patch.x,
+    y: patch.y,
+    width: patch.width,
+    height: patch.height,
+    fontSize: patch.fontSize,
+    fontWeight: patch.fontWeight,
+    borderRadius: patch.borderRadius,
+    opacity: patch.opacity,
+  };
+
+  return Object.fromEntries(
+    Object.entries(nextPatch).filter(([, value]) => value !== undefined),
+  ) as Partial<TemplateTimelineTrack["layers"][number]>;
+}
+
+function templateProjectToCaptions(project: TemplateProject): CaptionLine[] {
+  const captionLayers = project.timeline
+    .flatMap((track) => track.layers)
+    .filter((layer) => layer.type === "captions" || layer.type === "text")
+    .slice(0, 8);
+
+  if (!captionLayers.length) {
+    return [
+      {
+        id: `template-caption-${project.id}`,
+        start: 0,
+        end: Math.min(project.duration, 4),
+        text: project.name,
+      },
+    ];
+  }
+
+  return captionLayers.map((layer, index) => ({
+    id: `template-caption-${layer.id}`,
+    start: layer.absoluteStart,
+    end: Math.min(project.duration, layer.absoluteStart + layer.duration),
+    text: layer.content || layer.name || `Template layer ${index + 1}`,
+  }));
+}
+
+function templateProjectToEditPlan(project: TemplateProject): EditPlan {
+  return {
+    id: `template-edit-${project.id}`,
+    title: project.name,
+    hook: project.scenes[0]?.name ?? project.name,
+    summary: "Editable JSON video template converted into a Mawj Studio timeline project.",
+    targetDurationSeconds: project.duration,
+    styleId: "viral-saudi",
+    confidence: 96,
+    renderSettings: {
+      aspectRatio: project.aspectRatio === "4:5" ? "9:16" : project.aspectRatio,
+      resolution: `${project.width}x${project.height}`,
+      fps: project.export.fps,
+      loudness: "-14 LUFS",
+      safeMargins: "Template safe margins",
+    },
+    timeline: project.scenes.map((scene) => ({
+      id: scene.id,
+      label: scene.name,
+      start: scene.start,
+      end: scene.start + scene.duration,
+      action: `${scene.layers.length} editable layers from template JSON.`,
+      intensity: "medium",
+    })),
+    captions: templateProjectToCaptions(project).map((caption) => ({
+      at: caption.start,
+      text: caption.text,
+      emphasis: [],
+    })),
+    aiTools: [
+      { name: "Template engine", status: "ready", detail: "Hydrated JSON placeholders into editable timeline layers." },
+      { name: "Layer inspector", status: "ready", detail: "Text, media, timing, color, and geometry can be adjusted manually." },
+      { name: "Template renderer", status: "ready", detail: "Canvas renderer exports template projects from scenes and layers." },
+    ],
+    exportVariants: [
+      { platform: "MP4", duration: `${project.duration}s`, caption: "Template video export." },
+      { platform: "SRT", duration: `${project.duration}s`, caption: "Caption export from template text layers." },
+      { platform: "Thumbnail", duration: "1 frame", caption: "Template preview still." },
+    ],
+  };
+}
+
+function mapTemplateTrackKind(kind: TemplateTimelineTrack["kind"]): TimelineTrack["kind"] {
+  if (kind === "text" || kind === "image") return "overlay";
+  if (kind === "captions") return "caption";
+  if (kind === "background" || kind === "shape" || kind === "scenes" || kind === "waveform") return "effects";
+  return kind;
+}
+
+function mapTemplateLayerType(type: TemplateTimelineTrack["layers"][number]["type"]): TimelineLayer["type"] {
+  if (type === "captions") return "caption";
+  if (type === "background") return "background";
+  if (type === "shape") return "shape";
+  if (type === "waveform") return "waveform";
+  if (type === "audio") return "audio";
+  if (type === "video") return "video";
+  if (type === "image") return "image";
+  return "text";
+}
+
+function colorForTemplateLayer(type: TemplateTimelineTrack["layers"][number]["type"]) {
+  const colors: Record<TemplateTimelineTrack["layers"][number]["type"], string> = {
+    text: "#facc15",
+    image: "#c084fc",
+    video: "#8ef7c2",
+    shape: "#a78bfa",
+    captions: "#fb923c",
+    audio: "#7dd3fc",
+    background: "#64748b",
+    waveform: "#36d399",
+  };
+
+  return colors[type];
+}
+
+function normalizeHexColor(value?: string) {
+  if (!value || value.includes("{{") || !/^#[0-9a-f]{6}$/i.test(value)) return "#8ef7c2";
+  return value;
 }
 
 function createDemoProjects(): StudioProject[] {

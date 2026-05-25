@@ -1,0 +1,373 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "id": "before-after",
+  "name": "Before / After 9:16",
+  "category": "Before / After",
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "duration": 16,
+  "description": "A transformation template with before image, transition reveal, after image, result text, and CTA.",
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "requiredInputs": [
+    {
+      "key": "beforeImage",
+      "label": "Before Image",
+      "type": "image"
+    },
+    {
+      "key": "afterImage",
+      "label": "After Image",
+      "type": "image"
+    },
+    {
+      "key": "title",
+      "label": "Title",
+      "type": "text",
+      "default": "Before / After"
+    },
+    {
+      "key": "description",
+      "label": "Description",
+      "type": "textarea",
+      "default": "See the transformation."
+    },
+    {
+      "key": "cta",
+      "label": "CTA",
+      "type": "text",
+      "default": "Book now"
+    },
+    {
+      "key": "logo",
+      "label": "Logo",
+      "type": "image"
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#16a34a"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "before",
+      "name": "Before",
+      "start": 0,
+      "duration": 4,
+      "background": {
+        "type": "image",
+        "src": "{{beforeImage}}"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "before-img",
+          "type": "image",
+          "src": "{{beforeImage}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "safeMargin": false,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        },
+        {
+          "id": "label-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 100,
+          "y": 240,
+          "width": 880,
+          "height": 120,
+          "color": "#000000",
+          "opacity": 0.58,
+          "borderRadius": 36,
+          "safeMargin": true
+        },
+        {
+          "id": "before-label",
+          "type": "text",
+          "content": "Before",
+          "x": 100,
+          "y": 260,
+          "width": 880,
+          "height": 80,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "transition",
+      "name": "Transition",
+      "start": 4,
+      "duration": 3,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#000000"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.4
+      },
+      "layers": [
+        {
+          "id": "title",
+          "type": "text",
+          "content": "{{title}}",
+          "x": 100,
+          "y": 560,
+          "width": 880,
+          "height": 140,
+          "fontSize": 70,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.55
+          }
+        },
+        {
+          "id": "desc",
+          "type": "text",
+          "content": "{{description}}",
+          "x": 130,
+          "y": 760,
+          "width": 820,
+          "height": 180,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#dcfce7",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "after",
+      "name": "After",
+      "start": 7,
+      "duration": 5,
+      "background": {
+        "type": "image",
+        "src": "{{afterImage}}"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.35
+      },
+      "layers": [
+        {
+          "id": "after-img",
+          "type": "image",
+          "src": "{{afterImage}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "safeMargin": false,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        },
+        {
+          "id": "after-label-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 100,
+          "y": 240,
+          "width": 880,
+          "height": 120,
+          "color": "{{brandColor}}",
+          "opacity": 0.78,
+          "borderRadius": 36,
+          "safeMargin": true
+        },
+        {
+          "id": "after-label",
+          "type": "text",
+          "content": "After",
+          "x": 100,
+          "y": 260,
+          "width": 880,
+          "height": 80,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "name": "Result Text",
+      "start": 12,
+      "duration": 2,
+      "background": {
+        "type": "color",
+        "value": "#ffffff"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "result",
+          "type": "text",
+          "content": "{{description}}",
+          "x": 100,
+          "y": 520,
+          "width": 880,
+          "height": 220,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "logo-result",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 420,
+          "y": 920,
+          "width": 240,
+          "height": 140,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "name": "CTA",
+      "start": 14,
+      "duration": 2,
+      "background": {
+        "type": "color",
+        "value": "{{brandColor}}"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 100,
+          "y": 620,
+          "width": 880,
+          "height": 120,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "logo",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 420,
+          "y": 850,
+          "width": 240,
+          "height": 140,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        }
+      ]
+    }
+  ],
+  "audio": {
+    "music": "/music/reveal-pop.mp3",
+    "volume": 0.25
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
+}

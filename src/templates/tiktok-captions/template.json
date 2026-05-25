@@ -1,0 +1,195 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "id": "tiktok-captions",
+  "name": "TikTok Captions 9:16",
+  "category": "TikTok / Reels",
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "duration": 20,
+  "description": "A vertical video template focused on animated captions, hook title, and safe mobile CTA.",
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "requiredInputs": [
+    {
+      "key": "video",
+      "label": "Video",
+      "type": "video"
+    },
+    {
+      "key": "title",
+      "label": "Hook Title",
+      "type": "text",
+      "default": "Watch this"
+    },
+    {
+      "key": "captionStyle",
+      "label": "Caption Style",
+      "type": "select",
+      "default": "karaoke",
+      "options": [
+        "karaoke",
+        "bold",
+        "minimal"
+      ]
+    },
+    {
+      "key": "cta",
+      "label": "CTA",
+      "type": "text",
+      "default": "Follow for more"
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#8ef7c2"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "main",
+      "name": "Full Video with Captions",
+      "start": 0,
+      "duration": 20,
+      "background": {
+        "type": "blur",
+        "src": "{{video}}"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "video",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "safeMargin": false
+        },
+        {
+          "id": "title-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 80,
+          "y": 170,
+          "width": 920,
+          "height": 150,
+          "color": "#000000",
+          "opacity": 0.55,
+          "borderRadius": 36,
+          "safeMargin": true
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "content": "{{title}}",
+          "x": 100,
+          "y": 205,
+          "width": 880,
+          "height": 90,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideDown",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "captions",
+          "type": "captions",
+          "source": "auto",
+          "x": 80,
+          "y": 1180,
+          "width": 920,
+          "height": 330,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "highlightColor": "{{brandColor}}",
+          "align": "center",
+          "style": "{{captionStyle}}",
+          "direction": "auto",
+          "safeMargin": true
+        },
+        {
+          "id": "cta-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 210,
+          "y": 1500,
+          "width": 660,
+          "height": 110,
+          "color": "{{brandColor}}",
+          "opacity": 0.9,
+          "borderRadius": 55,
+          "safeMargin": true
+        },
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 230,
+          "y": 1520,
+          "width": 620,
+          "height": 70,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "#050608",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    }
+  ],
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
+}

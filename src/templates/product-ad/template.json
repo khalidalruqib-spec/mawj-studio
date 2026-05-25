@@ -1,0 +1,453 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "id": "product-ad",
+  "name": "Product Ad 9:16",
+  "category": "Product Ads",
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "duration": 15,
+  "description": "A structured product ad template for TikTok, Reels, and Shorts with hook, product showcase, benefits, price, and CTA.",
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "requiredInputs": [
+    {
+      "key": "productName",
+      "label": "Product Name",
+      "type": "text",
+      "default": "Your Product"
+    },
+    {
+      "key": "headline",
+      "label": "Headline",
+      "type": "text",
+      "default": "Limited Offer"
+    },
+    {
+      "key": "price",
+      "label": "Price",
+      "type": "text",
+      "default": "$99"
+    },
+    {
+      "key": "offer",
+      "label": "Offer",
+      "type": "text",
+      "default": "Today only"
+    },
+    {
+      "key": "cta",
+      "label": "CTA",
+      "type": "text",
+      "default": "Order Now"
+    },
+    {
+      "key": "productImage",
+      "label": "Product Image",
+      "type": "image"
+    },
+    {
+      "key": "logo",
+      "label": "Logo",
+      "type": "image"
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#111827"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "hook",
+      "name": "Hook",
+      "start": 0,
+      "duration": 3,
+      "background": {
+        "type": "color",
+        "value": "{{brandColor}}"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "headline",
+          "type": "text",
+          "content": "{{headline}}",
+          "x": 80,
+          "y": 230,
+          "width": 920,
+          "height": 170,
+          "fontSize": 78,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.5
+          }
+        },
+        {
+          "id": "product-image",
+          "type": "image",
+          "src": "{{productImage}}",
+          "x": 190,
+          "y": 610,
+          "width": 700,
+          "height": 680,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        },
+        {
+          "id": "hook-pill",
+          "type": "shape",
+          "shape": "rect",
+          "x": 260,
+          "y": 1320,
+          "width": 560,
+          "height": 92,
+          "color": "#ffffff",
+          "opacity": 0.16,
+          "borderRadius": 46,
+          "safeMargin": true
+        }
+      ]
+    },
+    {
+      "id": "showcase",
+      "name": "Product Showcase",
+      "start": 3,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#ffffff"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.35
+      },
+      "layers": [
+        {
+          "id": "product-name",
+          "type": "text",
+          "content": "{{productName}}",
+          "x": 80,
+          "y": 210,
+          "width": 920,
+          "height": 140,
+          "fontSize": 64,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "product-image-2",
+          "type": "image",
+          "src": "{{productImage}}",
+          "x": 180,
+          "y": 500,
+          "width": 720,
+          "height": 720,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        },
+        {
+          "id": "offer",
+          "type": "text",
+          "content": "{{offer}}",
+          "x": 120,
+          "y": 1320,
+          "width": 840,
+          "height": 100,
+          "fontSize": 54,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.45
+          }
+        }
+      ]
+    },
+    {
+      "id": "benefits",
+      "name": "Benefits",
+      "start": 7,
+      "duration": 3,
+      "background": {
+        "type": "gradient",
+        "from": "#ffffff",
+        "to": "#f4f7fb"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "benefit-card",
+          "type": "shape",
+          "shape": "rect",
+          "x": 100,
+          "y": 260,
+          "width": 880,
+          "height": 860,
+          "color": "{{brandColor}}",
+          "opacity": 0.12,
+          "borderRadius": 42,
+          "safeMargin": true
+        },
+        {
+          "id": "benefit-1",
+          "type": "text",
+          "content": "Fast. Clear. Ready to sell.",
+          "x": 130,
+          "y": 350,
+          "width": 820,
+          "height": 120,
+          "fontSize": 54,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "benefit-2",
+          "type": "text",
+          "content": "Built for mobile buyers",
+          "x": 130,
+          "y": 520,
+          "width": 820,
+          "height": 110,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "#334155",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "product-small",
+          "type": "image",
+          "src": "{{productImage}}",
+          "x": 290,
+          "y": 780,
+          "width": 500,
+          "height": 440,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        }
+      ]
+    },
+    {
+      "id": "price",
+      "name": "Price / Offer",
+      "start": 10,
+      "duration": 2.5,
+      "background": {
+        "type": "color",
+        "value": "#ffffff"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "price",
+          "type": "text",
+          "content": "{{price}}",
+          "x": 80,
+          "y": 420,
+          "width": 920,
+          "height": 150,
+          "fontSize": 92,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "offer-line",
+          "type": "text",
+          "content": "{{offer}}",
+          "x": 80,
+          "y": 600,
+          "width": 920,
+          "height": 100,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "logo-price",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 420,
+          "y": 1160,
+          "width": 240,
+          "height": 160,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "name": "CTA",
+      "start": 12.5,
+      "duration": 2.5,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#000000"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "logo",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 420,
+          "y": 280,
+          "width": 240,
+          "height": 180,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        },
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 100,
+          "y": 720,
+          "width": 880,
+          "height": 160,
+          "fontSize": 78,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.5
+          }
+        },
+        {
+          "id": "product-final",
+          "type": "text",
+          "content": "{{productName}}",
+          "x": 100,
+          "y": 940,
+          "width": 880,
+          "height": 100,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    }
+  ],
+  "audio": {
+    "music": "/music/energetic-ad.mp3",
+    "volume": 0.25
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
+}

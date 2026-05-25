@@ -1,0 +1,381 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "id": "course-announcement",
+  "name": "Course Announcement 9:16",
+  "category": "Course Announcements",
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "duration": 22,
+  "description": "A course announcement template with title, learning points, trainer, date, price, and registration CTA.",
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "requiredInputs": [
+    {
+      "key": "courseName",
+      "label": "Course Name",
+      "type": "text",
+      "default": "AI Content Course"
+    },
+    {
+      "key": "trainerName",
+      "label": "Trainer Name",
+      "type": "text",
+      "default": "Trainer Name"
+    },
+    {
+      "key": "date",
+      "label": "Date",
+      "type": "text",
+      "default": "June 20"
+    },
+    {
+      "key": "price",
+      "label": "Price",
+      "type": "text",
+      "default": "SAR 499"
+    },
+    {
+      "key": "registrationLink",
+      "label": "Registration Link",
+      "type": "text",
+      "default": "example.com"
+    },
+    {
+      "key": "logo",
+      "label": "Logo",
+      "type": "image"
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#7c3aed"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "title",
+      "name": "Course Title",
+      "start": 0,
+      "duration": 5,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#111827"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "course",
+          "type": "text",
+          "content": "{{courseName}}",
+          "x": 100,
+          "y": 350,
+          "width": 880,
+          "height": 150,
+          "fontSize": 68,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "trainer",
+          "type": "text",
+          "content": "with {{trainerName}}",
+          "x": 100,
+          "y": 560,
+          "width": 880,
+          "height": 80,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#ede9fe",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "learn",
+      "name": "What You Will Learn",
+      "start": 5,
+      "duration": 6,
+      "background": {
+        "type": "color",
+        "value": "#ffffff"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "learn-title",
+          "type": "text",
+          "content": "What you will learn",
+          "x": 100,
+          "y": 240,
+          "width": 880,
+          "height": 100,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "learn-list",
+          "type": "text",
+          "content": "Tools\nWorkflow\nPublishing system",
+          "x": 150,
+          "y": 430,
+          "width": 780,
+          "height": 330,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "left",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "trainer",
+      "name": "Trainer",
+      "start": 11,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#f5f3ff"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "logo",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 420,
+          "y": 260,
+          "width": 240,
+          "height": 150,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        },
+        {
+          "id": "trainer-name",
+          "type": "text",
+          "content": "{{trainerName}}",
+          "x": 100,
+          "y": 550,
+          "width": 880,
+          "height": 100,
+          "fontSize": 62,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "course-small",
+          "type": "text",
+          "content": "{{courseName}}",
+          "x": 100,
+          "y": 700,
+          "width": 880,
+          "height": 80,
+          "fontSize": 38,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "details",
+      "name": "Date and Price",
+      "start": 15,
+      "duration": 4,
+      "background": {
+        "type": "gradient",
+        "from": "#111827",
+        "to": "{{brandColor}}"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "date",
+          "type": "text",
+          "content": "{{date}}",
+          "x": 100,
+          "y": 440,
+          "width": 880,
+          "height": 100,
+          "fontSize": 64,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "price",
+          "type": "text",
+          "content": "{{price}}",
+          "x": 100,
+          "y": 610,
+          "width": 880,
+          "height": 110,
+          "fontSize": 76,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "register",
+      "name": "Register Now",
+      "start": 19,
+      "duration": 3,
+      "background": {
+        "type": "color",
+        "value": "#111827"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "Register now",
+          "x": 100,
+          "y": 580,
+          "width": 880,
+          "height": 120,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "link",
+          "type": "text",
+          "content": "{{registrationLink}}",
+          "x": 100,
+          "y": 760,
+          "width": 880,
+          "height": 80,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    }
+  ],
+  "audio": {
+    "music": "/music/learning-pulse.mp3",
+    "volume": 0.2
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
+}

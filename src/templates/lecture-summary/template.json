@@ -1,0 +1,395 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "id": "lecture-summary",
+  "name": "Lecture Summary 16:9",
+  "category": "Lecture Summaries",
+  "aspectRatio": "16:9",
+  "width": 1920,
+  "height": 1080,
+  "duration": 45,
+  "description": "A clean lecture summary template with title, instructor video, key points, summary, and closing.",
+  "safeMargins": {
+    "top": 72,
+    "bottom": 72,
+    "left": 96,
+    "right": 96
+  },
+  "requiredInputs": [
+    {
+      "key": "lectureTitle",
+      "label": "Lecture Title",
+      "type": "text",
+      "default": "Lecture Summary"
+    },
+    {
+      "key": "instructorName",
+      "label": "Instructor Name",
+      "type": "text",
+      "default": "Dr. Name"
+    },
+    {
+      "key": "video",
+      "label": "Lecture Video",
+      "type": "video"
+    },
+    {
+      "key": "points",
+      "label": "Key Points",
+      "type": "textarea",
+      "default": "Point one\nPoint two\nPoint three"
+    },
+    {
+      "key": "logo",
+      "label": "Logo",
+      "type": "image"
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#2563eb"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "opening",
+      "name": "Opening Title",
+      "start": 0,
+      "duration": 6,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#0f172a"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.4
+      },
+      "layers": [
+        {
+          "id": "logo",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 96,
+          "y": 72,
+          "width": 180,
+          "height": 90,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "content": "{{lectureTitle}}",
+          "x": 240,
+          "y": 300,
+          "width": 1440,
+          "height": 160,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "instructor",
+          "type": "text",
+          "content": "{{instructorName}}",
+          "x": 520,
+          "y": 500,
+          "width": 880,
+          "height": 80,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#dbeafe",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "instructor-video",
+      "name": "Instructor Video",
+      "start": 6,
+      "duration": 16,
+      "background": {
+        "type": "color",
+        "value": "#f8fafc"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.35
+      },
+      "layers": [
+        {
+          "id": "video",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 96,
+          "y": 110,
+          "width": 920,
+          "height": 760,
+          "fit": "cover",
+          "safeMargin": true,
+          "borderRadius": 28
+        },
+        {
+          "id": "note-card",
+          "type": "shape",
+          "shape": "rect",
+          "x": 1080,
+          "y": 160,
+          "width": 680,
+          "height": 620,
+          "color": "{{brandColor}}",
+          "opacity": 0.12,
+          "borderRadius": 32,
+          "safeMargin": true
+        },
+        {
+          "id": "talking-title",
+          "type": "text",
+          "content": "{{lectureTitle}}",
+          "x": 1120,
+          "y": 220,
+          "width": 600,
+          "height": 100,
+          "fontSize": 48,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "speaker",
+          "type": "text",
+          "content": "{{instructorName}}",
+          "x": 1120,
+          "y": 350,
+          "width": 600,
+          "height": 80,
+          "fontSize": 38,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "key-points",
+      "name": "Key Points",
+      "start": 22,
+      "duration": 12,
+      "background": {
+        "type": "color",
+        "value": "#ffffff"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "points-title",
+          "type": "text",
+          "content": "Key Points",
+          "x": 120,
+          "y": 120,
+          "width": 620,
+          "height": 90,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "left",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "points",
+          "type": "text",
+          "content": "{{points}}",
+          "x": 160,
+          "y": 270,
+          "width": 1300,
+          "height": 430,
+          "fontSize": 42,
+          "fontWeight": "600",
+          "color": "#111827",
+          "align": "left",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "summary",
+      "name": "Summary",
+      "start": 34,
+      "duration": 7,
+      "background": {
+        "type": "gradient",
+        "from": "#0f172a",
+        "to": "{{brandColor}}"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.35
+      },
+      "layers": [
+        {
+          "id": "summary-title",
+          "type": "text",
+          "content": "Summary",
+          "x": 360,
+          "y": 260,
+          "width": 1200,
+          "height": 120,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "summary-copy",
+          "type": "text",
+          "content": "{{lectureTitle}}",
+          "x": 360,
+          "y": 440,
+          "width": 1200,
+          "height": 110,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "closing",
+      "name": "Closing",
+      "start": 41,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#0f172a"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "logo-close",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 810,
+          "y": 300,
+          "width": 300,
+          "height": 160,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        },
+        {
+          "id": "close",
+          "type": "text",
+          "content": "Save this lesson",
+          "x": 520,
+          "y": 540,
+          "width": 880,
+          "height": 90,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    }
+  ],
+  "audio": {
+    "music": "/music/focused-ambient.mp3",
+    "volume": 0.18
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
+}

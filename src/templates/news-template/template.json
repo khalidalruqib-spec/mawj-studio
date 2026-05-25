@@ -1,0 +1,358 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "id": "news-template",
+  "name": "News Breaking Template 16:9",
+  "category": "News Style",
+  "aspectRatio": "16:9",
+  "width": 1920,
+  "height": 1080,
+  "duration": 25,
+  "description": "A breaking news template with intro, headline, details, source, and closing.",
+  "safeMargins": {
+    "top": 72,
+    "bottom": 72,
+    "left": 96,
+    "right": 96
+  },
+  "requiredInputs": [
+    {
+      "key": "newsTitle",
+      "label": "News Title",
+      "type": "text",
+      "default": "Breaking News"
+    },
+    {
+      "key": "newsSummary",
+      "label": "News Summary",
+      "type": "textarea",
+      "default": "Short summary of the story."
+    },
+    {
+      "key": "sourceName",
+      "label": "Source Name",
+      "type": "text",
+      "default": "Source"
+    },
+    {
+      "key": "imageOrVideo",
+      "label": "Image or Video",
+      "type": "image"
+    },
+    {
+      "key": "logo",
+      "label": "Logo",
+      "type": "image"
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#dc2626"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "intro",
+      "name": "Breaking News Intro",
+      "start": 0,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "{{brandColor}}"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "breaking",
+          "type": "text",
+          "content": "BREAKING NEWS",
+          "x": 220,
+          "y": 390,
+          "width": 1480,
+          "height": 150,
+          "fontSize": 92,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "logo",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 96,
+          "y": 70,
+          "width": 180,
+          "height": 90,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        }
+      ]
+    },
+    {
+      "id": "headline",
+      "name": "Headline",
+      "start": 4,
+      "duration": 6,
+      "background": {
+        "type": "image",
+        "src": "{{imageOrVideo}}"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "visual",
+          "type": "image",
+          "src": "{{imageOrVideo}}",
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "fit": "cover",
+          "safeMargin": false,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        },
+        {
+          "id": "lower",
+          "type": "shape",
+          "shape": "rect",
+          "x": 96,
+          "y": 680,
+          "width": 1728,
+          "height": 220,
+          "color": "#000000",
+          "opacity": 0.65,
+          "borderRadius": 28,
+          "safeMargin": true
+        },
+        {
+          "id": "headline-text",
+          "type": "text",
+          "content": "{{newsTitle}}",
+          "x": 140,
+          "y": 720,
+          "width": 1640,
+          "height": 110,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "details",
+      "name": "Details",
+      "start": 10,
+      "duration": 8,
+      "background": {
+        "type": "color",
+        "value": "#0f172a"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "details-title",
+          "type": "text",
+          "content": "Details",
+          "x": 120,
+          "y": 120,
+          "width": 600,
+          "height": 80,
+          "fontSize": 54,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "left",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "summary",
+          "type": "text",
+          "content": "{{newsSummary}}",
+          "x": 140,
+          "y": 260,
+          "width": 1500,
+          "height": 360,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "left",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "source",
+      "name": "Source",
+      "start": 18,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#111827"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "source-label",
+          "type": "text",
+          "content": "Source",
+          "x": 600,
+          "y": 360,
+          "width": 720,
+          "height": 80,
+          "fontSize": 48,
+          "fontWeight": "bold",
+          "color": "#94a3b8",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "source",
+          "type": "text",
+          "content": "{{sourceName}}",
+          "x": 460,
+          "y": 470,
+          "width": 1000,
+          "height": 100,
+          "fontSize": 66,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "closing",
+      "name": "Closing",
+      "start": 22,
+      "duration": 3,
+      "background": {
+        "type": "color",
+        "value": "{{brandColor}}"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "logo-close",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 810,
+          "y": 360,
+          "width": 300,
+          "height": 160,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        },
+        {
+          "id": "close",
+          "type": "text",
+          "content": "Stay updated",
+          "x": 520,
+          "y": 580,
+          "width": 880,
+          "height": 80,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    }
+  ],
+  "audio": {
+    "music": "/music/news-pulse.mp3",
+    "volume": 0.2
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
+}

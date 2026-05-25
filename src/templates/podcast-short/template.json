@@ -1,0 +1,208 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "id": "podcast-short",
+  "name": "Podcast Clip 9:16",
+  "category": "Podcast Clips",
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "duration": 30,
+  "description": "A vertical podcast clip template with framed video, speaker name, karaoke captions, logo, and waveform.",
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "requiredInputs": [
+    {
+      "key": "episodeTitle",
+      "label": "Episode Title",
+      "type": "text",
+      "default": "Powerful Moment"
+    },
+    {
+      "key": "guestName",
+      "label": "Guest Name",
+      "type": "text",
+      "default": "Guest Name"
+    },
+    {
+      "key": "video",
+      "label": "Podcast Video",
+      "type": "video"
+    },
+    {
+      "key": "logo",
+      "label": "Podcast Logo",
+      "type": "image"
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#7c3aed"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "main",
+      "name": "Main Podcast Frame",
+      "start": 0,
+      "duration": 30,
+      "background": {
+        "type": "color",
+        "value": "#0f172a"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "top-band",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 70,
+          "width": 940,
+          "height": 132,
+          "color": "{{brandColor}}",
+          "opacity": 0.18,
+          "borderRadius": 28,
+          "safeMargin": true
+        },
+        {
+          "id": "episode-title",
+          "type": "text",
+          "content": "{{episodeTitle}}",
+          "x": 90,
+          "y": 90,
+          "width": 900,
+          "height": 92,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "video-frame",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 80,
+          "y": 240,
+          "width": 920,
+          "height": 880,
+          "fit": "cover",
+          "safeMargin": true,
+          "borderRadius": 36
+        },
+        {
+          "id": "guest-name",
+          "type": "text",
+          "content": "{{guestName}}",
+          "x": 80,
+          "y": 1160,
+          "width": 920,
+          "height": 80,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "captions",
+          "type": "captions",
+          "source": "auto",
+          "x": 80,
+          "y": 1300,
+          "width": 920,
+          "height": 300,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "highlightColor": "{{brandColor}}",
+          "align": "center",
+          "style": "karaoke",
+          "direction": "auto",
+          "safeMargin": true
+        },
+        {
+          "id": "waveform",
+          "type": "waveform",
+          "source": "audio",
+          "x": 140,
+          "y": 1620,
+          "width": 800,
+          "height": 90,
+          "color": "{{brandColor}}",
+          "opacity": 0.85,
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "logo",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 440,
+          "y": 1730,
+          "width": 200,
+          "height": 100,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        }
+      ]
+    }
+  ],
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
+}

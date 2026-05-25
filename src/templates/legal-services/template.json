@@ -1,0 +1,329 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "id": "legal-services",
+  "name": "Legal Services 9:16",
+  "category": "Legal Services",
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "duration": 20,
+  "description": "A formal legal services ad with question hook, service explanation, trust points, and contact CTA.",
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "requiredInputs": [
+    {
+      "key": "officeName",
+      "label": "Office Name",
+      "type": "text",
+      "default": "Law Office"
+    },
+    {
+      "key": "serviceTitle",
+      "label": "Service Title",
+      "type": "text",
+      "default": "Commercial Contracts"
+    },
+    {
+      "key": "shortDescription",
+      "label": "Short Description",
+      "type": "textarea",
+      "default": "Clear legal support for your business."
+    },
+    {
+      "key": "phoneNumber",
+      "label": "Phone Number",
+      "type": "text",
+      "default": "05XXXXXXXX"
+    },
+    {
+      "key": "logo",
+      "label": "Logo",
+      "type": "image"
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#1e3a8a"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "question",
+      "name": "Legal Question Hook",
+      "start": 0,
+      "duration": 5,
+      "background": {
+        "type": "gradient",
+        "from": "#0f172a",
+        "to": "{{brandColor}}"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.35
+      },
+      "layers": [
+        {
+          "id": "question",
+          "type": "text",
+          "content": "Need legal clarity?",
+          "x": 100,
+          "y": 360,
+          "width": 880,
+          "height": 150,
+          "fontSize": 68,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "service",
+          "type": "text",
+          "content": "{{serviceTitle}}",
+          "x": 100,
+          "y": 560,
+          "width": 880,
+          "height": 100,
+          "fontSize": 48,
+          "fontWeight": "bold",
+          "color": "#bfdbfe",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "name": "Service Explanation",
+      "start": 5,
+      "duration": 6,
+      "background": {
+        "type": "color",
+        "value": "#ffffff"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "title",
+          "type": "text",
+          "content": "{{serviceTitle}}",
+          "x": 100,
+          "y": 260,
+          "width": 880,
+          "height": 120,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "desc",
+          "type": "text",
+          "content": "{{shortDescription}}",
+          "x": 120,
+          "y": 460,
+          "width": 840,
+          "height": 300,
+          "fontSize": 44,
+          "fontWeight": "600",
+          "color": "#111827",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "trust",
+      "name": "Trust Points",
+      "start": 11,
+      "duration": 5,
+      "background": {
+        "type": "color",
+        "value": "#f8fafc"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "trust-card",
+          "type": "shape",
+          "shape": "rect",
+          "x": 100,
+          "y": 300,
+          "width": 880,
+          "height": 660,
+          "color": "{{brandColor}}",
+          "opacity": 0.1,
+          "borderRadius": 36,
+          "safeMargin": true
+        },
+        {
+          "id": "trust-text",
+          "type": "text",
+          "content": "Contracts | Consultation | Follow-up",
+          "x": 130,
+          "y": 430,
+          "width": 820,
+          "height": 180,
+          "fontSize": 48,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "logo-trust",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 420,
+          "y": 780,
+          "width": 240,
+          "height": 130,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact",
+      "name": "Contact CTA",
+      "start": 16,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#0f172a"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "office",
+          "type": "text",
+          "content": "{{officeName}}",
+          "x": 100,
+          "y": 420,
+          "width": 880,
+          "height": 100,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "phone",
+          "type": "text",
+          "content": "{{phoneNumber}}",
+          "x": 100,
+          "y": 620,
+          "width": 880,
+          "height": 100,
+          "fontSize": 60,
+          "fontWeight": "bold",
+          "color": "#bfdbfe",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "logo",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 420,
+          "y": 860,
+          "width": 240,
+          "height": 130,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
+        }
+      ]
+    }
+  ],
+  "audio": {
+    "music": "/music/formal-trust.mp3",
+    "volume": 0.15
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
+}
