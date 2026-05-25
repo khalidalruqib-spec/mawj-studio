@@ -56,3 +56,7 @@ export function updateLocalProject(id: string, patch: Partial<StudioProject>) {
   projects.set(id, updated);
   return updated;
 }
+
+export function deleteLocalProject(id: string) {
+  return projects.delete(id);
+}

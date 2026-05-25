@@ -41,3 +41,8 @@ export const uploadUrlSchema = z.object({
   fileName: z.string().min(1),
   contentType: z.string().min(1),
 });
+
+export const updateProjectSchema = z.object({
+  title: z.string().min(1).max(120).optional(),
+  status: z.enum(["draft", "uploaded", "planned", "rendering", "completed", "failed"]).optional(),
+});

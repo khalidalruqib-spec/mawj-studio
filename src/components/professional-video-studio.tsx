@@ -37,6 +37,7 @@ import {
   Play,
   Plus,
   Redo2,
+  RefreshCw,
   Replace,
   Rocket,
   Save,
@@ -843,6 +844,12 @@ export function ProfessionalVideoStudio() {
     }
   }, []);
 
+  useEffect(() => {
+    if (activePanel === "dashboard") {
+      void loadProjects();
+    }
+  }, [activePanel, loadProjects]);
+
   function clearRenderedOutput() {
     setRenderResult(null);
     setRenderProgress(null);
@@ -1529,6 +1536,7 @@ export function ProfessionalVideoStudio() {
   }
 
   function trimSelectedLayer() {
+    if (!selectedLayer) return;
     commitTimeline((tracks) =>
       tracks.map((track) => ({
         ...track,
@@ -1541,7 +1549,28 @@ export function ProfessionalVideoStudio() {
     );
   }
 
+  function deleteSelectedLayer() {
+    if (!selectedLayer) return;
+
+    const nextTracks = timelineTracks.map((track) => ({
+      ...track,
+      layers: track.layers.filter((layer) => layer.id !== selectedLayer.id),
+    }));
+    const nextLayer = nextTracks.flatMap((track) => track.layers)[0] ?? null;
+
+    commitTimeline(nextTracks);
+    setSelectedLayerId(nextLayer?.id ?? "");
+    selectEngineLayer(nextLayer?.id ?? null);
+    setProjectStatus(`${selectedLayer.name} deleted from timeline`);
+  }
+
   function mergeVideoLayers() {
+    const videoTrack = timelineTracks.find((track) => track.kind === "video");
+    if (!videoTrack || videoTrack.layers.length < 2) {
+      setProjectStatus("Need at least two video clips to merge");
+      return;
+    }
+
     commitTimeline((tracks) =>
       tracks.map((track) => {
         if (track.kind !== "video" || track.layers.length < 2) return track;
@@ -1721,6 +1750,65 @@ export function ProfessionalVideoStudio() {
     if (saved.brandKit) setBrandKit(saved.brandKit);
     if (saved.engineProject) setEngineProject(saved.engineProject, { resetHistory: true });
     setProjectStatus("Local project snapshot loaded");
+  }
+
+  async function refreshProjectList() {
+    await loadProjects();
+    setProjectStatus("Project list refreshed");
+  }
+
+  async function updateProjectRecord(projectId: string) {
+    const existing = recentProjects.find((project) => project.id === projectId);
+    const isActive = activeProject?.id === projectId;
+    const nextStatus: StudioProject["status"] = isActive
+      ? plan
+        ? "planned"
+        : studioFile
+          ? "uploaded"
+          : "draft"
+      : existing?.status ?? "draft";
+    const nextTitle = isActive ? `${brandName || "Untitled"} · ${activeStyle.arabicName}` : existing?.title;
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: nextTitle,
+          status: nextStatus,
+        }),
+      });
+      const data = (await response.json()) as { project?: StudioProject; error?: string };
+      if (!response.ok || !data.project) throw new Error(data.error ?? "Could not update project.");
+
+      setRecentProjects((projects) =>
+        projects.map((project) => (project.id === projectId ? data.project! : project)),
+      );
+      if (activeProject?.id === projectId) setActiveProject(data.project);
+      setProjectStatus(`${data.project.title} updated`);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not update project.");
+    }
+  }
+
+  async function deleteProjectRecord(projectId: string) {
+    const existing = recentProjects.find((project) => project.id === projectId);
+    const confirmed =
+      typeof window === "undefined" ||
+      window.confirm(`Delete project "${existing?.title ?? projectId}"? This cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+      const data = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok || !data.ok) throw new Error(data.error ?? "Could not delete project.");
+
+      setRecentProjects((projects) => projects.filter((project) => project.id !== projectId));
+      if (activeProject?.id === projectId) setActiveProject(null);
+      setProjectStatus(`${existing?.title ?? "Project"} deleted`);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not delete project.");
+    }
   }
 
   function applyTemplatePreset(templateId: string) {
@@ -2159,7 +2247,13 @@ export function ProfessionalVideoStudio() {
 
         <section className="min-w-0 space-y-4">
           {activePanel === "dashboard" ? (
-            <DashboardPanel projects={recentProjects} projectStatus={projectStatus} />
+            <DashboardPanel
+              projects={recentProjects}
+              projectStatus={projectStatus}
+              onRefresh={refreshProjectList}
+              onUpdate={updateProjectRecord}
+              onDelete={deleteProjectRecord}
+            />
           ) : activePanel === "templates" ? (
             <TemplatesPanel activeTemplateId={activeTemplateId} onApply={applyTemplatePreset} />
           ) : activePanel === "collaboration" ? (
@@ -2175,6 +2269,8 @@ export function ProfessionalVideoStudio() {
                     <ToolbarButton label="Split" icon={Crop} onClick={splitSelectedLayer} />
                     <ToolbarButton label="Merge" icon={Layers3} onClick={mergeVideoLayers} />
                     <ToolbarButton label="Text" icon={Type} onClick={addTextLayer} />
+                    <ToolbarButton label="Update" icon={Save} onClick={saveProjectSnapshot} />
+                    <ToolbarButton label="Delete" icon={Trash2} onClick={deleteSelectedLayer} disabled={!selectedLayer} tone="danger" />
                     <ToolbarButton
                       label={isTranscribing ? "Captioning" : "Auto-caption"}
                       icon={isTranscribing ? Loader2 : Captions}
@@ -2381,7 +2477,7 @@ export function ProfessionalVideoStudio() {
           onLanguageChange={setLanguageMode}
           onGoalChange={setGoal}
         />
-        <LayerInspector layer={selectedLayer} onChange={updateSelectedLayer} />
+        <LayerInspector layer={selectedLayer} onChange={updateSelectedLayer} onDelete={deleteSelectedLayer} />
       </>
     );
   }
@@ -3285,28 +3381,70 @@ function BrandKitPanel({
   );
 }
 
-function DashboardPanel({ projects, projectStatus }: { projects: StudioProject[]; projectStatus: string }) {
+function DashboardPanel({
+  projects,
+  projectStatus,
+  onRefresh,
+  onUpdate,
+  onDelete,
+}: {
+  projects: StudioProject[];
+  projectStatus: string;
+  onRefresh: () => void;
+  onUpdate: (projectId: string) => void;
+  onDelete: (projectId: string) => void;
+}) {
   return (
     <section className="space-y-4">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardCard label="Projects" value={`${Math.max(projects.length, 12)}`} icon={FolderOpen} />
+        <DashboardCard label="Projects" value={`${projects.length}`} icon={FolderOpen} />
         <DashboardCard label="Uploaded media" value="48 assets" icon={UploadCloud} />
         <DashboardCard label="Export history" value="19 renders" icon={History} />
         <DashboardCard label="Storage usage" value="38.2 GB" icon={Cloud} />
       </div>
       <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <section className="panel p-4">
-          <PanelHeading icon={LayoutDashboard} title="User projects" />
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <PanelHeading icon={LayoutDashboard} title="User projects" />
+            <button
+              type="button"
+              onClick={onRefresh}
+              className="flex min-h-10 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-xs font-black transition hover:border-[var(--brand)]"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              Refresh
+            </button>
+          </div>
           <div className="space-y-2">
-            {(projects.length ? projects : createDemoProjects()).slice(0, 6).map((project) => (
-              <div key={project.id} className="grid gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3 sm:grid-cols-[1fr_auto]">
+            {projects.length ? projects.slice(0, 8).map((project) => (
+              <div key={project.id} className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3 lg:grid-cols-[1fr_auto]">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-black">{project.title}</p>
-                  <p className="mt-1 truncate text-xs font-semibold text-[var(--muted)]">{project.sourceFileName}</p>
+                  <p className="mt-1 truncate text-xs font-semibold text-[var(--muted)]">
+                    {project.sourceFileName} · {project.aspectRatio} · {new Date(project.updatedAt).toLocaleString()}
+                  </p>
                 </div>
-                <span className="rounded-md bg-black/25 px-2 py-1 text-xs font-black">{project.status}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-md bg-black/25 px-2 py-1 text-xs font-black">{project.status}</span>
+                  <button
+                    type="button"
+                    onClick={() => onUpdate(project.id)}
+                    className="min-h-9 rounded-md border border-[var(--line)] bg-black/20 px-3 text-[11px] font-black transition hover:border-[var(--brand)]"
+                  >
+                    Update
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(project.id)}
+                    className="min-h-9 rounded-md border border-red-400/40 bg-red-500/10 px-3 text-[11px] font-black text-red-100 transition hover:border-red-300"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-            ))}
+            )) : (
+              <EmptyMini label="No saved cloud projects yet. Upload a video and generate a plan to create one." />
+            )}
           </div>
         </section>
         <section className="panel p-4">
@@ -3587,9 +3725,11 @@ function ProjectSettingsPanel({
 function LayerInspector({
   layer,
   onChange,
+  onDelete,
 }: {
   layer: TimelineLayer | null;
   onChange: (patch: Partial<TimelineLayer>) => void;
+  onDelete: () => void;
 }) {
   if (!layer) {
     return (
@@ -3663,6 +3803,14 @@ function LayerInspector({
           />
         </Field>
       )}
+      <button
+        type="button"
+        onClick={onDelete}
+        className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm font-black text-red-100 transition hover:border-red-300"
+      >
+        <Trash2 className="h-4 w-4" aria-hidden="true" />
+        Delete selected layer
+      </button>
     </section>
   );
 }
@@ -3792,14 +3940,25 @@ function ToolbarButton({
   icon: Icon,
   onClick,
   disabled = false,
+  tone = "default",
 }: {
   label: string;
   icon: LucideIcon;
   onClick: () => void;
   disabled?: boolean;
+  tone?: "default" | "danger";
 }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className="flex min-h-10 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-xs font-black transition hover:border-[var(--brand)] disabled:opacity-40">
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-xs font-black transition disabled:opacity-40 ${
+        tone === "danger"
+          ? "border-red-400/40 bg-red-500/10 text-red-100 hover:border-red-300"
+          : "border-[var(--line)] bg-[var(--panel-soft)] hover:border-[var(--brand)]"
+      }`}
+    >
       <Icon className="h-4 w-4" aria-hidden="true" />
       {label}
     </button>
@@ -4946,32 +5105,6 @@ function colorForTemplateLayer(type: TemplateTimelineTrack["layers"][number]["ty
 function normalizeHexColor(value?: string) {
   if (!value || value.includes("{{") || !/^#[0-9a-f]{6}$/i.test(value)) return "#8ef7c2";
   return value;
-}
-
-function createDemoProjects(): StudioProject[] {
-  const now = new Date().toISOString();
-  return [
-    "TikTok product ad",
-    "Podcast clips batch",
-    "Arabic course promo",
-    "Restaurant launch reel",
-  ].map((title, index) => ({
-    id: `demo-${index}`,
-    title,
-    status: index === 0 ? "planned" : "completed",
-    styleId: index === 1 ? "podcast-cuts" : "viral-saudi",
-    platform: "tiktok",
-    aspectRatio: "9:16",
-    sourceFileName: `${title.toLowerCase().replaceAll(" ", "-")}.mp4`,
-    sourceFileSize: 28_000_000,
-    sourceMimeType: "video/mp4",
-    sourceDurationSeconds: 60,
-    storageBucket: "local-preview",
-    storagePath: null,
-    editPlan: null,
-    createdAt: now,
-    updatedAt: now,
-  }));
 }
 
 function getAssetKind(file: File): MediaAsset["kind"] {

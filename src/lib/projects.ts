@@ -1,5 +1,6 @@
 import {
   createLocalProject,
+  deleteLocalProject,
   getLocalProject,
   listLocalProjects,
   updateLocalProject,
@@ -20,6 +21,11 @@ export type CreateProjectInput = {
   sourceFileSize: number;
   sourceMimeType: string;
   sourceDurationSeconds: number;
+};
+
+export type UpdateProjectInput = {
+  title?: string;
+  status?: StudioProject["status"];
 };
 
 export async function listProjects() {
@@ -121,6 +127,43 @@ export async function updateProjectPlan(id: string, editPlan: EditPlan) {
 
   if (error) throw new Error(error.message);
   return rowToProject(data);
+}
+
+export async function updateProject(id: string, input: UpdateProjectInput) {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return updateLocalProject(id, input);
+  }
+
+  const update: Database["public"]["Tables"]["projects"]["Update"] = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.title !== undefined) update.title = input.title;
+  if (input.status !== undefined) update.status = input.status;
+
+  const { data, error } = await supabase
+    .from("projects")
+    .update(update)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return rowToProject(data);
+}
+
+export async function deleteProject(id: string) {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return deleteLocalProject(id);
+  }
+
+  const { error } = await supabase.from("projects").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  return true;
 }
 
 function projectInputToRow(input: CreateProjectInput): Database["public"]["Tables"]["projects"]["Insert"] {
