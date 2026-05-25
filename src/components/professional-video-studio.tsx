@@ -2,18 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Activity,
   BadgeCheck,
   BadgeDollarSign,
   Bot,
   Brain,
-  Building2,
   Captions,
   Clapperboard,
   Clock3,
   Cloud,
   Command,
   CreditCard,
+  Crown,
   Crop,
   Download,
   FileAudio2,
@@ -35,7 +34,6 @@ import {
   Palette,
   Pause,
   Play,
-  PlaySquare,
   Plus,
   Redo2,
   Replace,
@@ -84,6 +82,12 @@ import {
   type VideoStyle,
   type VideoStyleId,
 } from "@/lib/video-styles";
+import {
+  AD_TONES,
+  type AdCampaign,
+  type AdTone,
+  type AdVariant,
+} from "@/lib/ad-maker";
 
 type Goal = "engagement" | "sales" | "education" | "awareness";
 type PanelId =
@@ -158,6 +162,31 @@ type BrandKitState = {
   outro: string;
 };
 
+type TemplatePreset = {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  icon: LucideIcon;
+  platform: Platform;
+  aspectRatio: AspectRatio;
+  styleId: VideoStyleId;
+  goal: Goal;
+  captionTemplate: string;
+  backgroundMode: string;
+  audioTools: string[];
+  hook: string;
+  captions: string[];
+  timeline: Array<{
+    trackKind: TimelineTrack["kind"];
+    type: TimelineLayer["type"];
+    name: string;
+    start: number;
+    duration: number;
+    color: string;
+  }>;
+};
+
 type UploadUrlResponse = {
   mode: "supabase" | "local-preview";
   bucket: string;
@@ -182,6 +211,12 @@ type TranscribeStatusResponse = {
   model: string;
   directUploadLimitBytes: number;
   maxClientAudioSeconds: number;
+};
+
+type AdMakerResponse = {
+  campaign?: AdCampaign;
+  model?: string;
+  error?: string;
 };
 
 const GOAL_LABELS: Record<Goal, string> = {
@@ -237,18 +272,156 @@ const SAMPLE_TRANSCRIPT: TranscriptSegment[] = [
   },
 ];
 
-const TEMPLATE_GROUPS = [
-  { name: "TikTok", count: 18, icon: Zap, tone: "Fast hooks, jump cuts, karaoke captions" },
-  { name: "Instagram Reels", count: 16, icon: PlaySquare, tone: "Polished social edits and covers" },
-  { name: "YouTube Shorts", count: 14, icon: ListVideo, tone: "Retention-first educational shorts" },
-  { name: "Product Ads", count: 22, icon: BadgeDollarSign, tone: "Hook, problem, product, CTA" },
-  { name: "Podcast", count: 12, icon: Mic2, tone: "Clean cuts, quote cards, captions" },
-  { name: "Educational", count: 15, icon: Brain, tone: "Chapters, callouts, summary cards" },
-  { name: "Lecture", count: 9, icon: Command, tone: "Readable notes and topic splits" },
-  { name: "News", count: 8, icon: Activity, tone: "Lower thirds and fast context" },
-  { name: "Real Estate", count: 11, icon: Building2, tone: "Walkthroughs, area labels, pricing" },
-  { name: "Restaurant", count: 13, icon: Sparkles, tone: "Food closeups, menu labels, offers" },
-  { name: "Legal / Business", count: 10, icon: ShieldCheck, tone: "Formal captions and trust cues" },
+const TEMPLATE_PRESETS: TemplatePreset[] = [
+  {
+    id: "tiktok-hook-sprint",
+    name: "TikTok Hook Sprint",
+    category: "Creator",
+    description: "9:16 hook, jump cuts, big Arabic captions, and a 30s social cut.",
+    icon: Zap,
+    platform: "tiktok",
+    aspectRatio: "9:16",
+    styleId: "viral-saudi",
+    goal: "engagement",
+    captionTemplate: "Saudi Viral Bold",
+    backgroundMode: "Blurred vertical fill",
+    audioTools: ["Noise reduction", "Voice enhancement", "Auto volume leveling"],
+    hook: "لا تكمل قبل ما تشوف النتيجة.",
+    captions: ["أول 3 ثواني لازم تمسك الانتباه.", "قصينا الصمت وخلينا الإيقاع أسرع.", "احفظ المقطع وطبقه على محتواك."],
+    timeline: [
+      { trackKind: "overlay", type: "text", name: "0-3s punch hook", start: 0, duration: 3, color: "#facc15" },
+      { trackKind: "effects", type: "effect", name: "Jump cut rhythm", start: 3, duration: 14, color: "#fb7185" },
+      { trackKind: "caption", type: "caption", name: "Karaoke captions", start: 0, duration: 30, color: "#fb923c" },
+    ],
+  },
+  {
+    id: "product-ugc-ad",
+    name: "UGC Product Ad",
+    category: "Ads",
+    description: "Problem, product reveal, benefits, proof, CTA for TikTok and Reels.",
+    icon: BadgeDollarSign,
+    platform: "instagram",
+    aspectRatio: "9:16",
+    styleId: "product-drop",
+    goal: "sales",
+    captionTemplate: "Offer Pop",
+    backgroundMode: "Studio gradient",
+    audioTools: ["Noise reduction", "Voice enhancement", "Auto volume leveling"],
+    hook: "المشكلة أبسط مما تتوقع.",
+    captions: ["ابدأ بالمشكلة اللي يحس فيها العميل.", "اعرض المنتج كحل واضح.", "اختم بعرض أو دعوة طلب مباشرة."],
+    timeline: [
+      { trackKind: "overlay", type: "text", name: "Problem headline", start: 0, duration: 4, color: "#facc15" },
+      { trackKind: "overlay", type: "text", name: "Benefit callouts", start: 5, duration: 12, color: "#8ef7c2" },
+      { trackKind: "effects", type: "effect", name: "Product zooms", start: 4, duration: 18, color: "#36d399" },
+      { trackKind: "overlay", type: "text", name: "CTA end card", start: 24, duration: 5, color: "#c084fc" },
+    ],
+  },
+  {
+    id: "luxury-brand-film",
+    name: "Luxury Brand Film",
+    category: "Brand",
+    description: "Cinematic pacing, clean typography, and premium color treatment.",
+    icon: Crown,
+    platform: "instagram",
+    aspectRatio: "9:16",
+    styleId: "premium-brand",
+    goal: "awareness",
+    captionTemplate: "Luxury Minimal",
+    backgroundMode: "Studio gradient",
+    audioTools: ["Voice enhancement", "Echo reduction", "Auto volume leveling"],
+    hook: "تفاصيل صغيرة تصنع فرق كبير.",
+    captions: ["خلي البراند يظهر بثقة وهدوء.", "استخدم لقطات قريبة ونص قليل.", "اختم برسالة واضحة وسهلة التذكر."],
+    timeline: [
+      { trackKind: "effects", type: "effect", name: "Cinematic color grade", start: 0, duration: 45, color: "#d7b56d" },
+      { trackKind: "overlay", type: "text", name: "Minimal title", start: 1, duration: 5, color: "#fff0b8" },
+      { trackKind: "overlay", type: "image", name: "Logo outro", start: 38, duration: 5, color: "#c084fc" },
+    ],
+  },
+  {
+    id: "podcast-clip",
+    name: "Podcast Clip",
+    category: "Podcast",
+    description: "Quote card, filler cleanup, pause removal, and readable captions.",
+    icon: Mic2,
+    platform: "shorts",
+    aspectRatio: "9:16",
+    styleId: "podcast-cuts",
+    goal: "engagement",
+    captionTemplate: "Podcast Clean",
+    backgroundMode: "Podcast room",
+    audioTools: ["Noise reduction", "Voice enhancement", "Echo reduction"],
+    hook: "الجملة هذي تختصر الموضوع.",
+    captions: ["ابدأ بأقوى اقتباس من الضيف.", "احذف الترددات والسكتات الطويلة.", "خلي العنوان ثابت وواضح."],
+    timeline: [
+      { trackKind: "overlay", type: "text", name: "Quote card", start: 0, duration: 6, color: "#7dd3fc" },
+      { trackKind: "effects", type: "effect", name: "Filler cleanup markers", start: 6, duration: 22, color: "#60a5fa" },
+      { trackKind: "caption", type: "caption", name: "Podcast captions", start: 0, duration: 42, color: "#fb923c" },
+    ],
+  },
+  {
+    id: "course-lesson-short",
+    name: "Course Lesson Short",
+    category: "Education",
+    description: "Numbered lesson beats, topic split, summary, and final save CTA.",
+    icon: Brain,
+    platform: "shorts",
+    aspectRatio: "9:16",
+    styleId: "educational",
+    goal: "education",
+    captionTemplate: "Educational Steps",
+    backgroundMode: "Classroom",
+    audioTools: ["Voice enhancement", "Auto volume leveling"],
+    hook: "ثلاث نقاط تختصر عليك الدرس.",
+    captions: ["النقطة الأولى: الفكرة الأساسية.", "النقطة الثانية: مثال سريع.", "النقطة الثالثة: تطبيق مباشر."],
+    timeline: [
+      { trackKind: "overlay", type: "text", name: "Step 1", start: 0, duration: 7, color: "#a78bfa" },
+      { trackKind: "overlay", type: "text", name: "Step 2", start: 8, duration: 7, color: "#7dd3fc" },
+      { trackKind: "overlay", type: "text", name: "Step 3", start: 16, duration: 7, color: "#8ef7c2" },
+      { trackKind: "overlay", type: "text", name: "Summary card", start: 25, duration: 6, color: "#facc15" },
+    ],
+  },
+  {
+    id: "restaurant-offer-reel",
+    name: "Restaurant Offer Reel",
+    category: "Local business",
+    description: "Food closeups, menu labels, branch/location card, and offer CTA.",
+    icon: Sparkles,
+    platform: "snapchat",
+    aspectRatio: "9:16",
+    styleId: "restaurant-ad",
+    goal: "sales",
+    captionTemplate: "Food Pop",
+    backgroundMode: "Blurred vertical fill",
+    audioTools: ["Auto volume leveling", "Noise reduction"],
+    hook: "اللقطة هذي تكفي تفتح الشهية.",
+    captions: ["اعرض أقرب لقطة للأكل أولاً.", "أظهر اسم الصنف أو العرض.", "اختم بالموقع والطلب."],
+    timeline: [
+      { trackKind: "effects", type: "effect", name: "Food saturation boost", start: 0, duration: 28, color: "#ff9f1c" },
+      { trackKind: "overlay", type: "text", name: "Menu label", start: 4, duration: 8, color: "#ffe066" },
+      { trackKind: "overlay", type: "text", name: "Branch and offer CTA", start: 22, duration: 6, color: "#c084fc" },
+    ],
+  },
+  {
+    id: "business-trust-explainer",
+    name: "Business Trust Explainer",
+    category: "B2B",
+    description: "Formal 16:9/9:16 explainer with trust cues, proof, and clean captions.",
+    icon: ShieldCheck,
+    platform: "instagram",
+    aspectRatio: "16:9",
+    styleId: "educational",
+    goal: "awareness",
+    captionTemplate: "Formal Clean",
+    backgroundMode: "Office",
+    audioTools: ["Voice enhancement", "Echo reduction", "Auto volume leveling"],
+    hook: "القرار الصحيح يبدأ بمعلومة واضحة.",
+    captions: ["عرّف المشكلة بدون مبالغة.", "قدّم الدليل أو الأرقام المهمة.", "اختم بخطوة تواصل واضحة."],
+    timeline: [
+      { trackKind: "overlay", type: "text", name: "Authority lower third", start: 0, duration: 8, color: "#7dd3fc" },
+      { trackKind: "effects", type: "effect", name: "Clean corporate grade", start: 0, duration: 45, color: "#a78bfa" },
+      { trackKind: "overlay", type: "text", name: "Proof card", start: 12, duration: 10, color: "#8ef7c2" },
+    ],
+  },
 ];
 
 const AI_ACTIONS = [
@@ -347,6 +520,7 @@ export function ProfessionalVideoStudio() {
   const [timelineRedo, setTimelineRedo] = useState<TimelineTrack[][]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState("clip-main");
   const [timelineZoom, setTimelineZoom] = useState(1);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<TranscriptSegment[]>(SAMPLE_TRANSCRIPT);
   const [transcriptSearch, setTranscriptSearch] = useState("");
   const [captions, setCaptions] = useState<CaptionLine[]>(() => transcriptToCaptions(SAMPLE_TRANSCRIPT));
@@ -363,8 +537,9 @@ export function ProfessionalVideoStudio() {
     outro: "Follow / CTA screen",
   });
   const [adProductName, setAdProductName] = useState("Premium Saudi coffee");
-  const [adTone, setAdTone] = useState("luxury");
+  const [adTone, setAdTone] = useState<AdTone>("luxury");
   const [adOutput, setAdOutput] = useState("");
+  const [adCampaign, setAdCampaign] = useState<AdCampaign | null>(null);
   const [assistantCommand, setAssistantCommand] = useState("");
   const [assistantMessages, setAssistantMessages] = useState([
     "Ready. Try: Add Arabic captions, Remove silence, Extract best 5 clips, or Create an ad version.",
@@ -375,6 +550,7 @@ export function ProfessionalVideoStudio() {
   const [isUploading, setIsUploading] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isAdGenerating, setIsAdGenerating] = useState(false);
   const [transcriptionMode, setTranscriptionMode] = useState<"openai" | "demo" | null>(null);
   const [transcriptionNotice, setTranscriptionNotice] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -1030,12 +1206,115 @@ export function ProfessionalVideoStudio() {
     setProjectStatus("Local project snapshot loaded");
   }
 
-  function generateAdVersion() {
-    const hook = adTone === "funny" ? "Wait... this actually works." : `Make ${adProductName} look impossible to ignore.`;
-    setAdOutput(
-      `${hook}\n15s: Problem -> Product closeup -> CTA.\n30s: Hook -> 3 benefits -> proof -> CTA.\n60s: Story -> demonstration -> offer -> CTA.\nCaption: ${adProductName} جاهز يغيّر طريقتك.\nHashtags: #اعلان #تيك_توك #ريلز #MawjStudio`,
+  function applyTemplatePreset(templateId: string) {
+    const template = TEMPLATE_PRESETS.find((item) => item.id === templateId);
+    if (!template) return;
+
+    const durationSeconds = studioFile?.durationSeconds ?? 45;
+    const templateCaptions = createTemplateCaptions(template, durationSeconds);
+
+    setActiveTemplateId(template.id);
+    setPlatform(template.platform);
+    setAspectRatio(template.aspectRatio);
+    setStyleId(template.styleId);
+    setGoal(template.goal);
+    setCaptionTemplate(template.captionTemplate);
+    setBackgroundMode(template.backgroundMode);
+    setActiveAudioTools(toEnabledTools(template.audioTools));
+    setCaptions(templateCaptions);
+    setPlan(
+      createTemplateEditPlan({
+        template,
+        brandName,
+        durationSeconds,
+      }),
     );
-    setProjectStatus("AI ad versions generated");
+    commitTimeline((tracks) => applyTemplateToTimeline(tracks, template, durationSeconds));
+    setActivePanel("editor");
+    setProjectStatus(`${template.name} applied to timeline, captions, format, audio, and render plan`);
+    setAssistantMessages((messages) => [
+      `Template applied: ${template.name}. Format ${template.aspectRatio}, style ${template.captionTemplate}, ${template.audioTools.length} audio tools enabled.`,
+      ...messages,
+    ]);
+  }
+
+  async function generateAdVersion() {
+    const productName = adProductName.trim();
+    if (!productName) {
+      setError("اكتب اسم المنتج أو الخدمة أولاً.");
+      return;
+    }
+
+    setIsAdGenerating(true);
+    setError("");
+    setProjectStatus("Generating real AI ad campaign...");
+
+    try {
+      const response = await fetch("/api/ad-maker", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productName,
+          tone: adTone,
+          brandName,
+          platform,
+          aspectRatio,
+          goal,
+          languageMode,
+          durationSeconds: studioFile?.durationSeconds ?? 60,
+          assetNames: mediaAssets.map((asset) => asset.name),
+          transcriptPreview: transcript
+            .filter((segment) => !segment.deleted)
+            .slice(0, 10)
+            .map((segment) => `${formatDuration(segment.start)} ${segment.text}`)
+            .join("\n"),
+        }),
+      });
+      const data = (await response.json()) as AdMakerResponse;
+      if (!response.ok || !data.campaign) {
+        throw new Error(data.error ?? "Could not generate AI ad campaign.");
+      }
+
+      const campaign = data.campaign;
+      setAdCampaign(campaign);
+      setAdOutput(formatAdCampaign(campaign));
+      applyAdCampaignToProject(campaign);
+      setProjectStatus(`AI Ad Maker generated and applied using ${data.model ?? "OpenAI"}`);
+      setAssistantMessages((messages) => [
+        `AI Ad Maker: ${campaign.title}. Applied 30s version to timeline with captions and CTA.`,
+        ...messages,
+      ]);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? cleanOpenAIError(caughtError.message) : "Could not generate AI ad campaign.");
+    } finally {
+      setIsAdGenerating(false);
+    }
+  }
+
+  function applyAdCampaignToProject(campaign: AdCampaign) {
+    const variant = pickPrimaryAdVariant(campaign);
+    if (!variant) return;
+
+    setStyleId("product-drop");
+    setGoal("sales");
+    setCaptionTemplate("Offer Pop");
+    setActiveAudioTools((tools) => ({
+      ...tools,
+      "Noise reduction": true,
+      "Voice enhancement": true,
+      "Auto volume leveling": true,
+    }));
+    setCaptions(adVariantToCaptions(variant));
+    setPlan(
+      createAdCampaignEditPlan({
+        campaign,
+        variant,
+        brandName,
+        aspectRatio,
+      }),
+    );
+    commitTimeline((tracks) => applyAdVariantToTimeline(tracks, variant));
+    setActivePanel("editor");
   }
 
   function runAssistantCommand() {
@@ -1075,7 +1354,7 @@ export function ProfessionalVideoStudio() {
       response = "Background remover is set to replace the original with a studio background.";
     } else if (normalized.includes("ad")) {
       setActivePanel("ad-maker");
-      generateAdVersion();
+      void generateAdVersion();
       response = "Generated ad hooks, script structure, captions, CTA, and three durations.";
     } else if (normalized.includes("professional")) {
       setStyleId("premium-brand");
@@ -1265,7 +1544,7 @@ export function ProfessionalVideoStudio() {
           {activePanel === "dashboard" ? (
             <DashboardPanel projects={recentProjects} projectStatus={projectStatus} />
           ) : activePanel === "templates" ? (
-            <TemplatesPanel onApply={(name) => setProjectStatus(`${name} template applied`)} />
+            <TemplatesPanel activeTemplateId={activeTemplateId} onApply={applyTemplatePreset} />
           ) : activePanel === "collaboration" ? (
             <CollaborationPanel />
           ) : (
@@ -1424,9 +1703,15 @@ export function ProfessionalVideoStudio() {
           productName={adProductName}
           tone={adTone}
           output={adOutput}
+          campaign={adCampaign}
+          isGenerating={isAdGenerating}
           onProductNameChange={setAdProductName}
           onToneChange={setAdTone}
           onGenerate={generateAdVersion}
+          onApply={() => {
+            if (!adCampaign) return;
+            applyAdCampaignToProject(adCampaign);
+          }}
         />
       );
     }
@@ -2006,33 +2291,49 @@ function AudioPanel({
   );
 }
 
-function TemplatesPanel({ onApply }: { onApply: (name: string) => void }) {
+function TemplatesPanel({
+  activeTemplateId,
+  onApply,
+}: {
+  activeTemplateId: string | null;
+  onApply: (templateId: string) => void;
+}) {
   return (
     <section className="panel p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <PanelHeading icon={LayoutTemplate} title="Template library" />
         <span className="rounded-md bg-[var(--brand-soft)] px-2 py-1 text-xs font-black text-[var(--brand)]">
-          Social-first
+          Applies to timeline
         </span>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {TEMPLATE_GROUPS.map((template) => {
+        {TEMPLATE_PRESETS.map((template) => {
           const Icon = template.icon;
+          const active = activeTemplateId === template.id;
           return (
             <button
-              key={template.name}
+              key={template.id}
               type="button"
-              onClick={() => onApply(template.name)}
-              className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-4 text-left transition hover:border-[var(--brand)]"
+              onClick={() => onApply(template.id)}
+              className={`rounded-lg border p-4 text-left transition ${
+                active
+                  ? "border-[var(--brand)] bg-[var(--brand-soft)]"
+                  : "border-[var(--line)] bg-[var(--panel-soft)] hover:border-[var(--brand)]"
+              }`}
             >
               <div className="mb-3 flex items-center justify-between gap-2">
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
                   <Icon className="h-5 w-5" aria-hidden="true" />
                 </span>
-                <span className="rounded-md bg-black/25 px-2 py-1 text-xs font-black">{template.count}</span>
+                <span className="rounded-md bg-black/25 px-2 py-1 text-xs font-black">{template.aspectRatio}</span>
               </div>
               <p className="text-base font-black">{template.name}</p>
-              <p className="mt-2 text-sm font-semibold leading-6 text-[var(--muted)]">{template.tone}</p>
+              <p className="mt-1 text-xs font-black text-[var(--brand)]">{template.category}</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-[var(--muted)]">{template.description}</p>
+              <div className="mt-3 flex flex-wrap gap-1">
+                <span className="rounded-md bg-black/25 px-2 py-1 text-[11px] font-black">{PLATFORM_LABELS[template.platform]}</span>
+                <span className="rounded-md bg-black/25 px-2 py-1 text-[11px] font-black">{template.captionTemplate}</span>
+              </div>
             </button>
           );
         })}
@@ -2045,16 +2346,22 @@ function AdMakerPanel({
   productName,
   tone,
   output,
+  campaign,
+  isGenerating,
   onProductNameChange,
   onToneChange,
   onGenerate,
+  onApply,
 }: {
   productName: string;
-  tone: string;
+  tone: AdTone;
   output: string;
+  campaign: AdCampaign | null;
+  isGenerating: boolean;
   onProductNameChange: (name: string) => void;
-  onToneChange: (tone: string) => void;
+  onToneChange: (tone: AdTone) => void;
   onGenerate: () => void;
+  onApply: () => void;
 }) {
   return (
     <section className="panel p-4">
@@ -2063,25 +2370,45 @@ function AdMakerPanel({
         <input value={productName} onChange={(event) => onProductNameChange(event.target.value)} className="control-input" />
       </Field>
       <Field label="Tone">
-        <select value={tone} onChange={(event) => onToneChange(event.target.value)} className="control-select">
-          <option value="luxury">Luxury</option>
-          <option value="funny">Funny</option>
-          <option value="formal">Formal</option>
-          <option value="youthful">Youthful</option>
-          <option value="educational">Educational</option>
-          <option value="commercial">Commercial</option>
+        <select value={tone} onChange={(event) => onToneChange(event.target.value as AdTone)} className="control-select">
+          {AD_TONES.map((item) => (
+            <option key={item.id} value={item.id}>{item.label}</option>
+          ))}
         </select>
       </Field>
-      <button type="button" onClick={onGenerate} className="mb-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 py-2 text-sm font-black text-black">
-        <Rocket className="h-4 w-4" aria-hidden="true" />
-        Generate ad versions
+      <button
+        type="button"
+        onClick={onGenerate}
+        disabled={isGenerating}
+        className="mb-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 py-2 text-sm font-black text-black disabled:opacity-60"
+      >
+        {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Rocket className="h-4 w-4" aria-hidden="true" />}
+        {isGenerating ? "Generating real campaign..." : "Generate and apply ad"}
       </button>
-      {output ? (
-        <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-[var(--line)] bg-black/25 p-3 text-xs font-semibold leading-6 text-[var(--foreground)]">
-          {output}
-        </pre>
+      {campaign ? (
+        <div className="space-y-3">
+          <div className="rounded-lg border border-[var(--brand)] bg-[var(--brand-soft)] p-3">
+            <p className="text-sm font-black">{campaign.title}</p>
+            <p className="mt-2 text-xs font-bold leading-5 text-[var(--muted)]">{campaign.strategy}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {campaign.variants.map((variant) => (
+              <div key={variant.id} className="rounded-lg border border-[var(--line)] bg-black/20 p-2">
+                <p className="text-xs font-black text-[var(--brand)]">{variant.id}</p>
+                <p className="mt-1 line-clamp-3 text-[11px] font-bold leading-5 text-[var(--muted)]">{variant.hook}</p>
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={onApply} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-xs font-black text-black transition hover:bg-[var(--brand)]">
+            <Layers3 className="h-4 w-4" aria-hidden="true" />
+            Apply selected campaign again
+          </button>
+          <pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-lg border border-[var(--line)] bg-black/25 p-3 text-xs font-semibold leading-6 text-[var(--foreground)]">
+            {output}
+          </pre>
+        </div>
       ) : (
-        <EmptyMini label="Upload product media, choose tone, generate 15s/30s/60s ads." />
+        <EmptyMini label="Uses OpenAI to create 15s, 30s, and 60s ad scripts, captions, scenes, CTA, hashtags, then applies the 30s version to the timeline." />
       )}
     </section>
   );
@@ -2848,6 +3175,293 @@ function createCaptionRenderPlan({
       { platform: "Thumbnail", duration: "1 frame", caption: "Cover-ready still export." },
     ],
   };
+}
+
+function createTemplateCaptions(template: TemplatePreset, durationSeconds: number): CaptionLine[] {
+  const targetDuration = Math.min(Math.max(18, durationSeconds), 45);
+  const segmentDuration = targetDuration / template.captions.length;
+
+  return template.captions.map((text, index) => ({
+    id: `template-cap-${template.id}-${index}`,
+    start: Number((index * segmentDuration).toFixed(2)),
+    end: Number(Math.min(targetDuration, (index + 1) * segmentDuration).toFixed(2)),
+    text,
+  }));
+}
+
+function createTemplateEditPlan({
+  template,
+  brandName,
+  durationSeconds,
+}: {
+  template: TemplatePreset;
+  brandName: string;
+  durationSeconds: number;
+}): EditPlan {
+  const targetDurationSeconds = Math.min(Math.max(18, Math.round(durationSeconds || 30)), 60);
+
+  return {
+    id: `template-plan-${template.id}-${Date.now()}`,
+    title: `${template.name} · ${brandName || "Mawj Studio"}`,
+    hook: template.hook,
+    summary: `${template.description} Applied as a real timeline, caption, audio, and export preset.`,
+    targetDurationSeconds,
+    styleId: template.styleId,
+    confidence: 90,
+    renderSettings: {
+      aspectRatio: template.aspectRatio,
+      resolution: template.aspectRatio === "16:9" ? "1920x1080" : template.aspectRatio === "1:1" ? "1080x1080" : "1080x1920",
+      fps: 30,
+      loudness: "-14 LUFS",
+      safeMargins: "12% captions / 8% UI safe zones",
+    },
+    timeline: template.timeline.map((item, index) => ({
+      id: `template-step-${index}`,
+      label: item.name,
+      start: item.start,
+      end: item.start + item.duration,
+      action: `${item.name} using ${template.name}.`,
+      intensity: index === 0 ? "high" : "medium",
+    })),
+    captions: createTemplateCaptions(template, targetDurationSeconds).map((caption) => ({
+      at: caption.start,
+      text: caption.text,
+      emphasis: [],
+    })),
+    aiTools: [
+      ...template.audioTools.map((tool) => ({
+        name: tool,
+        status: "ready" as const,
+        detail: "Enabled by the selected template.",
+      })),
+      { name: "Template timeline", status: "ready", detail: "Overlay, caption, and effect layers were added to the project timeline." },
+    ],
+    exportVariants: [
+      { platform: PLATFORM_LABELS[template.platform], duration: `${targetDurationSeconds}s`, caption: template.description },
+      { platform: "MP4", duration: `${targetDurationSeconds}s`, caption: "Captioned edited export." },
+      { platform: "SRT", duration: `${targetDurationSeconds}s`, caption: "Template captions as subtitle file." },
+    ],
+  };
+}
+
+function applyTemplateToTimeline(
+  tracks: TimelineTrack[],
+  template: TemplatePreset,
+  durationSeconds: number,
+): TimelineTrack[] {
+  const templateDuration = Math.min(Math.max(18, durationSeconds), 60);
+
+  return tracks.map((track) => {
+    const generatedLayers = template.timeline
+      .filter((item) => item.trackKind === track.kind)
+      .map((item, index): TimelineLayer => ({
+        id: `template-${template.id}-${track.kind}-${index}`,
+        type: item.type,
+        name: item.name,
+        start: item.start,
+        duration: Math.min(item.duration, Math.max(1, templateDuration - item.start)),
+        color: item.color,
+      }));
+
+    const keptLayers = track.layers.filter((layer) => !isGeneratedEditingLayer(layer));
+
+    if (track.kind === "caption") {
+      return {
+        ...track,
+        layers: [
+          ...keptLayers.filter((layer) => layer.id !== "caption-main"),
+          {
+            id: `template-${template.id}-caption-main`,
+            type: "caption",
+            name: `${template.captionTemplate} captions`,
+            start: 0,
+            duration: templateDuration,
+            color: "#fb923c",
+          },
+          ...generatedLayers,
+        ],
+      };
+    }
+
+    return {
+      ...track,
+      layers: [...keptLayers, ...generatedLayers],
+    };
+  });
+}
+
+function toEnabledTools(tools: string[]) {
+  return tools.reduce<Record<string, boolean>>((enabled, tool) => {
+    enabled[tool] = true;
+    return enabled;
+  }, {});
+}
+
+function pickPrimaryAdVariant(campaign: AdCampaign) {
+  return (
+    campaign.variants.find((variant) => variant.id === "30s") ??
+    campaign.variants.find((variant) => variant.id === "15s") ??
+    campaign.variants[0] ??
+    null
+  );
+}
+
+function adVariantToCaptions(variant: AdVariant): CaptionLine[] {
+  return variant.scenes.map((scene) => ({
+    id: `ad-cap-${variant.id}-${scene.id}`,
+    start: scene.start,
+    end: scene.end,
+    text: scene.caption,
+  }));
+}
+
+function applyAdVariantToTimeline(tracks: TimelineTrack[], variant: AdVariant): TimelineTrack[] {
+  return tracks.map((track) => {
+    const keptLayers = track.layers.filter((layer) => !isGeneratedEditingLayer(layer));
+
+    if (track.kind === "overlay") {
+      return {
+        ...track,
+        layers: [
+          ...keptLayers,
+          ...variant.scenes.map((scene, index): TimelineLayer => ({
+            id: `ad-scene-overlay-${variant.id}-${scene.id}`,
+            type: "text",
+            name: scene.overlay || `Ad scene ${index + 1}`,
+            start: scene.start,
+            duration: Math.max(1, scene.end - scene.start),
+            color: index % 2 === 0 ? "#facc15" : "#8ef7c2",
+          })),
+        ],
+      };
+    }
+
+    if (track.kind === "caption") {
+      return {
+        ...track,
+        layers: [
+          ...keptLayers.filter((layer) => layer.id !== "caption-main"),
+          {
+            id: `ad-scene-captions-${variant.id}`,
+            type: "caption",
+            name: `${variant.id} AI ad captions`,
+            start: 0,
+            duration: variant.durationSeconds,
+            color: "#fb923c",
+          },
+        ],
+      };
+    }
+
+    if (track.kind === "effects") {
+      return {
+        ...track,
+        layers: [
+          ...keptLayers,
+          ...variant.scenes.map((scene, index): TimelineLayer => ({
+            id: `ad-scene-effect-${variant.id}-${scene.id}`,
+            type: "effect",
+            name: scene.shotType || `Scene ${index + 1} pacing`,
+            start: scene.start,
+            duration: Math.max(1, scene.end - scene.start),
+            color: index % 2 === 0 ? "#36d399" : "#a78bfa",
+          })),
+        ],
+      };
+    }
+
+    return { ...track, layers: keptLayers };
+  });
+}
+
+function createAdCampaignEditPlan({
+  campaign,
+  variant,
+  brandName,
+  aspectRatio,
+}: {
+  campaign: AdCampaign;
+  variant: AdVariant;
+  brandName: string;
+  aspectRatio: AspectRatio;
+}): EditPlan {
+  return {
+    id: `ad-plan-${Date.now()}`,
+    title: `${campaign.title} · ${variant.id}`,
+    hook: variant.hook || campaign.primaryHook,
+    summary: campaign.strategy,
+    targetDurationSeconds: variant.durationSeconds,
+    styleId: "product-drop",
+    confidence: 93,
+    renderSettings: {
+      aspectRatio,
+      resolution: aspectRatio === "16:9" ? "1920x1080" : aspectRatio === "1:1" ? "1080x1080" : "1080x1920",
+      fps: 30,
+      loudness: "-14 LUFS",
+      safeMargins: "12% captions / 8% UI safe zones",
+    },
+    timeline: variant.scenes.map((scene, index) => ({
+      id: scene.id || `scene-${index + 1}`,
+      label: scene.overlay || `Scene ${index + 1}`,
+      start: scene.start,
+      end: scene.end,
+      action: `${scene.visual} Voiceover: ${scene.voiceover}`,
+      intensity: index === 0 ? "high" : "medium",
+    })),
+    captions: variant.scenes.map((scene) => ({
+      at: scene.start,
+      text: scene.caption,
+      emphasis: [],
+    })),
+    aiTools: [
+      { name: "AI Ad Maker", status: "ready", detail: `${brandName || "Mawj Studio"} campaign generated from product brief.` },
+      { name: "Scene builder", status: "ready", detail: `${variant.scenes.length} timestamped scenes applied to the timeline.` },
+      { name: "Caption writer", status: "ready", detail: "Arabic-first ad captions are ready for burn-in and SRT export." },
+      { name: "Platform packaging", status: "ready", detail: campaign.platformNotes.join(" ") },
+    ],
+    exportVariants: campaign.variants.map((item) => ({
+      platform: item.id,
+      duration: `${item.durationSeconds}s`,
+      caption: item.hook,
+    })),
+  };
+}
+
+function formatAdCampaign(campaign: AdCampaign) {
+  const variants = campaign.variants
+    .map((variant) => {
+      const scenes = variant.scenes
+        .map((scene) => `${formatDuration(scene.start)}-${formatDuration(scene.end)} ${scene.overlay}: ${scene.caption}`)
+        .join("\n");
+
+      return `${variant.id} · ${variant.hook}\n${variant.script}\nCTA: ${variant.cta}\n${scenes}`;
+    })
+    .join("\n\n");
+
+  return [
+    campaign.title,
+    campaign.strategy,
+    `Audience: ${campaign.targetAudience}`,
+    `Hook: ${campaign.primaryHook}`,
+    `CTA: ${campaign.cta}`,
+    `Hashtags: ${campaign.hashtags.join(" ")}`,
+    variants,
+  ].join("\n\n");
+}
+
+function isGeneratedEditingLayer(layer: TimelineLayer) {
+  return layer.id.startsWith("template-") || layer.id.startsWith("ad-scene-");
+}
+
+function cleanOpenAIError(message: string) {
+  try {
+    const parsed = JSON.parse(message) as { error?: { message?: string } };
+    if (parsed.error?.message) return parsed.error.message;
+  } catch {
+    // Keep the original message when it is not JSON.
+  }
+
+  return message.replace(/sk-[A-Za-z0-9_-]+/g, "sk-***");
 }
 
 function createDemoProjects(): StudioProject[] {
