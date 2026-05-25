@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   BadgeCheck,
@@ -27,6 +27,13 @@ import {
 } from "lucide-react";
 import type { EditPlan } from "@/lib/edit-plan";
 import type { StudioProject } from "@/lib/project-store";
+import {
+  getCaptionForTime,
+  getPreviewFilter,
+  renderEditedVideo,
+  type BrowserRenderProgress,
+  type BrowserRenderResult,
+} from "@/lib/browser-video-renderer";
 import {
   createSupabaseBrowserClient,
   hasSupabaseBrowserEnv,
@@ -81,6 +88,10 @@ export function StudioWorkspace() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isRendering, setIsRendering] = useState(false);
+  const [previewTime, setPreviewTime] = useState(0);
+  const [renderProgress, setRenderProgress] = useState<BrowserRenderProgress | null>(null);
+  const [renderResult, setRenderResult] = useState<BrowserRenderResult | null>(null);
   const [error, setError] = useState("");
   const [storageStatus, setStorageStatus] = useState("No project saved yet");
 
@@ -88,6 +99,29 @@ export function StudioWorkspace() {
     () => VIDEO_STYLES.find((style) => style.id === styleId) ?? VIDEO_STYLES[0],
     [styleId],
   );
+
+  const previewFilter = useMemo(() => getPreviewFilter(styleId), [styleId]);
+  const previewCaption = useMemo(
+    () => getCaptionForTime(plan, previewTime, activeStyle.arabicName),
+    [activeStyle.arabicName, plan, previewTime],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (studioFile?.url) URL.revokeObjectURL(studioFile.url);
+    };
+  }, [studioFile?.url]);
+
+  useEffect(() => {
+    return () => {
+      if (renderResult?.url) URL.revokeObjectURL(renderResult.url);
+    };
+  }, [renderResult?.url]);
+
+  function clearRenderedOutput() {
+    setRenderResult(null);
+    setRenderProgress(null);
+  }
 
   const loadProjects = useCallback(async () => {
     try {
@@ -110,6 +144,8 @@ export function StudioWorkspace() {
     setStudioFile({ file, url, durationSeconds: 60 });
     setActiveProject(null);
     setPlan(null);
+    setPreviewTime(0);
+    clearRenderedOutput();
     setStorageStatus("Ready to save source video");
     setError("");
   }
@@ -149,6 +185,7 @@ export function StudioWorkspace() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "تعذر توليد خطة المونتاج.");
       setPlan(data.plan);
+      clearRenderedOutput();
       if (data.project) setActiveProject(data.project);
       await loadProjects();
     } catch (caughtError) {
@@ -245,6 +282,46 @@ export function StudioWorkspace() {
     }
   }
 
+  async function renderVideo() {
+    if (!studioFile) {
+      setError("ارفع الفيديو أولاً.");
+      return;
+    }
+
+    if (!plan) {
+      setError("ولّد خطة المونتاج أولاً ثم صدّر الفيديو.");
+      return;
+    }
+
+    setIsRendering(true);
+    setError("");
+    setRenderResult(null);
+    setRenderProgress({
+      percent: 0,
+      label: "Preparing renderer",
+      elapsedSeconds: 0,
+      outputSeconds: plan.targetDurationSeconds,
+    });
+
+    try {
+      const result = await renderEditedVideo({
+        sourceUrl: studioFile.url,
+        sourceFileName: studioFile.file.name,
+        sourceDurationSeconds: studioFile.durationSeconds,
+        aspectRatio,
+        style: activeStyle,
+        brandName,
+        plan,
+        onProgress: setRenderProgress,
+      });
+      setRenderResult(result);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "تعذر تصدير الفيديو.");
+    } finally {
+      setIsRendering(false);
+    }
+  }
+
   return (
     <main className="min-h-dvh bg-[var(--background)] text-[var(--foreground)]">
       <header className="border-b border-[var(--line)] bg-[var(--panel)]">
@@ -262,22 +339,38 @@ export function StudioWorkspace() {
           <div className="hidden items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 text-xs font-bold md:flex">
             <StatusPill label="Upload" active={Boolean(studioFile)} />
             <StatusPill label="Plan" active={Boolean(plan)} />
-            <StatusPill label="Render" active={false} />
+            <StatusPill label="Render" active={Boolean(renderResult)} />
           </div>
 
-          <button
-            type="button"
-            onClick={generatePlan}
-            disabled={isGenerating || isUploading}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-black text-black transition hover:bg-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isGenerating || isUploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <WandSparkles className="h-4 w-4" aria-hidden="true" />
-            )}
-            {isUploading ? "Saving..." : isGenerating ? "Generating..." : "Generate edit"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={generatePlan}
+              disabled={isGenerating || isUploading || isRendering}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-black text-black transition hover:bg-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isGenerating || isUploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <WandSparkles className="h-4 w-4" aria-hidden="true" />
+              )}
+              {isUploading ? "Saving..." : isGenerating ? "Generating..." : "Generate edit"}
+            </button>
+
+            <button
+              type="button"
+              onClick={renderVideo}
+              disabled={!plan || isRendering || isGenerating || isUploading}
+              className="hidden min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--line-strong)] bg-[var(--panel-soft)] px-4 py-2 text-sm font-black text-white transition hover:border-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-50 sm:flex"
+            >
+              {isRendering ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Download className="h-4 w-4" aria-hidden="true" />
+              )}
+              {isRendering ? `${renderProgress?.percent ?? 0}%` : "Render"}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -349,7 +442,10 @@ export function StudioWorkspace() {
                   <button
                     key={style.id}
                     type="button"
-                    onClick={() => setStyleId(style.id)}
+                    onClick={() => {
+                      setStyleId(style.id);
+                      clearRenderedOutput();
+                    }}
                     className={`w-full rounded-lg border p-3 text-right transition ${
                       selected
                         ? "border-[var(--brand)] bg-[var(--brand-soft)]"
@@ -391,19 +487,38 @@ export function StudioWorkspace() {
             <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_240px]">
               <div className="relative grid min-h-[520px] place-items-center overflow-hidden rounded-lg bg-black">
                 {studioFile ? (
-                  <video
-                    ref={videoRef}
-                    src={studioFile.url}
-                    onLoadedMetadata={captureDuration}
-                    onEnded={() => setIsPlaying(false)}
-                    className={`max-h-[640px] w-full ${
+                  <div
+                    className={`relative max-h-[660px] w-full overflow-hidden rounded-lg bg-black shadow-2xl ${
                       aspectRatio === "9:16"
                         ? "aspect-[9/16] max-w-[360px]"
                         : aspectRatio === "1:1"
                           ? "aspect-square max-w-[520px]"
-                          : "aspect-video max-w-[880px]"
-                    } bg-black object-contain`}
-                  />
+                          : "aspect-video max-w-[900px]"
+                    }`}
+                  >
+                    <video
+                      ref={videoRef}
+                      src={studioFile.url}
+                      onLoadedMetadata={captureDuration}
+                      onTimeUpdate={() => setPreviewTime(videoRef.current?.currentTime ?? 0)}
+                      onEnded={() => setIsPlaying(false)}
+                      className="h-full w-full bg-black object-cover"
+                      style={{ filter: previewFilter }}
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.34),transparent_30%,transparent_62%,rgba(0,0,0,0.52))]" />
+                    <div className="pointer-events-none absolute inset-x-4 top-4 flex justify-center">
+                      <span className="max-w-full truncate rounded-full border border-white/15 bg-black/55 px-3 py-1.5 text-xs font-black text-white shadow-lg backdrop-blur">
+                        {brandName || "Mawj Studio"} · {activeStyle.arabicName}
+                      </span>
+                    </div>
+                    {plan ? (
+                      <div className="pointer-events-none absolute inset-x-5 bottom-24 rounded-lg border border-white/10 bg-black/70 px-4 py-3 text-center shadow-xl backdrop-blur">
+                        <p className="text-balance text-lg font-black leading-7 text-white">
+                          {previewCaption}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
                 ) : (
                   <div className="grid place-items-center px-6 text-center">
                     <div className="space-y-4">
@@ -432,7 +547,14 @@ export function StudioWorkspace() {
                   </button>
 
                   <div className="mx-3 h-2 flex-1 overflow-hidden rounded-full bg-white/15">
-                    <div className="h-full w-2/5 rounded-full bg-[var(--brand)]" />
+                    <div
+                      className="h-full rounded-full bg-[var(--brand)] transition-[width]"
+                      style={{
+                        width: studioFile
+                          ? `${Math.min(100, (previewTime / studioFile.durationSeconds) * 100)}%`
+                          : "0%",
+                      }}
+                    />
                   </div>
 
                   <span className="text-xs font-black text-white/70">
@@ -507,7 +629,10 @@ export function StudioWorkspace() {
               <Field label="Brand">
                 <input
                   value={brandName}
-                  onChange={(event) => setBrandName(event.target.value)}
+                  onChange={(event) => {
+                    setBrandName(event.target.value);
+                    clearRenderedOutput();
+                  }}
                   className="control-input"
                 />
               </Field>
@@ -516,7 +641,10 @@ export function StudioWorkspace() {
                 <SelectShell>
                   <select
                     value={platform}
-                    onChange={(event) => setPlatform(event.target.value as Platform)}
+                    onChange={(event) => {
+                      setPlatform(event.target.value as Platform);
+                      clearRenderedOutput();
+                    }}
                     className="control-select"
                   >
                     {Object.entries(PLATFORM_LABELS).map(([value, label]) => (
@@ -534,7 +662,10 @@ export function StudioWorkspace() {
                     <button
                       key={preset.id}
                       type="button"
-                      onClick={() => setAspectRatio(preset.id as AspectRatio)}
+                      onClick={() => {
+                        setAspectRatio(preset.id as AspectRatio);
+                        clearRenderedOutput();
+                      }}
                       className={`min-h-11 rounded-lg border px-2 text-xs font-black transition ${
                         aspectRatio === preset.id
                           ? "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]"
@@ -551,7 +682,10 @@ export function StudioWorkspace() {
                 <SelectShell>
                   <select
                     value={languageMode}
-                    onChange={(event) => setLanguageMode(event.target.value as LanguageMode)}
+                    onChange={(event) => {
+                      setLanguageMode(event.target.value as LanguageMode);
+                      clearRenderedOutput();
+                    }}
                     className="control-select"
                   >
                     <option value="arabic">Arabic</option>
@@ -567,7 +701,10 @@ export function StudioWorkspace() {
                     <button
                       key={value}
                       type="button"
-                      onClick={() => setGoal(value as Goal)}
+                      onClick={() => {
+                        setGoal(value as Goal);
+                        clearRenderedOutput();
+                      }}
                       className={`min-h-11 rounded-lg border px-2 text-xs font-black transition ${
                         goal === value
                           ? "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]"
@@ -614,23 +751,82 @@ export function StudioWorkspace() {
             </div>
 
             {plan ? (
-              <div className="space-y-2">
-                {plan.exportVariants.map((variant) => (
-                  <div
-                    key={variant.platform}
-                    className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-black">{variant.platform}</p>
-                      <span className="rounded-md bg-white/10 px-2 py-1 text-xs font-black">
-                        {variant.duration}
-                      </span>
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={renderVideo}
+                  disabled={isRendering || isGenerating || isUploading}
+                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 py-3 text-sm font-black text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isRendering ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Download className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  {isRendering ? `Rendering ${renderProgress?.percent ?? 0}%` : "Render edited video"}
+                </button>
+
+                {isRendering ? (
+                  <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3">
+                    <div className="mb-2 flex items-center justify-between gap-3 text-xs font-black text-[var(--muted)]">
+                      <span>{renderProgress?.label ?? "Rendering"}</span>
+                      <span>{renderProgress?.percent ?? 0}%</span>
                     </div>
-                    <p className="mt-2 text-xs font-semibold leading-5 text-[var(--muted)]">
-                      {variant.caption}
-                    </p>
+                    <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-[var(--brand)] transition-[width]"
+                        style={{ width: `${renderProgress?.percent ?? 0}%` }}
+                      />
+                    </div>
                   </div>
-                ))}
+                ) : null}
+
+                {renderResult ? (
+                  <div className="rounded-lg border border-[var(--brand)] bg-[var(--brand-soft)] p-3">
+                    <video
+                      src={renderResult.url}
+                      controls
+                      className={`mx-auto mb-3 max-h-[420px] w-full rounded-lg bg-black object-contain ${
+                        aspectRatio === "9:16"
+                          ? "aspect-[9/16] max-w-[236px]"
+                          : aspectRatio === "1:1"
+                            ? "aspect-square"
+                            : "aspect-video"
+                      }`}
+                    />
+                    <div className="mb-3 grid grid-cols-2 gap-2">
+                      <SmallSetting label="Output" value={renderResult.resolution} />
+                      <SmallSetting label="Length" value={formatDuration(renderResult.durationSeconds)} />
+                    </div>
+                    <a
+                      href={renderResult.url}
+                      download={renderResult.fileName}
+                      className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-black text-black transition hover:bg-[var(--brand)]"
+                    >
+                      <Download className="h-4 w-4" aria-hidden="true" />
+                      Download edited file
+                    </a>
+                  </div>
+                ) : null}
+
+                <div className="space-y-2">
+                  {plan.exportVariants.map((variant) => (
+                    <div
+                      key={variant.platform}
+                      className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-black">{variant.platform}</p>
+                        <span className="rounded-md bg-white/10 px-2 py-1 text-xs font-black">
+                          {variant.duration}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs font-semibold leading-5 text-[var(--muted)]">
+                        {variant.caption}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <EmptyPanel compact />
