@@ -99,6 +99,7 @@ type PanelId =
 type MediaAsset = {
   id: string;
   name: string;
+  file: File;
   url: string;
   kind: "video" | "audio" | "image";
   size: number;
@@ -159,6 +160,16 @@ type UploadUrlResponse = {
   path: string;
   token: string | null;
   project: StudioProject;
+  error?: string;
+};
+
+type AutoTranscribeResponse = {
+  mode: "openai" | "demo";
+  model: string;
+  text: string;
+  transcript: TranscriptSegment[];
+  captions: CaptionLine[];
+  srt: string;
   error?: string;
 };
 
@@ -352,6 +363,8 @@ export function ProfessionalVideoStudio() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcriptionMode, setTranscriptionMode] = useState<"openai" | "demo" | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [previewTime, setPreviewTime] = useState(0);
   const [renderProgress, setRenderProgress] = useState<BrowserRenderProgress | null>(null);
@@ -365,10 +378,10 @@ export function ProfessionalVideoStudio() {
   );
 
   const previewFilter = useMemo(() => getPreviewFilter(styleId), [styleId]);
-  const previewCaption = useMemo(
-    () => getCaptionForTime(plan, previewTime, activeStyle.arabicName),
-    [activeStyle.arabicName, plan, previewTime],
-  );
+  const previewCaption = useMemo(() => {
+    const captionLine = getCaptionLineForTime(captions, previewTime);
+    return captionLine?.text ?? getCaptionForTime(plan, previewTime, activeStyle.arabicName);
+  }, [activeStyle.arabicName, captions, plan, previewTime]);
 
   const filteredTranscript = useMemo(() => {
     const query = transcriptSearch.trim().toLowerCase();
@@ -386,12 +399,6 @@ export function ProfessionalVideoStudio() {
       ),
     [timelineTracks],
   );
-
-  useEffect(() => {
-    return () => {
-      if (studioFile?.url) URL.revokeObjectURL(studioFile.url);
-    };
-  }, [studioFile?.url]);
 
   useEffect(() => {
     return () => {
@@ -473,9 +480,11 @@ export function ProfessionalVideoStudio() {
   async function handleFiles(files?: FileList | File[]) {
     if (!files?.length) return;
 
-    const incomingAssets: MediaAsset[] = Array.from(files).map((file) => ({
+    const filesArray = Array.from(files);
+    const incomingAssets: MediaAsset[] = filesArray.map((file) => ({
       id: crypto.randomUUID(),
       name: file.name,
+      file,
       url: URL.createObjectURL(file),
       kind: getAssetKind(file),
       size: file.size,
@@ -483,21 +492,26 @@ export function ProfessionalVideoStudio() {
 
     setMediaAssets((assets) => [...incomingAssets, ...assets]);
 
-    const firstVideoIndex = Array.from(files).findIndex((file) => file.type.startsWith("video/"));
-    const firstVideoFile = firstVideoIndex >= 0 ? Array.from(files)[firstVideoIndex] : null;
-    const firstVideoAsset = firstVideoIndex >= 0 ? incomingAssets[firstVideoIndex] : null;
+    const firstVideoAsset = incomingAssets.find((asset) => asset.kind === "video") ?? null;
 
-    if (firstVideoFile && firstVideoAsset) {
-      setStudioFile({ file: firstVideoFile, url: firstVideoAsset.url, durationSeconds: 60 });
+    if (firstVideoAsset) {
+      setStudioFile({ file: firstVideoAsset.file, url: firstVideoAsset.url, durationSeconds: 60 });
       setActiveProject(null);
       setPlan(null);
       setPreviewTime(0);
       clearRenderedOutput();
-      setProjectStatus("Source video loaded");
-      commitTimeline(createTimelineForVideo(firstVideoFile.name, 60));
-    } else {
-      commitTimeline((tracks) => addAssetsToTimeline(tracks, incomingAssets));
+      setProjectStatus(
+        incomingAssets.length > 1
+          ? `${incomingAssets.length} media files loaded into the timeline`
+          : "Source video loaded",
+      );
     }
+
+    commitTimeline((tracks) =>
+      mediaAssets.length || !firstVideoAsset
+        ? addAssetsToTimeline(tracks, incomingAssets)
+        : createTimelineForAssets(incomingAssets, firstVideoAsset.id),
+    );
 
     setError("");
   }
@@ -507,7 +521,76 @@ export function ProfessionalVideoStudio() {
     if (!studioFile || !duration || Number.isNaN(duration)) return;
     const roundedDuration = Math.round(duration);
     setStudioFile({ ...studioFile, durationSeconds: roundedDuration });
-    commitTimeline(createTimelineForVideo(studioFile.file.name, roundedDuration));
+    commitTimeline((tracks) => syncPrimaryVideoDuration(tracks, studioFile.file.name, roundedDuration));
+  }
+
+  function addMediaAssetToTimeline(asset: MediaAsset) {
+    commitTimeline((tracks) => addAssetsToTimeline(tracks, [asset]));
+    setProjectStatus(`${asset.name} added to timeline`);
+  }
+
+  function selectVideoAssetAsSource(asset: MediaAsset) {
+    if (asset.kind !== "video") return;
+    setStudioFile({ file: asset.file, url: asset.url, durationSeconds: 60 });
+    setActiveProject(null);
+    setPlan(null);
+    setPreviewTime(0);
+    clearRenderedOutput();
+    commitTimeline((tracks) => syncPrimaryVideoDuration(tracks, asset.name, 60));
+    setProjectStatus(`${asset.name} is now the preview source`);
+  }
+
+  async function transcribeVideo(asset?: MediaAsset) {
+    const targetFile = asset?.file ?? studioFile?.file;
+    const targetDuration = asset ? 60 : studioFile?.durationSeconds ?? 60;
+
+    if (!targetFile || (!targetFile.type.startsWith("video/") && !targetFile.type.startsWith("audio/"))) {
+      setError("Upload a video or audio file first.");
+      return;
+    }
+
+    setIsTranscribing(true);
+    setError("");
+    setProjectStatus("Reading video audio and generating captions...");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", targetFile, targetFile.name);
+      formData.append("durationSeconds", String(targetDuration));
+      formData.append(
+        "language",
+        languageMode === "arabic" ? "ar" : languageMode === "english" ? "en" : "auto",
+      );
+
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+      const data = (await response.json()) as AutoTranscribeResponse;
+      if (!response.ok) throw new Error(data.error ?? "Could not generate automatic captions.");
+
+      setTranscript(data.transcript);
+      setCaptions(data.captions);
+      setTranscriptionMode(data.mode);
+      setActivePanel("captions");
+      clearRenderedOutput();
+      commitTimeline((tracks) => ensureCaptionLayer(tracks, data.captions, targetDuration));
+      setProjectStatus(
+        data.mode === "openai"
+          ? `Auto captions ready with ${data.model}`
+          : "Demo captions ready. Add OPENAI_API_KEY for real video transcription.",
+      );
+      setAssistantMessages((messages) => [
+        data.mode === "openai"
+          ? `Auto-caption complete: ${data.captions.length} caption lines generated from the video audio.`
+          : "Demo captions generated. Add OPENAI_API_KEY on Vercel for real audio transcription.",
+        ...messages,
+      ]);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not transcribe this file.");
+    } finally {
+      setIsTranscribing(false);
+    }
   }
 
   async function generatePlan() {
@@ -650,8 +733,18 @@ export function ProfessionalVideoStudio() {
       return;
     }
 
-    if (!plan) {
-      setError("Generate an AI edit plan first.");
+    const renderPlan =
+      plan ??
+      createCaptionRenderPlan({
+        captions,
+        style: activeStyle,
+        aspectRatio,
+        brandName,
+        durationSeconds: studioFile.durationSeconds,
+      });
+
+    if (!renderPlan) {
+      setError("Generate an AI edit plan or automatic captions first.");
       return;
     }
 
@@ -662,7 +755,7 @@ export function ProfessionalVideoStudio() {
       percent: 0,
       label: "Preparing render",
       elapsedSeconds: 0,
-      outputSeconds: plan.targetDurationSeconds,
+      outputSeconds: renderPlan.targetDurationSeconds,
     });
     setProjectStatus("Rendering export...");
 
@@ -674,7 +767,7 @@ export function ProfessionalVideoStudio() {
         aspectRatio,
         style: activeStyle,
         brandName,
-        plan,
+        plan: renderPlan,
         onProgress: setRenderProgress,
       });
       setRenderResult(result);
@@ -919,8 +1012,8 @@ export function ProfessionalVideoStudio() {
       setActivePanel("editor");
       response = "Set the project to TikTok 9:16 with a fast viral Saudi pacing preset.";
     } else if (normalized.includes("arabic") || normalized.includes("captions")) {
-      generateCaptionsFromTranscript();
-      response = "Arabic captions are generated and ready for manual editing or burn-in export.";
+      void transcribeVideo();
+      response = "I started reading the video audio and will generate editable Arabic captions.";
     } else if (normalized.includes("silence")) {
       removeLongPauses();
       response = "Marked long pauses on the effects track for automatic removal.";
@@ -1003,7 +1096,7 @@ export function ProfessionalVideoStudio() {
             <button
               type="button"
               onClick={renderVideo}
-              disabled={!plan || isRendering || isGenerating || isUploading}
+              disabled={!studioFile || isRendering || isGenerating || isUploading}
               className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 py-2 text-sm font-black text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
             >
               {isRendering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
@@ -1076,12 +1169,50 @@ export function ProfessionalVideoStudio() {
               <span className="text-xs font-semibold text-[var(--muted)]">Video, audio, images</span>
             </button>
             <div className="space-y-2">
-              {mediaAssets.slice(0, 5).map((asset) => (
-                <div key={asset.id} className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-black/20 p-2">
-                  <AssetIcon kind={asset.kind} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-black">{asset.name}</p>
-                    <p className="text-[11px] font-semibold text-[var(--muted)]">{asset.kind} · {formatBytes(asset.size)}</p>
+              {mediaAssets.slice(0, 8).map((asset) => (
+                <div key={asset.id} className="rounded-lg border border-[var(--line)] bg-black/20 p-2">
+                  <div className="mb-2 flex items-center gap-2">
+                    <AssetIcon kind={asset.kind} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-black">{asset.name}</p>
+                      <p className="text-[11px] font-semibold text-[var(--muted)]">{asset.kind} · {formatBytes(asset.size)}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => addMediaAssetToTimeline(asset)}
+                      className="min-h-9 rounded-md border border-[var(--line)] bg-[var(--panel-soft)] px-2 text-[11px] font-black transition hover:border-[var(--brand)]"
+                    >
+                      Timeline
+                    </button>
+                    {asset.kind === "video" ? (
+                      <button
+                        type="button"
+                        onClick={() => selectVideoAssetAsSource(asset)}
+                        className="min-h-9 rounded-md border border-[var(--line)] bg-[var(--panel-soft)] px-2 text-[11px] font-black transition hover:border-[var(--brand)]"
+                      >
+                        Preview
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => addMediaAssetToTimeline(asset)}
+                        className="min-h-9 rounded-md border border-[var(--line)] bg-[var(--panel-soft)] px-2 text-[11px] font-black transition hover:border-[var(--brand)]"
+                      >
+                        Layer
+                      </button>
+                    )}
+                    {(asset.kind === "video" || asset.kind === "audio") ? (
+                      <button
+                        type="button"
+                        onClick={() => transcribeVideo(asset)}
+                        disabled={isTranscribing}
+                        className="col-span-2 min-h-9 rounded-md bg-[var(--brand)] px-2 text-[11px] font-black text-black transition hover:bg-white disabled:opacity-60"
+                      >
+                        {isTranscribing ? "Captioning..." : "Auto-caption"}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               ))}
@@ -1108,6 +1239,12 @@ export function ProfessionalVideoStudio() {
                     <ToolbarButton label="Split" icon={Crop} onClick={splitSelectedLayer} />
                     <ToolbarButton label="Merge" icon={Layers3} onClick={mergeVideoLayers} />
                     <ToolbarButton label="Text" icon={Type} onClick={addTextLayer} />
+                    <ToolbarButton
+                      label={isTranscribing ? "Captioning" : "Auto-caption"}
+                      icon={isTranscribing ? Loader2 : Captions}
+                      onClick={() => transcribeVideo()}
+                      disabled={isTranscribing || !studioFile}
+                    />
                   </div>
                   <div className="flex items-center gap-2 text-xs font-bold text-[var(--muted)]">
                     <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
@@ -1134,7 +1271,7 @@ export function ProfessionalVideoStudio() {
                     previewCaption={previewCaption}
                     activeStyle={activeStyle}
                     brandName={brandName}
-                    plan={plan}
+                    showCaptionOverlay={Boolean(plan || captions.length)}
                     isPlaying={isPlaying}
                     previewTime={previewTime}
                     onLoadedMetadata={captureDuration}
@@ -1195,7 +1332,10 @@ export function ProfessionalVideoStudio() {
           onDeleteSegment={markTranscriptDeleted}
           onRemoveFillers={removeFillerWords}
           onRemovePauses={removeLongPauses}
+          onAutoTranscribe={() => transcribeVideo()}
           onGenerateCaptions={generateCaptionsFromTranscript}
+          isTranscribing={isTranscribing}
+          transcriptionMode={transcriptionMode}
         />
       );
     }
@@ -1207,8 +1347,11 @@ export function ProfessionalVideoStudio() {
           template={captionTemplate}
           onTemplateChange={setCaptionTemplate}
           onCaptionChange={updateCaption}
+          onAutoTranscribe={() => transcribeVideo()}
           onDownloadSrt={downloadSrt}
           onBurnCaptions={renderVideo}
+          isTranscribing={isTranscribing}
+          transcriptionMode={transcriptionMode}
         />
       );
     }
@@ -1338,7 +1481,7 @@ function VideoPreview({
   previewCaption,
   activeStyle,
   brandName,
-  plan,
+  showCaptionOverlay,
   isPlaying,
   previewTime,
   onLoadedMetadata,
@@ -1353,7 +1496,7 @@ function VideoPreview({
   previewCaption: string;
   activeStyle: VideoStyle;
   brandName: string;
-  plan: EditPlan | null;
+  showCaptionOverlay: boolean;
   isPlaying: boolean;
   previewTime: number;
   onLoadedMetadata: () => void;
@@ -1388,7 +1531,7 @@ function VideoPreview({
               {brandName || "Mawj Studio"} · {activeStyle.arabicName}
             </span>
           </div>
-          {plan ? (
+          {showCaptionOverlay ? (
             <div className="pointer-events-none absolute inset-x-5 bottom-24 rounded-lg border border-white/10 bg-black/72 px-4 py-3 text-center shadow-xl backdrop-blur">
               <p className="text-balance text-lg font-black leading-7 text-white">{previewCaption}</p>
             </div>
@@ -1579,7 +1722,10 @@ function TranscriptPanel({
   onDeleteSegment,
   onRemoveFillers,
   onRemovePauses,
+  onAutoTranscribe,
   onGenerateCaptions,
+  isTranscribing,
+  transcriptionMode,
 }: {
   transcript: TranscriptSegment[];
   query: string;
@@ -1587,11 +1733,28 @@ function TranscriptPanel({
   onDeleteSegment: (id: string) => void;
   onRemoveFillers: () => void;
   onRemovePauses: () => void;
+  onAutoTranscribe: () => void;
   onGenerateCaptions: () => void;
+  isTranscribing: boolean;
+  transcriptionMode: "openai" | "demo" | null;
 }) {
   return (
     <section className="panel p-4">
       <PanelHeading icon={Mic2} title="Text-based editing" />
+      <button
+        type="button"
+        onClick={onAutoTranscribe}
+        disabled={isTranscribing}
+        className="mb-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 py-2 text-sm font-black text-black transition hover:bg-white disabled:opacity-60"
+      >
+        {isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Captions className="h-4 w-4" />}
+        {isTranscribing ? "Reading video..." : "Auto-caption from video"}
+      </button>
+      {transcriptionMode ? (
+        <p className="mb-3 rounded-lg border border-[var(--line)] bg-black/20 p-2 text-xs font-bold text-[var(--muted)]">
+          Mode: {transcriptionMode === "openai" ? "real OpenAI transcription" : "demo fallback"}
+        </p>
+      ) : null}
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
         <input
@@ -1638,19 +1801,41 @@ function CaptionsPanel({
   template,
   onTemplateChange,
   onCaptionChange,
+  onAutoTranscribe,
   onDownloadSrt,
   onBurnCaptions,
+  isTranscribing,
+  transcriptionMode,
 }: {
   captions: CaptionLine[];
   template: string;
   onTemplateChange: (template: string) => void;
   onCaptionChange: (id: string, text: string) => void;
+  onAutoTranscribe: () => void;
   onDownloadSrt: () => void;
   onBurnCaptions: () => void;
+  isTranscribing: boolean;
+  transcriptionMode: "openai" | "demo" | null;
 }) {
   return (
     <section className="panel p-4">
       <PanelHeading icon={Captions} title="Automatic captions" />
+      <button
+        type="button"
+        onClick={onAutoTranscribe}
+        disabled={isTranscribing}
+        className="mb-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 py-2 text-sm font-black text-black transition hover:bg-white disabled:opacity-60"
+      >
+        {isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic2 className="h-4 w-4" />}
+        {isTranscribing ? "Transcribing..." : "Read video and generate captions"}
+      </button>
+      {transcriptionMode ? (
+        <p className="mb-3 rounded-lg border border-[var(--line)] bg-black/20 p-2 text-xs font-bold text-[var(--muted)]">
+          {transcriptionMode === "openai"
+            ? "Captions were generated from the uploaded video's audio."
+            : "Demo captions are active. Add OPENAI_API_KEY for real audio transcription."}
+        </p>
+      ) : null}
       <div className="mb-3 grid grid-cols-1 gap-2">
         {CAPTION_TEMPLATES.map((item) => (
           <button
@@ -2349,6 +2534,13 @@ function createDefaultTimeline(): TimelineTrack[] {
   return createTimelineForVideo("Source video", 36);
 }
 
+function createTimelineForAssets(assets: MediaAsset[], primaryVideoAssetId: string): TimelineTrack[] {
+  const primaryVideo = assets.find((asset) => asset.id === primaryVideoAssetId && asset.kind === "video");
+  const base = createTimelineForVideo(primaryVideo?.name ?? "Source video", 60);
+  const extraAssets = assets.filter((asset) => asset.id !== primaryVideoAssetId);
+  return addAssetsToTimeline(base, extraAssets);
+}
+
 function createTimelineForVideo(name: string, duration: number): TimelineTrack[] {
   const resolvedDuration = Math.max(12, Math.min(120, duration));
   return [
@@ -2388,27 +2580,79 @@ function createTimelineForVideo(name: string, duration: number): TimelineTrack[]
   ];
 }
 
-function addAssetsToTimeline(tracks: TimelineTrack[], assets: MediaAsset[]) {
+function addAssetsToTimeline(tracks: TimelineTrack[], assets: MediaAsset[]): TimelineTrack[] {
   return tracks.map((track) => {
     const matchingAssets = assets.filter((asset) =>
-      track.kind === "audio" ? asset.kind === "audio" : track.kind === "overlay" ? asset.kind === "image" : false,
+      track.kind === "video"
+        ? asset.kind === "video"
+        : track.kind === "audio"
+          ? asset.kind === "audio"
+          : track.kind === "overlay"
+            ? asset.kind === "image"
+            : false,
     );
     if (!matchingAssets.length) return track;
+    const trackEnd = getTrackEnd(track);
     return {
       ...track,
       layers: [
         ...track.layers,
-        ...matchingAssets.map((asset, index) => ({
+        ...matchingAssets.map((asset, index): TimelineLayer => ({
           id: asset.id,
           type: asset.kind as TimelineLayer["type"],
           name: asset.name,
-          start: index * 2,
-          duration: asset.kind === "audio" ? 20 : 8,
-          color: asset.kind === "audio" ? "#7dd3fc" : "#c084fc",
+          start: track.kind === "video" || track.kind === "audio" ? trackEnd + index * 2 : index * 2,
+          duration: asset.kind === "video" ? 12 : asset.kind === "audio" ? 20 : 8,
+          color: asset.kind === "video" ? "#8ef7c2" : asset.kind === "audio" ? "#7dd3fc" : "#c084fc",
         })),
       ],
     };
   });
+}
+
+function syncPrimaryVideoDuration(tracks: TimelineTrack[], sourceName: string, duration: number): TimelineTrack[] {
+  const resolvedDuration = Math.max(1, Math.min(360, duration));
+  return tracks.map((track) => ({
+    ...track,
+    layers: track.layers.map((layer) => {
+      if (layer.id === "clip-main") {
+        return { ...layer, name: sourceName, duration: resolvedDuration };
+      }
+
+      if (["audio-main", "caption-main", "effect-color", "brand-bug"].includes(layer.id)) {
+        return { ...layer, duration: resolvedDuration };
+      }
+
+      return layer;
+    }),
+  }));
+}
+
+function ensureCaptionLayer(tracks: TimelineTrack[], captions: CaptionLine[], durationSeconds: number): TimelineTrack[] {
+  const captionDuration =
+    captions.length > 0 ? Math.max(...captions.map((caption) => caption.end)) : durationSeconds;
+
+  return tracks.map((track) =>
+    track.kind === "caption"
+      ? {
+          ...track,
+          layers: [
+            {
+              id: "caption-main",
+              type: "caption" as const,
+              name: `${captions.length} auto captions`,
+              start: 0,
+              duration: Math.max(1, captionDuration),
+              color: "#fb923c",
+            },
+          ],
+        }
+      : track,
+  );
+}
+
+function getTrackEnd(track: TimelineTrack) {
+  return track.layers.reduce((end, layer) => Math.max(end, layer.start + layer.duration), 0);
 }
 
 function transcriptToCaptions(transcript: TranscriptSegment[]): CaptionLine[] {
@@ -2427,6 +2671,72 @@ function planToCaptions(plan: EditPlan): CaptionLine[] {
     end: index < plan.captions.length - 1 ? plan.captions[index + 1].at : caption.at + 4,
     text: caption.text,
   }));
+}
+
+function getCaptionLineForTime(captions: CaptionLine[], time: number) {
+  return captions.find((caption) => time >= caption.start && time <= caption.end) ?? null;
+}
+
+function createCaptionRenderPlan({
+  captions,
+  style,
+  aspectRatio,
+  brandName,
+  durationSeconds,
+}: {
+  captions: CaptionLine[];
+  style: VideoStyle;
+  aspectRatio: AspectRatio;
+  brandName: string;
+  durationSeconds: number;
+}): EditPlan | null {
+  if (!captions.length) return null;
+
+  const targetDurationSeconds = Math.max(
+    4,
+    Math.min(durationSeconds, Math.ceil(Math.max(...captions.map((caption) => caption.end)))),
+  );
+
+  return {
+    id: `caption-render-${Date.now()}`,
+    title: `${brandName || "Mawj Studio"} auto-caption render`,
+    hook: captions[0]?.text ?? style.arabicName,
+    summary: "Rendered from uploaded media with automatic captions.",
+    targetDurationSeconds,
+    styleId: style.id,
+    confidence: 88,
+    renderSettings: {
+      aspectRatio,
+      resolution: aspectRatio === "16:9" ? "1920x1080" : aspectRatio === "1:1" ? "1080x1080" : "1080x1920",
+      fps: 30,
+      loudness: "-14 LUFS",
+      safeMargins: "12% captions / 8% UI safe zones",
+    },
+    timeline: [
+      {
+        id: "caption-render",
+        label: "Auto captions",
+        start: 0,
+        end: targetDurationSeconds,
+        action: "Burn generated captions into the video export.",
+        intensity: "medium",
+      },
+    ],
+    captions: captions.map((caption) => ({
+      at: caption.start,
+      text: caption.text,
+      emphasis: [],
+    })),
+    aiTools: [
+      { name: "Automatic transcription", status: "ready", detail: "Video audio converted to editable captions." },
+      { name: "Caption burn-in", status: "ready", detail: "Captions are rendered into the exported video." },
+    ],
+    exportVariants: [
+      { platform: "MP4", duration: `${targetDurationSeconds}s`, caption: "Captioned social export." },
+      { platform: "SRT", duration: `${targetDurationSeconds}s`, caption: "Editable subtitle file." },
+      { platform: "Thumbnail", duration: "1 frame", caption: "Cover-ready still export." },
+    ],
+  };
 }
 
 function createDemoProjects(): StudioProject[] {
