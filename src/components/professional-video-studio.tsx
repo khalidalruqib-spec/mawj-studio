@@ -2465,21 +2465,24 @@ export function ProfessionalVideoStudio() {
 
   return (
     <main className="min-h-dvh bg-[var(--background)] text-[var(--foreground)]">
-      <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand)] text-black">
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] text-black"
+              style={{ boxShadow: "var(--shadow-brand)" }}
+            >
               <Sparkles className="h-5 w-5" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-lg font-black leading-5">Mawj Studio</p>
-              <p className="truncate text-xs font-semibold text-[var(--muted)]">
-                AI content studio / استوديو مونتاج ذكي
+              <p className="truncate text-[15px] font-black leading-5 tracking-tight">Mawj Studio</p>
+              <p className="truncate text-[11px] font-semibold text-[var(--muted)]">
+                استوديو المونتاج الذكي
               </p>
             </div>
           </div>
 
-          <div className="hidden items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 text-xs font-bold xl:flex">
+          <div className="hidden items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 xl:flex">
             <StatusPill label="Upload" active={Boolean(studioFile || mediaAssets.length || templateProject)} />
             <StatusPill label="Timeline" active={timelineTracks.some((track) => track.layers.length)} />
             <StatusPill label="AI" active={Boolean(plan)} />
@@ -2487,9 +2490,9 @@ export function ProfessionalVideoStudio() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href="/templates" className="flex min-h-11 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-sm font-black transition hover:border-[var(--brand)]">
+            <Link href="/templates" className="btn-ghost hidden sm:inline-flex">
               <LayoutTemplate className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Templates</span>
+              <span>Templates</span>
             </Link>
             <button type="button" onClick={saveProjectSnapshot} className="icon-button" aria-label="Save project">
               <Save className="h-4 w-4" aria-hidden="true" />
@@ -2501,7 +2504,7 @@ export function ProfessionalVideoStudio() {
               type="button"
               onClick={generatePlan}
               disabled={isGenerating || isUploading || isRendering}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-black text-black transition hover:bg-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-60 sm:px-4"
+              className="btn-ghost"
             >
               {isGenerating || isUploading ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -2509,14 +2512,14 @@ export function ProfessionalVideoStudio() {
                 <WandSparkles className="h-4 w-4" aria-hidden="true" />
               )}
               <span className="hidden sm:inline">
-                {isUploading ? "Saving" : isGenerating ? "Generating" : "Generate"}
+                {isUploading ? "Saving" : isGenerating ? "Generating…" : "Generate"}
               </span>
             </button>
             <button
               type="button"
               onClick={renderVideo}
               disabled={(!studioFile && !templateProject) || isRendering || isGenerating || isUploading}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 py-2 text-sm font-black text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
+              className="btn-brand"
             >
               {isRendering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               <span className="hidden sm:inline">{isRendering ? `${renderProgress?.percent ?? 0}%` : "Export"}</span>
@@ -2541,9 +2544,9 @@ export function ProfessionalVideoStudio() {
                     <Link
                       key={panel.id}
                       href="/templates"
-                      className="flex min-h-14 items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-left text-[var(--muted)] transition hover:border-[var(--brand)] hover:text-white"
+                      className="nav-btn"
                     >
-                      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <Icon className="nav-btn-icon h-4 w-4 shrink-0" aria-hidden="true" />
                       <span className="min-w-0">
                         <span className="block truncate text-xs font-black">{panel.label}</span>
                         <span className="block truncate text-[11px] font-semibold opacity-75">Open library</span>
@@ -2556,13 +2559,9 @@ export function ProfessionalVideoStudio() {
                     key={panel.id}
                     type="button"
                     onClick={() => setActivePanel(panel.id)}
-                    className={`flex min-h-14 items-center gap-3 rounded-lg border px-3 py-2 text-left transition ${
-                      active
-                        ? "border-[var(--brand)] bg-[var(--brand-soft)] text-white"
-                        : "border-[var(--line)] bg-[var(--panel-soft)] text-[var(--muted)] hover:border-[var(--line-strong)] hover:text-white"
-                    }`}
+                    className={`nav-btn w-full${active ? " active" : ""}`}
                   >
-                    <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <Icon className="nav-btn-icon h-4 w-4 shrink-0" aria-hidden="true" />
                     <span className="min-w-0">
                       <span className="block truncate text-xs font-black">{panel.label}</span>
                       <span className="block truncate text-[11px] font-semibold opacity-75">{panel.description}</span>
@@ -2596,11 +2595,11 @@ export function ProfessionalVideoStudio() {
                 handleFiles(event.dataTransfer.files);
               }}
               onDragOver={(event) => event.preventDefault()}
-              className="mb-3 flex min-h-32 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--line-strong)] bg-[var(--panel-soft)] p-4 text-center transition hover:border-[var(--brand)]"
+              className="drop-zone mb-3 flex min-h-32 w-full flex-col items-center justify-center gap-2 p-4 text-center"
             >
               <UploadCloud className="h-6 w-6 text-[var(--brand)]" aria-hidden="true" />
               <span className="text-sm font-black">Drag media here</span>
-              <span className="text-xs font-semibold text-[var(--muted)]">Video, audio, images</span>
+              <span className="text-xs font-semibold text-[var(--muted)]">Video · Audio · Images</span>
             </button>
             <div className="space-y-2">
               {mediaAssets.slice(0, 8).map((asset) => (
@@ -2616,11 +2615,11 @@ export function ProfessionalVideoStudio() {
                       </p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-1.5">
                     <button
                       type="button"
                       onClick={() => addMediaAssetToTimeline(asset)}
-                      className="min-h-9 rounded-md border border-[var(--line)] bg-[var(--panel-soft)] px-2 text-[11px] font-black transition hover:border-[var(--brand)]"
+                      className="toolbar-btn justify-center text-[11px]"
                     >
                       Timeline
                     </button>
@@ -2628,7 +2627,7 @@ export function ProfessionalVideoStudio() {
                       <button
                         type="button"
                         onClick={() => selectVideoAssetAsSource(asset)}
-                        className="min-h-9 rounded-md border border-[var(--line)] bg-[var(--panel-soft)] px-2 text-[11px] font-black transition hover:border-[var(--brand)]"
+                        className="toolbar-btn justify-center text-[11px]"
                       >
                         Preview
                       </button>
@@ -2636,7 +2635,7 @@ export function ProfessionalVideoStudio() {
                       <button
                         type="button"
                         onClick={() => addMediaAssetToTimeline(asset)}
-                        className="min-h-9 rounded-md border border-[var(--line)] bg-[var(--panel-soft)] px-2 text-[11px] font-black transition hover:border-[var(--brand)]"
+                        className="toolbar-btn justify-center text-[11px]"
                       >
                         Layer
                       </button>
@@ -2646,9 +2645,9 @@ export function ProfessionalVideoStudio() {
                         type="button"
                         onClick={() => transcribeVideo(asset)}
                         disabled={isTranscribing}
-                        className="col-span-2 min-h-9 rounded-md bg-[var(--brand)] px-2 text-[11px] font-black text-black transition hover:bg-white disabled:opacity-60"
+                        className="btn-brand col-span-2 min-h-9 text-[11px]"
                       >
-                        {isTranscribing ? "Captioning..." : "Auto-caption"}
+                        {isTranscribing ? "Captioning…" : "Auto-caption"}
                       </button>
                     ) : null}
                     {asset.kind === "image" ? (
@@ -2656,17 +2655,17 @@ export function ProfessionalVideoStudio() {
                         type="button"
                         onClick={() => generateImageStoryboard(mediaAssets.filter((item) => item.kind === "image"))}
                         disabled={isGenerating}
-                        className="col-span-2 min-h-9 rounded-md bg-[var(--brand)] px-2 text-[11px] font-black text-black transition hover:bg-white disabled:opacity-60"
+                        className="btn-brand col-span-2 min-h-9 text-[11px]"
                       >
-                        {isGenerating ? "Making video..." : "Make video from images"}
+                        {isGenerating ? "Making video…" : "Make video from images"}
                       </button>
                     ) : null}
                     <button
                       type="button"
                       onClick={() => deleteMediaAsset(asset)}
-                      className="col-span-2 min-h-9 rounded-md border border-red-400/40 bg-red-500/10 px-2 text-[11px] font-black text-red-100 transition hover:border-red-300"
+                      className="toolbar-btn danger col-span-2 justify-center text-[11px]"
                     >
-                      Delete media
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -3698,7 +3697,7 @@ function AiStudioPanel({
           type="button"
           onClick={() => onRunTool(AI_TOOLS[0])}
           disabled={isRunning}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-black text-black transition hover:bg-[var(--brand)] disabled:opacity-60"
+          className="btn-brand w-full"
         >
           {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <WandSparkles className="h-4 w-4" />}
           Generate with AI
@@ -3706,7 +3705,9 @@ function AiStudioPanel({
       </div>
 
       <div className="mt-4">
-        <p className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-[var(--muted)]">Recommended</p>
+        <p className="section-heading mb-2">
+          <span className="metric-label">Recommended</span>
+        </p>
         <div className="grid grid-cols-2 gap-2">
           {recommendedTools.slice(0, 4).map((tool) => {
             const Icon = tool.icon;
@@ -3715,9 +3716,11 @@ function AiStudioPanel({
                 key={tool.id}
                 type="button"
                 onClick={() => onRunTool(tool)}
-                className="min-h-24 rounded-lg border border-[var(--line)] bg-black/20 p-2 text-left transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)]"
+                className="min-h-24 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-2.5 text-left transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] hover:shadow-[var(--shadow-brand)] active:scale-[.97]"
               >
-                <Icon className="mb-2 h-4 w-4 text-[var(--brand)]" aria-hidden="true" />
+                <span className="ai-tool-card-icon mb-2 flex h-8 w-8">
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                </span>
                 <span className="block text-xs font-black">{tool.title}</span>
                 <span className="mt-1 line-clamp-2 block text-[11px] font-semibold leading-4 text-[var(--muted)]">
                   {tool.subtitle}
@@ -3770,28 +3773,24 @@ function AiStudioPanel({
               key={tool.id}
               type="button"
               onClick={() => onRunTool(tool)}
-              className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3 text-left transition hover:border-[var(--brand)]"
+              className="ai-tool-card"
             >
-              <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
-                  <Icon className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-black">{tool.title}</span>
-                    <span className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-black ${
-                      needsMedia ? "bg-amber-400/15 text-amber-100" : "bg-[var(--brand-soft)] text-[var(--brand)]"
-                    }`}>
-                      {needsMedia ? "Needs media" : tool.badge}
-                    </span>
-                  </span>
-                  <span className="mt-1 block text-xs font-semibold leading-5 text-[var(--muted)]">{tool.subtitle}</span>
-                  <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-black text-white/70">
-                    Run
-                    <Rocket className="h-3 w-3" aria-hidden="true" />
+              <span className="ai-tool-card-icon">
+                <Icon className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-black">{tool.title}</span>
+                  <span className={`badge shrink-0 ${needsMedia ? "badge-amber" : "badge-brand"}`}>
+                    {needsMedia ? "Needs media" : tool.badge}
                   </span>
                 </span>
-              </div>
+                <span className="mt-1 block text-xs font-semibold leading-5 text-[var(--muted)]">{tool.subtitle}</span>
+                <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-black text-[var(--brand)]">
+                  Run
+                  <Rocket className="h-3 w-3" aria-hidden="true" />
+                </span>
+              </span>
             </button>
           );
         })}
@@ -4707,7 +4706,7 @@ function AssistantPanel({
           type="button"
           onClick={() => onRunCommand()}
           disabled={isRunning || !command.trim()}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand)] text-black disabled:opacity-50"
+          className="btn-brand h-11 w-11 shrink-0 px-0"
           aria-label="Run AI command"
         >
           {isRunning ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <WandSparkles className="h-4 w-4" aria-hidden="true" />}
@@ -4720,7 +4719,7 @@ function AssistantPanel({
             type="button"
             onClick={() => onRunCommand(quickCommand.command)}
             disabled={isRunning}
-            className="rounded-full border border-[var(--line)] bg-[var(--panel-soft)] px-2.5 py-1 text-[11px] font-black text-[var(--muted)] transition hover:border-[var(--brand)] hover:text-white disabled:opacity-50"
+            className="badge badge-muted cursor-pointer py-1.5 transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] hover:text-[var(--brand)] disabled:opacity-50"
           >
             {quickCommand.label}
           </button>
@@ -4728,27 +4727,26 @@ function AssistantPanel({
       </div>
       <div className="max-h-64 space-y-2 overflow-auto pr-1">
         {isRunning ? (
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-2 text-xs font-black text-[var(--brand)]">
-            يفهم الأمر ويجهز الأكشنات...
+          <div className="msg-assistant fade-in flex items-center gap-2">
+            <span className="think-dot" />
+            <span className="think-dot" />
+            <span className="think-dot" />
+            <span className="mr-2 text-xs font-semibold text-[var(--muted)]">يفهم الأمر ويجهز الأكشنات...</span>
           </div>
         ) : null}
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`rounded-lg border p-2 text-xs font-semibold leading-5 ${
-              message.role === "user"
-                ? "border-[var(--brand)] bg-[var(--brand-soft)] text-white"
-                : "border-[var(--line)] bg-[var(--panel-soft)] text-[var(--muted)]"
-            }`}
+            className={`fade-in ${message.role === "user" ? "msg-user" : "msg-assistant"}`}
             dir="auto"
           >
-            <p>{message.role === "user" ? `You: ${message.content}` : message.content}</p>
+            <p>{message.role === "user" ? `أنت: ${message.content}` : message.content}</p>
             {message.actions?.length ? (
               <div className="mt-2 flex flex-wrap gap-1">
                 {message.actions.map((action) => (
                   <span
                     key={`${message.id}-${action.type}`}
-                    className="rounded-md border border-[var(--brand)] bg-black/25 px-1.5 py-0.5 text-[10px] font-black text-[var(--brand)]"
+                    className="action-tag"
                   >
                     ✓ {action.label}
                   </span>
@@ -4763,14 +4761,19 @@ function AssistantPanel({
 }
 
 function StatusPill({ label, active }: { label: string; active: boolean }) {
-  return <span className={`rounded-md px-3 py-1.5 ${active ? "bg-[var(--brand)] text-black" : "text-[var(--muted)]"}`}>{label}</span>;
+  return (
+    <span className={`status-pill ${active ? "active" : "inactive"}`}>
+      {active && <span className="pulse-dot mr-1.5 inline-block" />}
+      {label}
+    </span>
+  );
 }
 
 function PanelHeading({ icon: Icon, title }: { icon: LucideIcon; title: string }) {
   return (
-    <div className="mb-4 flex items-center gap-2">
-      <Icon className="h-4 w-4 text-[var(--brand)]" aria-hidden="true" />
-      <h2 className="text-sm font-black">{title}</h2>
+    <div className="section-heading mb-4">
+      <Icon className="section-heading-icon h-4 w-4" aria-hidden="true" />
+      <h2>{title}</h2>
     </div>
   );
 }
@@ -4793,11 +4796,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-xs font-black transition disabled:opacity-40 ${
-        tone === "danger"
-          ? "border-red-400/40 bg-red-500/10 text-red-100 hover:border-red-300"
-          : "border-[var(--line)] bg-[var(--panel-soft)] hover:border-[var(--brand)]"
-      }`}
+      className={`toolbar-btn${tone === "danger" ? " danger" : ""}`}
     >
       <Icon className="h-4 w-4" aria-hidden="true" />
       {label}
@@ -4807,7 +4806,7 @@ function ToolbarButton({
 
 function CompactButton({ label, icon: Icon, onClick }: { label: string; icon: LucideIcon; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-2 py-2 text-[11px] font-black transition hover:border-[var(--brand)]">
+    <button type="button" onClick={onClick} className="toolbar-btn justify-center px-2 text-[11px]">
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       {label}
     </button>
@@ -4862,8 +4861,8 @@ function LibraryList({ title, items, icon: Icon }: { title: string; items: strin
 
 function EmptyMini({ label }: { label: string }) {
   return (
-    <div className="grid min-h-28 place-items-center rounded-lg border border-dashed border-[var(--line-strong)] bg-[var(--panel-soft)] p-4 text-center">
-      <p className="text-xs font-bold leading-5 text-[var(--muted)]">{label}</p>
+    <div className="empty-state min-h-28 rounded-lg border border-dashed border-[var(--line-strong)]">
+      <p className="empty-state-sub">{label}</p>
     </div>
   );
 }
