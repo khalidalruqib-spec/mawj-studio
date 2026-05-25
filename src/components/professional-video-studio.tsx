@@ -1918,21 +1918,81 @@ export function ProfessionalVideoStudio() {
   }
 
   function removeLongPauses() {
+    // Detect real silence gaps from actual transcript segments
+    const activeTranscript = transcript.filter((seg) => !seg.deleted);
+    const sorted = [...activeTranscript].sort((a, b) => a.start - b.start);
+    const silenceMarkers: TimelineLayer[] = [];
+
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const gapStart = sorted[i].end;
+      const gapEnd = sorted[i + 1].start;
+      const gap = gapEnd - gapStart;
+      if (gap >= 0.5) {
+        silenceMarkers.push({
+          id: crypto.randomUUID(),
+          type: "effect",
+          name: `Silence ${formatDuration(gapStart)}–${formatDuration(gapEnd)}`,
+          start: gapStart,
+          duration: gap,
+          color: "#60a5fa",
+        });
+      }
+    }
+
+    // If no transcript available, use plan timeline gaps or duration-based estimates
+    if (!silenceMarkers.length) {
+      const total = Math.max(15, studioFile?.durationSeconds ?? totalTimelineSeconds);
+
+      if (plan?.timeline?.length) {
+        for (let i = 0; i < plan.timeline.length - 1; i++) {
+          const gap = plan.timeline[i + 1].start - plan.timeline[i].end;
+          if (gap >= 0.5) {
+            silenceMarkers.push({
+              id: crypto.randomUUID(),
+              type: "effect",
+              name: `Pause at ${formatDuration(plan.timeline[i].end)}`,
+              start: plan.timeline[i].end,
+              duration: gap,
+              color: "#60a5fa",
+            });
+          }
+        }
+      }
+
+      if (!silenceMarkers.length) {
+        // Duration-based estimate when no transcript/plan data
+        const positions = [
+          { start: Math.min(Math.round(total * 0.22), total - 3), duration: Math.min(2, total * 0.07) },
+          { start: Math.min(Math.round(total * 0.55), total - 3), duration: Math.min(1.5, total * 0.05) },
+        ];
+        positions.forEach((pos, i) => {
+          if (pos.start > 0 && pos.start < total) {
+            silenceMarkers.push({
+              id: crypto.randomUUID(),
+              type: "effect",
+              name: `Estimated pause ${i + 1} — ارفع فيديو للكشف الحقيقي`,
+              start: pos.start,
+              duration: pos.duration,
+              color: "#60a5fa",
+            });
+          }
+        });
+      }
+    }
+
+    const count = silenceMarkers.length;
     commitTimeline((tracks) =>
       tracks.map((track) =>
         track.kind === "effects"
-          ? {
-              ...track,
-              layers: [
-                ...track.layers,
-                { id: crypto.randomUUID(), type: "effect", name: "Silence removal", start: 7, duration: 2, color: "#60a5fa" },
-                { id: crypto.randomUUID(), type: "effect", name: "Long pause removed", start: 19, duration: 1.5, color: "#60a5fa" },
-              ],
-            }
+          ? { ...track, layers: [...track.layers, ...silenceMarkers] }
           : track,
       ),
     );
-    setProjectStatus("Long pauses marked for removal");
+    setProjectStatus(
+      count > 0
+        ? `${count} silence region${count !== 1 ? "s" : ""} marked on timeline`
+        : "No silence detected in current transcript",
+    );
   }
 
   function addEffectLayer(name: string, color: string, duration = Math.min(totalTimelineSeconds, 30)) {
@@ -2355,11 +2415,13 @@ export function ProfessionalVideoStudio() {
 
       if (action.type === "REMOVE_SILENCE") {
         removeLongPauses();
+        setActivePanel("transcript");
       }
 
       if (action.type === "EXTRACT_CLIPS") {
         handleAiAction("shorts");
         handleAiAction("moments");
+        setActivePanel("editor");
       }
 
       if (action.type === "IMPROVE_AUDIO") {
@@ -2856,53 +2918,202 @@ export function ProfessionalVideoStudio() {
 
   function handleAiAction(actionId: string) {
     if (actionId === "shorts") {
+      const total = Math.max(15, studioFile?.durationSeconds ?? totalTimelineSeconds);
+
+      // Use plan timeline to anchor the first scene start; fallback to 0
+      const firstSceneStart = plan?.timeline?.[0]?.start ?? 0;
+      const midStart = plan?.timeline?.find((t) => t.intensity === "high")?.start ?? Math.round(total * 0.2);
+
+      const clips: TimelineLayer[] = [
+        {
+          id: crypto.randomUUID(),
+          type: "effect" as const,
+          name: `15s clip · ${formatDuration(firstSceneStart)}–${formatDuration(firstSceneStart + 15)}`,
+          start: firstSceneStart,
+          duration: Math.min(15, total - firstSceneStart),
+          color: "#8ef7c2",
+        },
+        {
+          id: crypto.randomUUID(),
+          type: "effect" as const,
+          name: `30s clip · ${formatDuration(midStart)}–${formatDuration(midStart + 30)}`,
+          start: midStart,
+          duration: Math.min(30, total - midStart),
+          color: "#a78bfa",
+        },
+        {
+          id: crypto.randomUUID(),
+          type: "effect" as const,
+          name: `60s cut · 0–${formatDuration(Math.min(60, total))}`,
+          start: 0,
+          duration: Math.min(60, total),
+          color: "#fbbf24",
+        },
+      ].filter((clip) => clip.duration >= 3);
+
       commitTimeline((tracks) =>
         tracks.map((track) =>
           track.kind === "effects"
-            ? {
-                ...track,
-                layers: [
-                  ...track.layers,
-                  { id: crypto.randomUUID(), type: "effect", name: "15s clip", start: 0, duration: 15, color: "#8ef7c2" },
-                  { id: crypto.randomUUID(), type: "effect", name: "30s clip", start: 3, duration: 30, color: "#a78bfa" },
-                  { id: crypto.randomUUID(), type: "effect", name: "60s clip", start: 0, duration: 60, color: "#fbbf24" },
-                ],
-              }
+            ? { ...track, layers: [...track.layers, ...clips] }
             : track,
         ),
       );
-      setProjectStatus("AI clip versions generated");
+      setProjectStatus(`${clips.length} clip versions marked on timeline (15s, 30s, 60s)`);
     }
 
     if (actionId === "titles") {
-      setAssistantMessages((messages) => [
-        createAssistantMessage("assistant", "Titles: لا تفوّت أول 3 ثواني | From raw footage to pro ad | Save this editing trick"),
-        createAssistantMessage("assistant", "Hashtags: #صناعة_المحتوى #مونتاج #ريلز #تيك_توك"),
-        ...messages,
-      ].slice(0, 12));
+      // Use real plan/transcript data when available
+      const baseTitle = plan?.title ?? (transcript.length ? transcript[0].text.slice(0, 60).trim() : null);
+      const hook = plan?.hook ?? null;
+      const platformTag =
+        platform === "tiktok" ? "#تيك_توك"
+        : platform === "instagram" ? "#ريلز"
+        : platform === "shorts" ? "#شورتس"
+        : "#سوشال";
+
+      const titles = baseTitle
+        ? [
+            baseTitle,
+            hook ?? `لا تفوّت هذا المقطع`,
+            `${baseTitle.slice(0, 36)} | جرب هذا`,
+          ]
+        : [
+            "لا تكمل قبل ما تشوف هذا المقطع كاملاً",
+            "الطريقة الأسرع لتحويل فيديو عادي لمحتوى يشد الانتباه",
+            "ارفع الفيديو واضغط Generate للحصول على عناوين مخصصة",
+          ];
+
+      const hashtags = `#صناعة_المحتوى #مونتاج #محتوى_رقمي ${platformTag} #موج_ستوديو`;
+
+      setAssistantMessages((messages) =>
+        [
+          createAssistantMessage(
+            "assistant",
+            `عناوين مقترحة${baseTitle ? "" : " (ارفع فيديو للحصول على عناوين مخصصة)"}:\n• ${titles.join("\n• ")}\n\nهاشتاقات: ${hashtags}`,
+          ),
+          ...messages,
+        ].slice(0, 12),
+      );
     }
 
     if (actionId === "summary") {
-      setAssistantMessages((messages) => [
-        createAssistantMessage("assistant", "Summary: The strongest angle is a fast before/after transformation with Arabic captions and a direct CTA."),
-        ...messages,
-      ].slice(0, 12));
+      const summaryText = plan
+        ? `الفيديو: "${plan.title}". المدة المقترحة ${plan.targetDurationSeconds}s. الـ Hook: "${plan.hook}". الخلاصة: ${plan.summary}`
+        : transcript.length
+          ? `المحتوى يغطي: "${transcript
+              .slice(0, 2)
+              .map((s) => s.text)
+              .join(" ")
+              .slice(0, 140)}..."\n\nالزاوية الأقوى: تحويل سريع مع كابشن عربي واضح ودعوة مباشرة للتفاعل.`
+          : `ارفع فيديو أو صور ثم اضغط Generate لتحليل المحتوى واقتراح أفضل زاوية للمنصة.`;
+
+      setAssistantMessages((messages) =>
+        [createAssistantMessage("assistant", summaryText), ...messages].slice(0, 12),
+      );
     }
 
     if (actionId === "moments") {
-      setAssistantMessages((messages) => [
-        createAssistantMessage(
-          "assistant",
-          "Best moments: 0-3s hook, 9-16s value proof, 18-23s CTA. Suggested for TikTok/Reels/Shorts.",
-          [{ type: "EXTRACT_CLIPS", label: "Best moments marked" }],
+      const total = Math.max(15, studioFile?.durationSeconds ?? totalTimelineSeconds);
+
+      // Derive moment timestamps from plan timeline, transcript, or duration estimates
+      let hookEnd: number;
+      let valueStart: number;
+      let valueEnd: number;
+      let ctaStart: number;
+
+      if (plan?.timeline?.length) {
+        const hookItem = plan.timeline[0];
+        hookEnd = hookItem.end ?? Math.min(4, total * 0.15);
+
+        const valueItem =
+          plan.timeline.find((t) => t.intensity === "high" && t.start > hookEnd) ??
+          plan.timeline[1] ??
+          null;
+        valueStart = valueItem?.start ?? hookEnd;
+        valueEnd = valueItem?.end ?? Math.min(valueStart + 10, total * 0.75);
+
+        const ctaItem = plan.timeline.at(-1);
+        ctaStart = ctaItem?.start ?? Math.max(hookEnd + 5, total - 6);
+      } else if (transcript.length) {
+        const sorted = [...transcript].sort((a, b) => a.start - b.start);
+        hookEnd = sorted[0]?.end ?? Math.min(3, total * 0.1);
+        valueStart = hookEnd;
+        valueEnd = sorted[Math.min(2, sorted.length - 1)]?.end ?? Math.min(hookEnd + 10, total * 0.7);
+        ctaStart = sorted.at(-1)?.start ?? Math.max(hookEnd + 5, total - 6);
+      } else {
+        hookEnd = Math.min(3, total * 0.12);
+        valueStart = hookEnd;
+        valueEnd = Math.min(hookEnd + 10, total * 0.7);
+        ctaStart = Math.max(hookEnd + 5, total - 6);
+      }
+
+      const momentLayers: TimelineLayer[] = [
+        {
+          id: crypto.randomUUID(),
+          type: "effect" as const,
+          name: `Hook 0–${formatDuration(hookEnd)}`,
+          start: 0,
+          duration: Math.max(1, hookEnd),
+          color: "#fbbf24",
+        },
+        {
+          id: crypto.randomUUID(),
+          type: "effect" as const,
+          name: `Value ${formatDuration(valueStart)}–${formatDuration(valueEnd)}`,
+          start: valueStart,
+          duration: Math.max(1, valueEnd - valueStart),
+          color: "#8ef7c2",
+        },
+        {
+          id: crypto.randomUUID(),
+          type: "effect" as const,
+          name: `CTA ${formatDuration(ctaStart)}`,
+          start: ctaStart,
+          duration: Math.max(2, total - ctaStart),
+          color: "#a78bfa",
+        },
+      ].filter((layer) => layer.start >= 0 && layer.start < total && layer.duration > 0);
+
+      commitTimeline((tracks) =>
+        tracks.map((track) =>
+          track.kind === "effects"
+            ? { ...track, layers: [...track.layers, ...momentLayers] }
+            : track,
         ),
-        ...messages,
-      ].slice(0, 12));
+      );
+
+      const source = plan ? "AI plan" : transcript.length ? "transcript" : "duration estimate";
+      setAssistantMessages((messages) =>
+        [
+          createAssistantMessage(
+            "assistant",
+            `أفضل اللحظات (من ${source}):\n• Hook 0–${formatDuration(hookEnd)} — اجذب الانتباه\n• Value ${formatDuration(valueStart)}–${formatDuration(valueEnd)} — القيمة الأساسية\n• CTA ${formatDuration(ctaStart)}+ — دعوة للتفاعل\n\nتم تمييزها على الـ timeline.`,
+            [{ type: "EXTRACT_CLIPS", label: `Moments marked from ${source}` }],
+          ),
+          ...messages,
+        ].slice(0, 12),
+      );
     }
   }
 
   async function runAiTool(tool: AiToolItem) {
     const imageAssets = mediaAssets.filter((asset) => asset.kind === "image");
+    const hasAnyMedia = Boolean(studioFile ?? mediaAssets.length ?? templateProject);
+
+    // Guard: tools that require media show a helpful message instead of failing silently
+    if (tool.needsMedia && !hasAnyMedia) {
+      setAssistantMessages((messages) =>
+        [
+          createAssistantMessage(
+            "assistant",
+            `${tool.title}: ارفع فيديو أو صوت أو صور أولاً لتفعيل هذه الأداة.`,
+          ),
+          ...messages,
+        ].slice(0, 12),
+      );
+      setActivePanel("editor");
+      return;
+    }
 
     if (tool.id === "idea-to-video" && !studioFile && imageAssets.length) {
       setPlatform("tiktok");
@@ -2950,9 +3161,7 @@ export function ProfessionalVideoStudio() {
 
     if (tool.id === "remove-silence") {
       removeLongPauses();
-      handleAiAction("moments");
       setActivePanel("transcript");
-      setProjectStatus("Silence removal markers applied");
       return;
     }
 
@@ -2962,6 +3171,7 @@ export function ProfessionalVideoStudio() {
       setStyleId("viral-saudi");
       setCaptionTemplate("Saudi Viral Bold");
       setProjectStatus("Project resized for TikTok/Reels/Shorts safe margins");
+      return;
     }
 
     if (tool.id === "remove-background") {
@@ -2970,22 +3180,24 @@ export function ProfessionalVideoStudio() {
       return;
     }
 
+    // Open the panel first so the user sees the destination
     if (tool.openPanel) {
       setActivePanel(tool.openPanel);
     }
 
+    // actionId takes priority over command to avoid duplicate timeline writes
     if (tool.actionId) {
       handleAiAction(tool.actionId);
+      return;
     }
 
+    // Command fallback: run through the full AI assistant pipeline
     if (tool.command) {
       await runAssistantCommand(tool.command);
       return;
     }
 
-    if (tool.openPanel && !tool.actionId) {
-      setProjectStatus(`${tool.title} ready`);
-    }
+    setProjectStatus(`${tool.title} ready`);
   }
 }
 

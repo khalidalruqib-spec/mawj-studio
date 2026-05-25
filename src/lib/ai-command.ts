@@ -101,52 +101,87 @@ export function resolveLocalAICommand(
     });
   }
 
-  if (matchesAny(text, ["caption", "captions", "subtitle", "subtitles", "كابشن", "كابتشن", "ترجمة", "عربي"])) {
+  if (
+    matchesAny(text, [
+      "caption", "captions", "subtitle", "subtitles",
+      "كابشن", "كابتشن", "ترجمة", "عربي", "نص", "نصوص",
+    ])
+  ) {
     actions.push({
       type: "ADD_ARABIC_CAPTIONS",
       label: "إنشاء كابشن عربي قابل للتعديل",
     });
   }
 
-  if (matchesAny(text, ["silence", "pause", "pauses", "صمت", "سكوت", "فراغ", "توقف"])) {
+  if (
+    matchesAny(text, [
+      "silence", "pause", "pauses", "quiet", "dead air",
+      "صمت", "سكوت", "فراغ", "توقف", "احذف الصمت", "ازل الصمت",
+    ])
+  ) {
     actions.push({
       type: "REMOVE_SILENCE",
-      label: "تحديد مناطق الصمت في مسار المؤثرات",
+      label: "كشف وتحديد مناطق الصمت على الـ timeline",
     });
   }
 
-  if (matchesAny(text, ["best", "highlight", "moments", "clips", "أفضل", "لحظات", "مقاطع"])) {
+  if (
+    matchesAny(text, [
+      "best", "highlight", "highlights", "moments", "clips", "extract", "cut",
+      "أفضل", "لحظات", "مقاطع", "استخرج", "نسخ", "short", "شورت",
+    ])
+  ) {
     actions.push({
       type: "EXTRACT_CLIPS",
-      label: "اقتراح نسخ 15s و30s و60s",
+      label: "تحديد أفضل اللحظات وإنشاء نسخ 15s و30s و60s",
     });
   }
 
-  if (matchesAny(text, ["audio", "voice", "noise", "صوت", "ضوضاء", "نقاء"])) {
+  if (
+    matchesAny(text, [
+      "audio", "voice", "noise", "enhance", "clean", "echo", "volume",
+      "صوت", "ضوضاء", "نقاء", "تنظيف", "صدى", "نظف",
+    ])
+  ) {
     actions.push({
       type: "IMPROVE_AUDIO",
-      label: "تفعيل تنظيف الصوت ورفع الوضوح",
+      label: "تفعيل سلسلة تنظيف الصوت",
     });
   }
 
-  if (matchesAny(text, ["background", "خلفية", "استوديو", "blur"])) {
+  if (
+    matchesAny(text, [
+      "background", "bg", "remove bg", "studio", "blur",
+      "خلفية", "استوديو", "احذف الخلفية", "ازل الخلفية",
+    ])
+  ) {
     actions.push({
       type: "REMOVE_BACKGROUND",
       label: "تجهيز استبدال الخلفية",
     });
   }
 
-  if (matchesAny(text, ["ad", "ads", "اعلان", "إعلان", "تسويق", "بيع"])) {
+  if (
+    matchesAny(text, [
+      "ad", "ads", "advertisement", "commercial", "marketing", "cta", "sell",
+      "اعلان", "إعلان", "تسويق", "بيع", "عرض", "منتج",
+    ])
+  ) {
     actions.push({
       type: "CREATE_AD_VERSION",
-      label: "إنشاء نسخة إعلانية",
+      label: "إنشاء نسخة إعلانية بـ hook وCTA",
     });
   }
 
-  if (matchesAny(text, ["professional", "احترافي", "فخم", "luxury", "نظيف"])) {
+  if (
+    matchesAny(text, [
+      "professional", "luxury", "premium", "clean", "minimal",
+      "احترافي", "فخم", "راقي", "نظيف", "مينيمال",
+    ])
+  ) {
     actions.push({
       type: "APPLY_PRO_STYLE",
-      label: "تطبيق ستايل احترافي أنظف",
+      label: "تطبيق ستايل احترافي فاخر",
     });
   }
 
@@ -156,6 +191,12 @@ export function resolveLocalAICommand(
         type: "CREATE_IMAGE_STORYBOARD",
         label: "تحويل الصور إلى فيديو بمشاهد وطبقات قابلة للتعديل",
         params: { imageCount: context.imageCount ?? context.mediaCount ?? 0 },
+      });
+    } else if (context.hasVideo) {
+      // Default for video: suggest captions as the most common first action
+      actions.push({
+        type: "ADD_ARABIC_CAPTIONS",
+        label: "إضافة كابشن عربي تلقائي للفيديو",
       });
     } else {
       actions.push({
@@ -170,8 +211,12 @@ export function resolveLocalAICommand(
   return {
     message: buildLocalAssistantMessage(actions, context, targetCut),
     actions,
-    engine: context.hasVideo ? "Local timeline command engine" : "Local storyboard command engine",
-    confidence: Math.min(94, 74 + actions.length * 5 + (context.hasVideo ? 5 : 0)),
+    engine: context.hasVideo
+      ? "Local timeline command engine"
+      : context.hasImages
+        ? "Local storyboard command engine"
+        : "Local command engine",
+    confidence: Math.min(94, 70 + actions.length * 6 + (context.hasVideo ? 8 : 0) + (context.captionCount ? 4 : 0)),
     targetCut,
     mode: "local",
   };
