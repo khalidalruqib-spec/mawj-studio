@@ -2557,7 +2557,7 @@ function TimelineEditor({
           {formatDuration(totalSeconds)}
         </div>
       </div>
-      <div className="overflow-x-auto p-4">
+      <div className="overflow-x-auto p-4" dir="ltr">
         <div className="min-w-[820px]" style={{ width: `${canvasWidth}px` }}>
           <canvas
             ref={canvasRef}
