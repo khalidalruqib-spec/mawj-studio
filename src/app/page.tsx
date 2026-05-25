@@ -1,5 +1,5 @@
-import { StudioWorkspace } from "@/components/studio-workspace";
+import { ProfessionalVideoStudio } from "@/components/professional-video-studio";
 
 export default function Home() {
-  return <StudioWorkspace />;
+  return <ProfessionalVideoStudio />;
 }

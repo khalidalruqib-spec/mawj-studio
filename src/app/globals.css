@@ -76,6 +76,28 @@ button:disabled {
   box-shadow: 0 0 0 3px var(--brand-soft);
 }
 
+.icon-button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  width: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  color: var(--foreground);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.icon-button:hover {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
 ::selection {
   background: var(--brand);
   color: #050608;
