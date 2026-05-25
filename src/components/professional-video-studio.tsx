@@ -1564,9 +1564,9 @@ export function ProfessionalVideoStudio() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href="/templates" className="hidden min-h-11 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-sm font-black transition hover:border-[var(--brand)] md:flex">
+            <Link href="/templates" className="flex min-h-11 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-sm font-black transition hover:border-[var(--brand)]">
               <LayoutTemplate className="h-4 w-4" aria-hidden="true" />
-              Templates
+              <span className="hidden sm:inline">Templates</span>
             </Link>
             <button type="button" onClick={saveProjectSnapshot} className="icon-button" aria-label="Save project">
               <Save className="h-4 w-4" aria-hidden="true" />
@@ -1613,6 +1613,21 @@ export function ProfessionalVideoStudio() {
               {PANELS.map((panel) => {
                 const Icon = panel.icon;
                 const active = activePanel === panel.id;
+                if (panel.id === "templates") {
+                  return (
+                    <Link
+                      key={panel.id}
+                      href="/templates"
+                      className="flex min-h-14 items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-left text-[var(--muted)] transition hover:border-[var(--brand)] hover:text-white"
+                    >
+                      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <span className="min-w-0">
+                        <span className="block truncate text-xs font-black">{panel.label}</span>
+                        <span className="block truncate text-[11px] font-semibold opacity-75">Open library</span>
+                      </span>
+                    </Link>
+                  );
+                }
                 return (
                   <button
                     key={panel.id}
