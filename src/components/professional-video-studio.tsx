@@ -76,6 +76,7 @@ import {
   hasSupabaseBrowserEnv,
 } from "@/lib/supabase/client";
 import {
+  deleteMediaRecord,
   getLatestProjectSnapshot,
   listMediaRecords,
   storeMediaFile,
@@ -1112,6 +1113,36 @@ export function ProfessionalVideoStudio() {
     setProjectStatus(`${asset.name} added to timeline`);
   }
 
+  function clearSourceVideoState() {
+    if (studioFile?.url) revokeObjectUrl(studioFile.url);
+    videoRef.current?.pause();
+    setStudioFile(null);
+    setActiveProject(null);
+    setTemplateProject(null);
+    setPlan(null);
+    setIsPlaying(false);
+    setPreviewTime(0);
+    clearRenderedOutput();
+  }
+
+  function deleteMediaAsset(asset: MediaAsset) {
+    const isCurrentSource = studioFile?.url === asset.url || studioFile?.file.name === asset.name;
+    const nextTracks = removeAssetFromTimeline(timelineTracks, asset, isCurrentSource);
+    const nextLayer = nextTracks.flatMap((track) => track.layers)[0] ?? null;
+
+    if (isCurrentSource) {
+      clearSourceVideoState();
+    }
+
+    revokeObjectUrl(asset.url);
+    setMediaAssets((assets) => assets.filter((item) => item.id !== asset.id));
+    void deleteMediaRecord(asset.id).catch(() => undefined);
+    commitTimeline(nextTracks);
+    setSelectedLayerId(nextLayer?.id ?? "");
+    selectEngineLayer(nextLayer?.id ?? null);
+    setProjectStatus(`${asset.name} deleted from media and timeline`);
+  }
+
   function selectVideoAssetAsSource(asset: MediaAsset) {
     if (asset.kind !== "video") return;
     const durationSeconds = Math.round(asset.durationSeconds ?? 60);
@@ -1552,16 +1583,36 @@ export function ProfessionalVideoStudio() {
   function deleteSelectedLayer() {
     if (!selectedLayer) return;
 
+    const sourceAsset = findSourceAssetForLayer(selectedLayer, mediaAssets, studioFile);
+    const deletesSourceVideo = selectedLayer.type === "video" && Boolean(sourceAsset || isPrimarySourceLayer(selectedLayer, studioFile));
     const nextTracks = timelineTracks.map((track) => ({
       ...track,
-      layers: track.layers.filter((layer) => layer.id !== selectedLayer.id),
+      layers: track.layers.filter((layer) => {
+        if (layer.id === selectedLayer.id) return false;
+        if (!deletesSourceVideo) return true;
+        if (sourceAsset && layer.id === sourceAsset.id) return false;
+        return !["audio-main"].includes(layer.id);
+      }),
     }));
     const nextLayer = nextTracks.flatMap((track) => track.layers)[0] ?? null;
+
+    if (deletesSourceVideo) {
+      clearSourceVideoState();
+      if (sourceAsset) {
+        revokeObjectUrl(sourceAsset.url);
+        setMediaAssets((assets) => assets.filter((asset) => asset.id !== sourceAsset.id));
+        void deleteMediaRecord(sourceAsset.id).catch(() => undefined);
+      }
+    }
 
     commitTimeline(nextTracks);
     setSelectedLayerId(nextLayer?.id ?? "");
     selectEngineLayer(nextLayer?.id ?? null);
-    setProjectStatus(`${selectedLayer.name} deleted from timeline`);
+    setProjectStatus(
+      deletesSourceVideo
+        ? `${selectedLayer.name} deleted from preview, media, and timeline`
+        : `${selectedLayer.name} deleted from timeline`,
+    );
   }
 
   function mergeVideoLayers() {
@@ -2237,6 +2288,13 @@ export function ProfessionalVideoStudio() {
                         {isTranscribing ? "Captioning..." : "Auto-caption"}
                       </button>
                     ) : null}
+                    <button
+                      type="button"
+                      onClick={() => deleteMediaAsset(asset)}
+                      className="col-span-2 min-h-9 rounded-md border border-red-400/40 bg-red-500/10 px-2 text-[11px] font-black text-red-100 transition hover:border-red-300"
+                    >
+                      Delete media
+                    </button>
                   </div>
                 </div>
               ))}
@@ -4413,6 +4471,47 @@ function ensureCaptionLayer(tracks: TimelineTrack[], captions: CaptionLine[], du
 
 function getTrackEnd(track: TimelineTrack) {
   return track.layers.reduce((end, layer) => Math.max(end, layer.start + layer.duration), 0);
+}
+
+function findSourceAssetForLayer(
+  layer: TimelineLayer,
+  mediaAssets: MediaAsset[],
+  studioFile: StudioFile | null,
+) {
+  return mediaAssets.find((asset) => {
+    if (asset.id === layer.id) return true;
+    if (layer.src && asset.url === layer.src) return true;
+    if (studioFile && asset.url === studioFile.url && layer.type === "video") return true;
+    return asset.name === layer.name && asset.kind === layer.type;
+  }) ?? null;
+}
+
+function isPrimarySourceLayer(layer: TimelineLayer, studioFile: StudioFile | null) {
+  if (layer.type !== "video" || !studioFile) return false;
+  return layer.id === "clip-main" || layer.src === studioFile.url || layer.name === studioFile.file.name;
+}
+
+function removeAssetFromTimeline(
+  tracks: TimelineTrack[],
+  asset: MediaAsset,
+  isCurrentSource: boolean,
+) {
+  return tracks.map((track) => ({
+    ...track,
+    layers: track.layers.filter((layer) => {
+      if (layer.id === asset.id) return false;
+      if (layer.src && layer.src === asset.url) return false;
+      if (layer.name === asset.name && layer.type === asset.kind) return false;
+      if (isCurrentSource && ["clip-main", "audio-main"].includes(layer.id)) return false;
+      return true;
+    }),
+  }));
+}
+
+function revokeObjectUrl(url?: string) {
+  if (url?.startsWith("blob:")) {
+    URL.revokeObjectURL(url);
+  }
 }
 
 function createAssistantMessage(
