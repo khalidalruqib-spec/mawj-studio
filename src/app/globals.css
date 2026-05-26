@@ -3,27 +3,30 @@
 /* ── Design Tokens ─────────────────────────────────────────────────── */
 :root {
   /* Surfaces */
-  --background:   #07080b;
+  --background:   #070913;
   --foreground:   #f0f2f8;
-  --panel:        #0e1017;
-  --panel-soft:   #13161f;
-  --panel-raised: #181c27;
+  --panel:        #0c0f1a;
+  --panel-soft:   #111522;
+  --panel-raised: #161b2b;
 
   /* Lines */
-  --line:         #1f2333;
-  --line-strong:  #2e3447;
-  --line-subtle:  #161929;
+  --line:         #1a2035;
+  --line-strong:  #252d45;
+  --line-subtle:  #12182a;
 
   /* Text */
-  --muted:        #7d899e;
-  --muted-strong: #a0aaba;
+  --muted:        #a0aec0;
+  --muted-strong: #c5ced9;
 
-  /* Brand — Mawj mint-green */
-  --brand:        #7ef2bc;
-  --brand-dim:    #5cd9a0;
-  --brand-soft:   rgba(126, 242, 188, 0.10);
-  --brand-glow:   rgba(126, 242, 188, 0.18);
-  --brand-ring:   rgba(126, 242, 188, 0.30);
+  /* Brand — neon blue + orange accent */
+  --brand:        #00b4d8;
+  --brand-dim:    #0096b8;
+  --brand-soft:   rgba(0, 180, 216, 0.10);
+  --brand-glow:   rgba(0, 180, 216, 0.22);
+  --brand-ring:   rgba(0, 180, 216, 0.35);
+  --accent:       #ff7b00;
+  --accent-soft:  rgba(255, 123, 0, 0.12);
+  --accent-glow:  rgba(255, 123, 0, 0.20);
 
   /* Accent colours */
   --violet:       #a78bfa;
@@ -49,7 +52,7 @@
   --shadow-sm:    0 2px 8px rgba(0,0,0,.25);
   --shadow-md:    0 8px 32px rgba(0,0,0,.32);
   --shadow-lg:    0 20px 72px rgba(0,0,0,.40);
-  --shadow-brand: 0 0 24px rgba(126,242,188,.14);
+  --shadow-brand: 0 0 24px rgba(0, 180, 216, 0.18);
 
   /* Transitions */
   --ease-out:     cubic-bezier(0.2, 0.9, 0.25, 1);
@@ -62,7 +65,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-arabic), var(--font-geist-sans), "Geist", "IBM Plex Sans Arabic", "Noto Kufi Arabic", Tahoma, Arial, sans-serif;
+  --font-sans: var(--font-arabic), var(--font-geist-sans), "Cairo", "Geist", "IBM Plex Sans Arabic", "Noto Kufi Arabic", Tahoma, Arial, sans-serif;
   --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace;
 }
 
@@ -86,7 +89,22 @@ body {
 
 ::selection {
   background: var(--brand);
-  color: #050608;
+  color: #070913;
+}
+
+/* ── Brand typography ──────────────────────────────────────────────── */
+.brand-name-gradient {
+  background: linear-gradient(120deg, #ffffff, #e0e0e0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-divider {
+  width: 2.5rem;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--brand));
 }
 
 /* Thin custom scrollbar */
@@ -228,7 +246,7 @@ button:disabled { cursor: not-allowed; }
   font-size: 0.875rem;
   font-weight: 800;
   background: var(--brand);
-  color: #060a09;
+  color: #ffffff;
   border: 1px solid transparent;
   transition:
     background-color var(--duration-fast) var(--ease-out),
@@ -237,8 +255,8 @@ button:disabled { cursor: not-allowed; }
 }
 
 .btn-brand:hover:not(:disabled) {
-  background: #9fffd0;
-  box-shadow: 0 0 28px rgba(126,242,188,.35);
+  background: var(--brand-dim);
+  box-shadow: 0 0 28px rgba(0, 180, 216, 0.35);
 }
 
 .btn-brand:active:not(:disabled) {
@@ -340,7 +358,7 @@ button:disabled { cursor: not-allowed; }
   letter-spacing: 0.02em;
 }
 
-.badge-brand   { background: var(--brand-soft);   color: var(--brand); border: 1px solid rgba(126,242,188,.2); }
+.badge-brand   { background: var(--brand-soft);   color: var(--brand); border: 1px solid rgba(0,180,216,.25); }
 .badge-violet  { background: var(--violet-soft);  color: var(--violet); border: 1px solid rgba(167,139,250,.2); }
 .badge-amber   { background: var(--amber-soft);   color: var(--amber); border: 1px solid rgba(251,191,36,.2); }
 .badge-muted   { background: var(--panel-raised); color: var(--muted); border: 1px solid var(--line); }

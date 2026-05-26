@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="ring" x1="64" y1="64" x2="448" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ff7b00"/>
+      <stop offset="50%" stop-color="#00b4d8"/>
+      <stop offset="100%" stop-color="#ff7b00"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#00b4d8" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#00b4d8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="play" x1="200" y1="160" x2="360" y2="352" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#48cae4"/>
+      <stop offset="100%" stop-color="#00b4d8"/>
+    </linearGradient>
+  </defs>
+  <circle cx="256" cy="256" r="248" fill="url(#glow)"/>
+  <circle cx="256" cy="256" r="220" stroke="url(#ring)" stroke-width="20"/>
+  <circle cx="256" cy="256" r="188" fill="#070913"/>
+  <path d="M214 168v176l152-88-152-88Z" fill="url(#play)"/>
+  <circle cx="338" cy="174" r="18" fill="#ff7b00"/>
+  <path d="M338 158v8M338 182v8M330 174h8M346 174h8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+</svg>

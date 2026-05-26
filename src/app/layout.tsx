@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { Cairo, Geist, Geist_Mono } from "next/font/google";
 import { BRAND } from "@/lib/brand";
 import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
@@ -18,15 +18,15 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const ibmPlexArabic = IBM_Plex_Sans_Arabic({
+const cairo = Cairo({
   variable: "--font-arabic",
-  subsets: ["arabic"],
-  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["arabic", "latin"],
+  weight: ["300", "400", "600", "700", "900"],
   display: "swap",
 });
 
 export const viewport: Viewport = {
-  themeColor: "#07080b",
+  themeColor: BRAND.colors.background,
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   keywords: [
     "محرر فيديو", "ذكاء اصطناعي", "تيك توك", "انستقرام", "يوتيوب شورتس",
     "video editor", "AI", "Arabic", "Saudi", "short-form content",
-    BRAND.fullName, "موج", "MAWJ",
+    BRAND.fullName, "المنصة", "Al-Manassa", "video AI",
   ],
   authors: [{ name: BRAND.fullName }],
   creator: BRAND.fullName,
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico" },
-      { url: "/mawj-icon.svg", type: "image/svg+xml" },
+      { url: "/platform-logo.svg", type: "image/svg+xml" },
     ],
   },
   robots: {
@@ -90,7 +90,7 @@ export default function RootLayout({
     <html
       lang="ar"
       dir="rtl"
-      className={`${geistSans.variable} ${geistMono.variable} ${ibmPlexArabic.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[--background] text-[--foreground]">
         {children}

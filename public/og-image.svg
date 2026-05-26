@@ -1,25 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#07080b"/>
-      <stop offset="1" stop-color="#0e1017"/>
+      <stop offset="0" stop-color="#070913"/>
+      <stop offset="1" stop-color="#0c0f1a"/>
     </linearGradient>
     <radialGradient id="glow1" cx="0.22" cy="0.18" r="0.55">
-      <stop offset="0" stop-color="rgba(126,242,188,0.22)"/>
-      <stop offset="1" stop-color="rgba(126,242,188,0)"/>
+      <stop offset="0" stop-color="rgba(0,180,216,0.22)"/>
+      <stop offset="1" stop-color="rgba(0,180,216,0)"/>
     </radialGradient>
     <radialGradient id="glow2" cx="0.85" cy="0.85" r="0.65">
-      <stop offset="0" stop-color="rgba(167,139,250,0.14)"/>
-      <stop offset="1" stop-color="rgba(167,139,250,0)"/>
+      <stop offset="0" stop-color="rgba(255,123,0,0.12)"/>
+      <stop offset="1" stop-color="rgba(255,123,0,0)"/>
     </radialGradient>
-    <linearGradient id="markGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#9efcd0"/>
-      <stop offset="45%" stop-color="#7ef2bc"/>
-      <stop offset="100%" stop-color="#4dd4a0"/>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff7b00"/>
+      <stop offset="50%" stop-color="#00b4d8"/>
+      <stop offset="100%" stop-color="#ff7b00"/>
     </linearGradient>
-    <linearGradient id="waveHi" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#b8ffe0"/>
-      <stop offset="100%" stop-color="#7ef2bc"/>
+    <linearGradient id="divider" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff7b00"/>
+      <stop offset="100%" stop-color="#00b4d8"/>
     </linearGradient>
   </defs>
 
@@ -27,36 +27,31 @@
   <rect width="1200" height="630" fill="url(#glow1)"/>
   <rect width="1200" height="630" fill="url(#glow2)"/>
 
-  <!-- Brand mark -->
-  <g transform="translate(80 96) scale(2.8)">
-    <rect width="48" height="48" rx="14" fill="url(#markGrad)"/>
-    <path d="M9 33c5.5-7 11-10 16.5-8.5 3.2 1 6.2 3.8 9 7.5 2.2-4.2 5.8-6.8 10.5-7 4-.2 7.2 1.8 9.5 5.5v4.2c-3.5-3.2-7.2-4.8-11-4.5-4.2.4-7.8 2.8-10.5 6.5-2.8-3.5-6.5-5.8-11-6-4-.2-7.5 1.5-10 4.8V33Z" fill="#071210" opacity="0.88"/>
-    <path d="M10 28.5c4.8-6.5 10-9.2 15.5-7.5 2.8.9 5.2 3 7.2 6 1.8-2.8 4.5-4.5 8-4.8 3.8-.3 7 1.5 9.3 4.8l-3.8 2.8c-1.6-2-3.8-3-6.2-2.8-3 .3-5.2 2-6.5 4.5-2.5-2.5-5.8-4-9.5-3.5-3.2.4-6 2.2-8.2 5v-4.5Z" fill="url(#waveHi)"/>
-    <path d="M31.5 17.5 38 22l-6.5 4.5V17.5Z" fill="#071210"/>
-    <circle cx="14" cy="16" r="2.2" fill="#071210" opacity="0.75"/>
+  <!-- Logo -->
+  <g transform="translate(72 88) scale(2.2)">
+    <circle cx="56" cy="56" r="52" stroke="url(#ring)" stroke-width="5" fill="none"/>
+    <circle cx="56" cy="56" r="44" fill="#070913"/>
+    <path d="M42 36v40l28-20-28-20Z" fill="#00b4d8"/>
+    <circle cx="74" cy="38" r="5" fill="#ff7b00"/>
   </g>
 
-  <!-- Arabic name -->
-  <text x="260" y="168" fill="#f0f2f8" font-family="IBM Plex Sans Arabic, Noto Kufi Arabic, Tahoma, Arial, sans-serif" font-size="72" font-weight="700" direction="rtl">????</text>
-  <text x="260" y="218" fill="#7ef2bc" font-family="Geist, system-ui, sans-serif" font-size="28" font-weight="800" letter-spacing="8">MAWJ</text>
+  <text x="260" y="168" fill="#ffffff" font-family="Cairo, IBM Plex Sans Arabic, Tahoma, sans-serif" font-size="72" font-weight="900" direction="rtl">??????</text>
+  <text x="260" y="228" fill="#a0aec0" font-family="Cairo, IBM Plex Sans Arabic, Tahoma, sans-serif" font-size="30" font-weight="300" direction="rtl">????? ??????? ??????? ?????????</text>
+  <rect x="260" y="252" width="80" height="4" rx="2" fill="url(#divider)"/>
 
-  <!-- Tagline -->
-  <text x="260" y="278" fill="#a0aaba" font-family="IBM Plex Sans Arabic, Noto Kufi Arabic, Tahoma, Arial, sans-serif" font-size="30" font-weight="600" direction="rtl">???? ??????? ?????</text>
-  <text x="260" y="330" fill="#7d899e" font-family="IBM Plex Sans Arabic, Noto Kufi Arabic, Tahoma, Arial, sans-serif" font-size="22" font-weight="500" direction="rtl">????? · ????? AI · ????? TikTok / Reels / Shorts</text>
+  <text x="260" y="310" fill="#7d899e" font-family="Cairo, IBM Plex Sans Arabic, Tahoma, sans-serif" font-size="22" font-weight="500" direction="rtl">????? · ????? AI · ????? TikTok / Reels / Shorts</text>
 
-  <!-- CTA pill -->
-  <g transform="translate(260 380)">
-    <rect x="0" y="0" width="340" height="72" rx="18" fill="rgba(126,242,188,0.12)" stroke="rgba(126,242,188,0.32)" stroke-width="1.5"/>
-    <text x="170" y="46" fill="#7ef2bc" text-anchor="middle" font-family="IBM Plex Sans Arabic, Noto Kufi Arabic, Tahoma, Arial, sans-serif" font-size="24" font-weight="700" direction="rtl">mawj-studio.vercel.app</text>
+  <g transform="translate(260 360)">
+    <rect x="0" y="0" width="360" height="72" rx="18" fill="rgba(0,180,216,0.10)" stroke="rgba(0,180,216,0.30)" stroke-width="1.5"/>
+    <text x="180" y="46" fill="#00b4d8" text-anchor="middle" font-family="Cairo, Tahoma, sans-serif" font-size="24" font-weight="700" direction="rtl">mawj-studio.vercel.app</text>
   </g>
 
-  <!-- Phone mock -->
-  <g opacity="0.6" transform="translate(820 100)">
-    <rect x="0" y="0" width="290" height="400" rx="28" fill="rgba(19,22,31,0.92)" stroke="rgba(46,52,71,0.85)"/>
-    <rect x="24" y="28" width="242" height="22" rx="11" fill="rgba(126,242,188,0.2)"/>
+  <g opacity="0.55" transform="translate(820 100)">
+    <rect x="0" y="0" width="290" height="400" rx="28" fill="rgba(12,15,26,0.92)" stroke="rgba(37,45,69,0.85)"/>
+    <rect x="24" y="28" width="242" height="22" rx="11" fill="rgba(0,180,216,0.18)"/>
     <rect x="24" y="64" width="190" height="16" rx="8" fill="rgba(240,242,248,0.1)"/>
-    <rect x="24" y="96" width="242" height="180" rx="18" fill="rgba(0,0,0,0.25)" stroke="rgba(46,52,71,0.55)"/>
-    <rect x="24" y="296" width="130" height="16" rx="8" fill="rgba(167,139,250,0.18)"/>
-    <rect x="24" y="324" width="242" height="20" rx="10" fill="rgba(126,242,188,0.22)"/>
+    <rect x="24" y="96" width="242" height="180" rx="18" fill="rgba(0,0,0,0.25)" stroke="rgba(37,45,69,0.55)"/>
+    <rect x="24" y="296" width="130" height="16" rx="8" fill="rgba(255,123,0,0.18)"/>
+    <rect x="24" y="324" width="242" height="20" rx="10" fill="rgba(0,180,216,0.22)"/>
   </g>
 </svg>

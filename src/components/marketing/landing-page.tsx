@@ -15,7 +15,7 @@ import {
   Zap,
 } from "lucide-react";
 import { BrandLockup } from "@/components/brand/brand-lockup";
-import { MawjLogo } from "@/components/brand/mawj-logo";
+import { PlatformLogo } from "@/components/brand/platform-logo";
 import { SiteHeader } from "@/components/site/site-header";
 import { Badge } from "@/design-system/badge";
 import { Button } from "@/design-system/button";
@@ -63,7 +63,7 @@ const STEPS = [
 
 const FAQ = [
   {
-    q: "هل مَوج بديل عن CapCut؟",
+    q: "هل المنصة بديل عن CapCut؟",
     a: `${BRAND.nameAr} مصمم للأتمتة والقوالب العربية داخل المتصفح. الهدف: من رفع الفيديو إلى نسخة جاهزة للنشر بأقل خطوات.`,
   },
   {
@@ -80,8 +80,8 @@ export function LandingPage() {
   return (
     <div className="min-h-dvh bg-[var(--background)] text-[var(--foreground)]">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-32 right-0 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(126,242,188,0.12),transparent_70%)]" />
-        <div className="absolute bottom-0 left-0 h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,rgba(167,139,250,0.08),transparent_70%)]" />
+        <div className="absolute -top-32 right-0 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(0,180,216,0.14),transparent_70%)]" />
+        <div className="absolute bottom-0 left-0 h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,rgba(255,123,0,0.08),transparent_70%)]" />
       </div>
 
       <SiteHeader marketing />
@@ -92,7 +92,7 @@ export function LandingPage() {
           <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
             <div>
               <Badge tone="brand" className="mb-5">
-                <MawjLogo className="h-3.5 w-3.5" aria-hidden="true" />
+                <PlatformLogo size={14} className="!shadow-none" aria-hidden="true" />
                 {BRAND.taglineAr}
               </Badge>
               <h1 className="text-balance text-4xl font-black leading-[1.15] tracking-tight sm:text-5xl lg:text-[3.25rem]">
@@ -141,7 +141,7 @@ export function LandingPage() {
                     <p className="text-center text-2xl font-black text-[var(--brand)]">+٣٠٠٪</p>
                     <p className="text-center text-xs font-bold text-[var(--muted)]">تفاعل بعد أول أسبوع</p>
                   </div>
-                  <p className="rounded-lg bg-[var(--brand)] py-2 text-center text-sm font-black text-[#060a09]">
+                  <p className="rounded-lg bg-[var(--brand)] py-2 text-center text-sm font-black text-white">
                     اطلب العرض الآن ←
                   </p>
                 </div>
@@ -305,7 +305,7 @@ export function LandingPage() {
       <footer className="border-t border-[var(--line)] py-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <BrandLockup size="sm" showTagline={false} showLatin={false} />
+            <BrandLockup size="sm" showTagline={false} />
             <p className="text-xs font-semibold text-[var(--muted)]">
               © {new Date().getFullYear()} {BRAND.fullName}
             </p>
