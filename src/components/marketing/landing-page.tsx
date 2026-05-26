@@ -305,7 +305,7 @@ export function LandingPage() {
       <footer className="border-t border-[var(--line)] py-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <BrandLockup size="sm" showTagline={false} />
+            <BrandLockup size="sm" mode="official" />
             <p className="text-xs font-semibold text-[var(--muted)]">
               © {new Date().getFullYear()} {BRAND.fullName}
             </p>

@@ -56,10 +56,10 @@ export const metadata: Metadata = {
     description: BRAND.description,
     images: [
       {
-        url: "/og-image.svg",
-        width: 1200,
-        height: 630,
-        alt: `${BRAND.fullName} — AI Video Editor`,
+        url: "/platform-logo.png",
+        width: 1024,
+        height: 558,
+        alt: `${BRAND.fullName} — ${BRAND.taglineAr}`,
       },
     ],
   },
@@ -67,13 +67,14 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: BRAND.metaTitle,
     description: BRAND.taglineAr,
-    images: ["/og-image.svg"],
+    images: ["/platform-logo.png"],
   },
   icons: {
     icon: [
-      { url: "/favicon.ico" },
+      { url: "/platform-icon.png", type: "image/png" },
       { url: "/platform-logo.svg", type: "image/svg+xml" },
     ],
+    apple: [{ url: "/platform-icon.png", type: "image/png" }],
   },
   robots: {
     index: true,

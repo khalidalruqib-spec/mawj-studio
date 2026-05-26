@@ -4,30 +4,45 @@ import { PlatformLogo } from "@/components/brand/platform-logo";
 type BrandLockupProps = {
   /** sm = header · md = default · lg = hero */
   size?: "sm" | "md" | "lg";
+  /** official = bundled PNG lockup · text = icon + typography fallback */
+  mode?: "official" | "text";
   showTagline?: boolean;
   showLatin?: boolean;
   showDivider?: boolean;
-  /** Override default tagline */
+  /** Override default tagline (text mode only) */
   tagline?: string;
   className?: string;
 };
 
-const SIZES = {
+const LOCKUP_HEIGHT = { sm: 36, md: 44, lg: 72 } as const;
+
+const TEXT_SIZES = {
   sm: { icon: 36, name: "text-[14px]", latin: "text-[9px]", tagline: "text-[10px]" },
   md: { icon: 40, name: "text-[15px]", latin: "text-[10px]", tagline: "text-[11px]" },
   lg: { icon: 56, name: "text-2xl", latin: "text-xs", tagline: "text-sm" },
 } as const;
 
-/** Header / hero brand lockup: circular logo + المنصة + tagline. */
+/** Header / hero brand lockup — official PNG or text fallback. */
 export function BrandLockup({
   size = "md",
+  mode = "official",
   showTagline = true,
   showLatin = false,
   showDivider = false,
   tagline,
   className = "",
 }: BrandLockupProps) {
-  const s = SIZES[size];
+  if (mode === "official") {
+    return (
+      <PlatformLogo
+        variant="lockup"
+        lockupHeight={LOCKUP_HEIGHT[size]}
+        className={className}
+      />
+    );
+  }
+
+  const s = TEXT_SIZES[size];
   const taglineText = tagline ?? BRAND.taglineAr;
 
   return (

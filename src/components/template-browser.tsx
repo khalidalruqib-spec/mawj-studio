@@ -218,11 +218,7 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
       <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
-            <BrandLockup
-              size="sm"
-              showLatin={false}
-              tagline="سوق القوالب — مشاريع مونتاج جاهزة"
-            />
+            <BrandLockup size="sm" mode="official" />
           </div>
           <button type="button" onClick={() => router.push("/studio")} className="btn-ghost">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />

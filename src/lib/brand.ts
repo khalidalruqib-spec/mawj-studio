@@ -16,11 +16,12 @@ export const BRAND = {
     "المنصة — صناعة الفيديو بالذكاء الاصطناعي للمبدعين السعوديين والعرب. حوّل أفكارك إلى محتوى احترافي لـ TikTok وInstagram وYouTube Shorts.",
   /** SEO / OG title */
   metaTitle: "المنصة — صناعة الفيديو بالذكاء الاصطناعي",
-  /** Local logo (bundled). Replace public/platform-logo.svg when official PNG is available. */
-  logoSrc: "/platform-logo.svg",
-  /** Official remote logo — fallback reference */
-  logoRemoteUrl:
-    "https://images.prodia.technology/6ffb131c-c760-449e-ba63-df62be552ccf.png",
+  /** Full horizontal lockup (icon + name + slogan) */
+  logoLockupSrc: "/platform-logo.png",
+  /** Square icon mark — cropped from official lockup */
+  logoIconSrc: "/platform-icon.png",
+  /** @deprecated use logoIconSrc or logoLockupSrc */
+  logoSrc: "/platform-icon.png",
   colors: {
     background: "#070913",
     primary: "#00b4d8",
