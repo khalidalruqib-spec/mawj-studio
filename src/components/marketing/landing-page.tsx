@@ -27,8 +27,8 @@ const FEATURES = [
   },
   {
     icon: Layers3,
-    title: "١٩+ قالب احترافي",
-    body: "تيك توك، إعلانات، عقار، مطاعم، بودكاست، أخبار — كل قالب يتحول لمشروع مونتاج كامل.",
+    title: "٢٤+ قالب CapCut/TikTok",
+    body: "تيك توك، CapCut، إعلانات، عقار، مطاعم، بودكاست — كل قالب يتحول لمشروع مونتاج كامل.",
   },
   {
     icon: Captions,
@@ -43,8 +43,8 @@ const FEATURES = [
 ] as const;
 
 const TEMPLATE_CATEGORIES = [
-  { icon: Zap, label: "تيك توك / ريلز", count: "4 قوالب" },
-  { icon: ShoppingBag, label: "إعلانات المنتجات", count: "3 قوالب" },
+  { icon: Zap, label: "تيك توك / CapCut", count: "9+ قوالب" },
+  { icon: ShoppingBag, label: "إعلانات المنتجات", count: "5+ قوالب" },
   { icon: Building2, label: "عقار ومطاعم", count: "2 قوالب" },
   { icon: Mic, label: "بودكاست", count: "1 قالب" },
   { icon: Newspaper, label: "أخبار", count: "2 قالب" },
@@ -113,7 +113,7 @@ export function LandingPage() {
               </div>
               <dl className="mt-10 grid grid-cols-3 gap-4 border-t border-[var(--line)] pt-8">
                 <div>
-                  <dt className="text-2xl font-black text-[var(--brand)]">19+</dt>
+                  <dt className="text-2xl font-black text-[var(--brand)]">24+</dt>
                   <dd className="text-xs font-bold text-[var(--muted)]">قالب جاهز</dd>
                 </div>
                 <div>
