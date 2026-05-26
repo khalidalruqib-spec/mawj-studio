@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a1a12"/>
+      <stop offset="100%" stop-color="#050608"/>
+    </linearGradient>
+    <filter id="blur2"><feGaussianBlur stdDeviation="40"/></filter>
+  </defs>
+  <rect width="960" height="540" fill="url(#bg2)"/>
+  <ellipse cx="200" cy="150" rx="250" ry="250" fill="#7ef2bc" opacity="0.12" filter="url(#blur2)"/>
+  <ellipse cx="760" cy="400" rx="200" ry="200" fill="#34d399" opacity="0.10" filter="url(#blur2)"/>
+  <rect x="0" y="0" width="960" height="4" fill="#7ef2bc" opacity="0.8"/>
+  <rect x="40" y="80" width="293" height="320" rx="12" fill="#7ef2bc" opacity="0.07"/>
+  <rect x="40" y="80" width="293" height="320" rx="12" fill="none" stroke="#7ef2bc" stroke-width="1" opacity="0.25"/>
+  <rect x="40" y="80" width="293" height="6" rx="3" fill="#7ef2bc" opacity="0.7"/>
+  <text x="186" y="145" font-family="system-ui,sans-serif" font-size="28" fill="#7ef2bc" text-anchor="middle" opacity="0.6">●</text>
+  <text x="186" y="200" font-family="system-ui,sans-serif" font-size="11" font-weight="800" fill="white" text-anchor="middle" opacity="0.7">1</text>
+  <text x="186" y="370" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#7ef2bc" text-anchor="middle" opacity="0.85">Atmosphere</text>
+  <text x="186" y="387" font-family="system-ui,sans-serif" font-size="9" fill="white" text-anchor="middle" opacity="0.40">3s</text>
+  <rect x="341" y="80" width="293" height="320" rx="12" fill="#34d399" opacity="0.07"/>
+  <rect x="341" y="80" width="293" height="320" rx="12" fill="none" stroke="#34d399" stroke-width="1" opacity="0.25"/>
+  <rect x="341" y="80" width="293" height="6" rx="3" fill="#34d399" opacity="0.7"/>
+  <text x="487" y="145" font-family="system-ui,sans-serif" font-size="28" fill="#34d399" text-anchor="middle" opacity="0.6">●</text>
+  <text x="487" y="200" font-family="system-ui,sans-serif" font-size="11" font-weight="800" fill="white" text-anchor="middle" opacity="0.7">2</text>
+  <text x="487" y="370" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#34d399" text-anchor="middle" opacity="0.85">Quote</text>
+  <text x="487" y="387" font-family="system-ui,sans-serif" font-size="9" fill="white" text-anchor="middle" opacity="0.40">8s</text>
+  <rect x="642" y="80" width="293" height="320" rx="12" fill="#7ef2bc" opacity="0.07"/>
+  <rect x="642" y="80" width="293" height="320" rx="12" fill="none" stroke="#7ef2bc" stroke-width="1" opacity="0.25"/>
+  <rect x="642" y="80" width="293" height="6" rx="3" fill="#7ef2bc" opacity="0.7"/>
+  <text x="788" y="145" font-family="system-ui,sans-serif" font-size="28" fill="#7ef2bc" text-anchor="middle" opacity="0.6">●</text>
+  <text x="788" y="200" font-family="system-ui,sans-serif" font-size="11" font-weight="800" fill="white" text-anchor="middle" opacity="0.7">3</text>
+  <text x="788" y="370" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#7ef2bc" text-anchor="middle" opacity="0.85">Brand Outro</text>
+  <text x="788" y="387" font-family="system-ui,sans-serif" font-size="9" fill="white" text-anchor="middle" opacity="0.40">4s</text>
+  <text x="480" y="464" font-family="system-ui,sans-serif" font-size="22" font-weight="900" fill="white" text-anchor="middle" letter-spacing="-0.5">Motivational Quote</text>
+  <text x="480" y="493" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#7ef2bc" text-anchor="middle" opacity="0.8">3 scenes · 15s · TikTok / Reels</text>
+  <text x="480" y="526" font-family="system-ui,sans-serif" font-size="11" fill="white" text-anchor="middle" opacity="0.25">Mawj Studio</text>
+</svg>

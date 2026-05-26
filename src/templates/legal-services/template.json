@@ -318,7 +318,7 @@
     }
   ],
   "audio": {
-    "music": "/music/formal-trust.mp3",
+    "music": null,
     "volume": 0.15
   },
   "export": {

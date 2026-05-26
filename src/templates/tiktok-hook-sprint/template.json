@@ -1,7 +1,28 @@
 {
   "language": "mixed",
-  "animations": ["fadeIn","fadeOut","slideUp","slideDown","slideLeft","slideRight","zoomIn","zoomOut","pop","bounce","typewriter","blurReveal","rotateIn"],
-  "transitions": ["cut","fade","slide","zoom","wipe","blur"],
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
   "id": "tiktok-hook-sprint",
   "name": "TikTok Hook Sprint",
   "category": "TikTok / Reels",
@@ -10,20 +31,106 @@
   "height": 1920,
   "duration": 30,
   "description": "High-energy 5-scene TikTok template: hook → problem → solution → proof → CTA. Optimized for maximum retention and engagement.",
-  "safeMargins": { "top": 160, "bottom": 260, "left": 70, "right": 70 },
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
   "requiredInputs": [
-    { "key": "hookText",      "label": "Hook Question",        "type": "textarea", "default": "هل تعرف ما الذي يجعلك تنجح؟",            "placeholder": "اكتب السؤال الذي سيوقف المشاهد",    "required": true },
-    { "key": "problem",       "label": "Problem Statement",    "type": "textarea", "default": "معظم الناس يضيعون وقتهم بدون خطة واضحة", "placeholder": "المشكلة التي يعاني منها جمهورك",       "required": true },
-    { "key": "stat1Label",    "label": "Stat 1 Label",         "type": "text",     "default": "نمو",              "placeholder": "مثال: نمو",          "required": true },
-    { "key": "stat1Value",    "label": "Stat 1 Value",         "type": "text",     "default": "+٣٠٠٪",            "placeholder": "مثال: ٣٠٠٪",         "required": true },
-    { "key": "stat2Label",    "label": "Stat 2 Label",         "type": "text",     "default": "عملاء",            "placeholder": "مثال: عملاء",         "required": true },
-    { "key": "stat2Value",    "label": "Stat 2 Value",         "type": "text",     "default": "+١٠٠٠",            "placeholder": "مثال: ١٠٠٠+",         "required": true },
-    { "key": "stat3Label",    "label": "Stat 3 Label",         "type": "text",     "default": "رضا",              "placeholder": "مثال: رضا",           "required": true },
-    { "key": "stat3Value",    "label": "Stat 3 Value",         "type": "text",     "default": "٩٨٪",              "placeholder": "مثال: ٩٨٪",           "required": true },
-    { "key": "ctaText",       "label": "Call to Action",       "type": "text",     "default": "تابعني الآن لمزيد من النصائح",         "placeholder": "نص الدعوة للعمل",                     "required": true },
-    { "key": "handle",        "label": "Your Handle / Username","type": "text",    "default": "@youraccount",     "placeholder": "@اسمك",               "required": true },
-    { "key": "video",         "label": "Solution Video Clip",  "type": "video",                                                                         "required": true },
-    { "key": "brandColor",    "label": "Brand Color",          "type": "color",    "default": "#7ef2bc",                                                "required": false }
+    {
+      "key": "hookText",
+      "label": "Hook Question",
+      "type": "textarea",
+      "default": "هل تعرف ما الذي يجعلك تنجح؟",
+      "placeholder": "اكتب السؤال الذي سيوقف المشاهد",
+      "required": true
+    },
+    {
+      "key": "problem",
+      "label": "Problem Statement",
+      "type": "textarea",
+      "default": "معظم الناس يضيعون وقتهم بدون خطة واضحة",
+      "placeholder": "المشكلة التي يعاني منها جمهورك",
+      "required": true
+    },
+    {
+      "key": "stat1Label",
+      "label": "Stat 1 Label",
+      "type": "text",
+      "default": "نمو",
+      "placeholder": "مثال: نمو",
+      "required": true
+    },
+    {
+      "key": "stat1Value",
+      "label": "Stat 1 Value",
+      "type": "text",
+      "default": "+٣٠٠٪",
+      "placeholder": "مثال: ٣٠٠٪",
+      "required": true
+    },
+    {
+      "key": "stat2Label",
+      "label": "Stat 2 Label",
+      "type": "text",
+      "default": "عملاء",
+      "placeholder": "مثال: عملاء",
+      "required": true
+    },
+    {
+      "key": "stat2Value",
+      "label": "Stat 2 Value",
+      "type": "text",
+      "default": "+١٠٠٠",
+      "placeholder": "مثال: ١٠٠٠+",
+      "required": true
+    },
+    {
+      "key": "stat3Label",
+      "label": "Stat 3 Label",
+      "type": "text",
+      "default": "رضا",
+      "placeholder": "مثال: رضا",
+      "required": true
+    },
+    {
+      "key": "stat3Value",
+      "label": "Stat 3 Value",
+      "type": "text",
+      "default": "٩٨٪",
+      "placeholder": "مثال: ٩٨٪",
+      "required": true
+    },
+    {
+      "key": "ctaText",
+      "label": "Call to Action",
+      "type": "text",
+      "default": "تابعني الآن لمزيد من النصائح",
+      "placeholder": "نص الدعوة للعمل",
+      "required": true
+    },
+    {
+      "key": "handle",
+      "label": "Your Handle / Username",
+      "type": "text",
+      "default": "@youraccount",
+      "placeholder": "@اسمك",
+      "required": true
+    },
+    {
+      "key": "video",
+      "label": "Solution Video Clip",
+      "type": "video",
+      "required": true
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#7ef2bc",
+      "required": false
+    }
   ],
   "scenes": [
     {
@@ -31,8 +138,14 @@
       "name": "Hook",
       "start": 0,
       "duration": 5,
-      "background": { "type": "color", "value": "#0d0d0d" },
-      "transition": { "type": "cut", "duration": 0.3 },
+      "background": {
+        "type": "color",
+        "value": "#0d0d0d"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0.3
+      },
       "layers": [
         {
           "id": "hook-bg-glow",
@@ -60,7 +173,10 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.25 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.25
+          }
         },
         {
           "id": "hook-text",
@@ -77,8 +193,14 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "pop", "duration": 0.4 },
-          "animationOut": { "type": "fadeOut", "duration": 0.2 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4
+          },
+          "animationOut": {
+            "type": "fadeOut",
+            "duration": 0.2
+          }
         },
         {
           "id": "hook-accent-line",
@@ -106,7 +228,10 @@
           "align": "center",
           "direction": "ltr",
           "safeMargin": true,
-          "animationIn": { "type": "bounce", "duration": 0.5 }
+          "animationIn": {
+            "type": "bounce",
+            "duration": 0.5
+          }
         }
       ]
     },
@@ -115,8 +240,14 @@
       "name": "Problem",
       "start": 5,
       "duration": 7,
-      "background": { "type": "color", "value": "#111111" },
-      "transition": { "type": "slide", "duration": 0.35 },
+      "background": {
+        "type": "color",
+        "value": "#111111"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.35
+      },
       "layers": [
         {
           "id": "problem-red-tint",
@@ -144,7 +275,10 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.3 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
         },
         {
           "id": "problem-divider",
@@ -173,15 +307,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.45 },
-          "animationOut": { "type": "fadeOut", "duration": 0.25 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.45
+          },
+          "animationOut": {
+            "type": "fadeOut",
+            "duration": 0.25
+          }
         },
         {
           "id": "problem-handle",
           "type": "text",
           "content": "{{handle}}",
           "x": 70,
-          "y": 1720,
+          "y": 1600,
           "width": 940,
           "height": 60,
           "fontSize": 30,
@@ -190,7 +330,10 @@
           "align": "center",
           "direction": "ltr",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
         }
       ]
     },
@@ -199,8 +342,14 @@
       "name": "Solution",
       "start": 12,
       "duration": 8,
-      "background": { "type": "color", "value": "#050505" },
-      "transition": { "type": "zoom", "duration": 0.4 },
+      "background": {
+        "type": "color",
+        "value": "#050505"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.4
+      },
       "layers": [
         {
           "id": "solution-video",
@@ -250,14 +399,17 @@
           "color": "#000000",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "pop", "duration": 0.4 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4
+          }
         },
         {
           "id": "solution-handle",
           "type": "text",
           "content": "{{handle}}",
           "x": 70,
-          "y": 1780,
+          "y": 1600,
           "width": 940,
           "height": 60,
           "fontSize": 32,
@@ -266,7 +418,10 @@
           "align": "center",
           "direction": "ltr",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.3 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
         }
       ]
     },
@@ -275,8 +430,16 @@
       "name": "Proof",
       "start": 20,
       "duration": 6,
-      "background": { "type": "gradient", "from": "#0d0d0d", "to": "#0a1a12", "angle": 145 },
-      "transition": { "type": "fade", "duration": 0.4 },
+      "background": {
+        "type": "gradient",
+        "from": "#0d0d0d",
+        "to": "#0a1a12",
+        "angle": 145
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.4
+      },
       "layers": [
         {
           "id": "proof-header",
@@ -292,7 +455,10 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.35 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
         },
         {
           "id": "stat1-box",
@@ -319,7 +485,10 @@
           "color": "{{brandColor}}",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "pop", "duration": 0.4 },
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4
+          },
           "editable": true
         },
         {
@@ -335,7 +504,10 @@
           "color": "#cccccc",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "fadeIn", "duration": 0.4 },
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          },
           "editable": true
         },
         {
@@ -363,7 +535,10 @@
           "color": "{{brandColor}}",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "pop", "duration": 0.45 },
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.45
+          },
           "editable": true
         },
         {
@@ -379,7 +554,10 @@
           "color": "#cccccc",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "fadeIn", "duration": 0.45 },
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.45
+          },
           "editable": true
         },
         {
@@ -407,7 +585,10 @@
           "color": "{{brandColor}}",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "pop", "duration": 0.5 },
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5
+          },
           "editable": true
         },
         {
@@ -423,7 +604,10 @@
           "color": "#cccccc",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "fadeIn", "duration": 0.5 },
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5
+          },
           "editable": true
         }
       ]
@@ -433,8 +617,16 @@
       "name": "CTA",
       "start": 26,
       "duration": 4,
-      "background": { "type": "gradient", "from": "#0a1a12", "to": "#042410", "angle": 145 },
-      "transition": { "type": "fade", "duration": 0.4 },
+      "background": {
+        "type": "gradient",
+        "from": "#0a1a12",
+        "to": "#042410",
+        "angle": 145
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.4
+      },
       "layers": [
         {
           "id": "cta-top-accent",
@@ -463,7 +655,10 @@
           "direction": "ltr",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "blurReveal", "duration": 0.5 }
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.5
+          }
         },
         {
           "id": "cta-divider",
@@ -492,7 +687,10 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.45 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.45
+          }
         },
         {
           "id": "cta-follow-icon",
@@ -508,11 +706,21 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "bounce", "duration": 0.6 }
+          "animationIn": {
+            "type": "bounce",
+            "duration": 0.6
+          }
         }
       ]
     }
   ],
-  "audio": { "music": null, "volume": 1 },
-  "export": { "format": "mp4", "fps": 30, "quality": "1080p" }
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
 }

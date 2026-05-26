@@ -442,7 +442,7 @@
     }
   ],
   "audio": {
-    "music": "/music/energetic-ad.mp3",
+    "music": null,
     "volume": 0.25
   },
   "export": {

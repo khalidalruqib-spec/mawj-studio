@@ -39,7 +39,8 @@ export async function getTemplateById(templateId: string): Promise<VideoTemplate
 
 export function getTemplateAssetPath(templateId: string, fileName: string) {
   const safeId = sanitizeTemplateId(templateId);
-  const safeFileName = fileName === "preview.png" ? "preview.png" : "thumbnail.png";
+  const allowed = ["preview.png", "thumbnail.png", "preview.svg", "thumbnail.svg"];
+  const safeFileName = allowed.includes(fileName) ? fileName : "thumbnail.png";
   return path.join(TEMPLATES_DIR, safeId, safeFileName);
 }
 

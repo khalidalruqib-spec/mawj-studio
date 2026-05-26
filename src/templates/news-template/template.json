@@ -347,7 +347,7 @@
     }
   ],
   "audio": {
-    "music": "/music/news-pulse.mp3",
+    "music": null,
     "volume": 0.2
   },
   "export": {

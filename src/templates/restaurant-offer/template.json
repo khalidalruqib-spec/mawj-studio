@@ -345,7 +345,7 @@
     }
   ],
   "audio": {
-    "music": "/music/food-pop.mp3",
+    "music": null,
     "volume": 0.25
   },
   "export": {

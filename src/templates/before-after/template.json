@@ -362,7 +362,7 @@
     }
   ],
   "audio": {
-    "music": "/music/reveal-pop.mp3",
+    "music": null,
     "volume": 0.25
   },
   "export": {

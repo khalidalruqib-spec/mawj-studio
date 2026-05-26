@@ -142,9 +142,19 @@ function drawLayer(
   const width = layer.width ?? context.canvas.width;
   const height = layer.height ?? context.canvas.height;
   const opacity = getAnimatedOpacity(layer, time);
+  const transform = getLayerTransform(layer, time);
 
   context.save();
   context.globalAlpha = opacity * (layer.opacity ?? 1);
+
+  // Apply transform for slide/zoom/pop/bounce animations
+  if (transform.tx !== 0 || transform.ty !== 0 || transform.scale !== 1) {
+    const cx = x + width / 2;
+    const cy = y + height / 2;
+    context.translate(cx + transform.tx, cy + transform.ty);
+    context.scale(transform.scale, transform.scale);
+    context.translate(-cx, -cy);
+  }
 
   if (layer.type === "background") {
     drawBackgroundLayer(context, layer);
@@ -169,9 +179,103 @@ function drawLayer(
 }
 
 function drawBackgroundLayer(context: CanvasRenderingContext2D, layer: TemplateTimelineLayer) {
+  const w = context.canvas.width;
+  const h = context.canvas.height;
+
+  // Gradient background
+  const layerAny = layer as Record<string, unknown>;
+  const fromColor = layer.gradientFrom ?? (typeof layerAny["from"] === "string" ? layerAny["from"] : undefined);
+  const toColor   = layer.gradientTo   ?? (typeof layerAny["to"]   === "string" ? layerAny["to"]   : undefined);
+
+  if (fromColor && toColor && !fromColor.includes("{{") && !toColor.includes("{{")) {
+    const rawAngle = typeof layerAny["angle"] === "number" ? layerAny["angle"] : 145;
+    const angle = rawAngle * (Math.PI / 180);
+    const x0 = w / 2 - Math.cos(angle) * w / 2;
+    const y0 = h / 2 - Math.sin(angle) * h / 2;
+    const x1 = w / 2 + Math.cos(angle) * w / 2;
+    const y1 = h / 2 + Math.sin(angle) * h / 2;
+    const grad = context.createLinearGradient(x0, y0, x1, y1);
+    grad.addColorStop(0, fromColor);
+    grad.addColorStop(1, toColor);
+    context.fillStyle = grad;
+    context.fillRect(0, 0, w, h);
+    return;
+  }
+
   const color = layer.backgroundColor ?? layer.color ?? "#111827";
   context.fillStyle = color.includes("{{") ? "#111827" : color;
-  context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+  context.fillRect(0, 0, w, h);
+}
+
+/** Returns {tx, ty, scale} for the in-animation at this moment */
+function getLayerTransform(layer: TemplateTimelineLayer, time: number) {
+  const relTime = time - layer.absoluteStart;
+  const animIn  = layer.animationIn;
+  const animOut = layer.animationOut;
+
+  // Default — no transform
+  let tx = 0, ty = 0, scale = 1;
+
+  if (animIn?.duration && relTime < animIn.duration) {
+    const progress = Math.max(0, Math.min(1, relTime / animIn.duration));
+    const ease = easeOut(progress);
+    const invEase = 1 - ease;
+    const canvas = { w: 1080, h: 1920 }; // typical 9:16; safe to over-travel
+
+    switch (animIn.type) {
+      case "slideUp":
+        ty = invEase * canvas.h * 0.18;
+        break;
+      case "slideDown":
+        ty = -invEase * canvas.h * 0.18;
+        break;
+      case "slideLeft":
+        tx = invEase * canvas.w * 0.25;
+        break;
+      case "slideRight":
+        tx = -invEase * canvas.w * 0.25;
+        break;
+      case "zoomIn":
+        scale = 0.7 + ease * 0.3;
+        break;
+      case "zoomOut":
+        scale = 1.3 - ease * 0.3;
+        break;
+      case "pop":
+        scale = progress < 0.6
+          ? 0.5 + (progress / 0.6) * 0.6  // grow fast
+          : 1.1 - ((progress - 0.6) / 0.4) * 0.1; // slight overshoot settle
+        break;
+      case "bounce":
+        scale = 1 + Math.sin(progress * Math.PI * 2.5) * 0.08 * (1 - progress);
+        break;
+      case "blurReveal":
+        // Blur is not directly doable on canvas without a filter — simulate with scale
+        scale = 0.92 + ease * 0.08;
+        break;
+      case "rotateIn":
+        // Approximate — canvas rotate is global; skip per-layer rotation for now
+        scale = 0.7 + ease * 0.3;
+        break;
+    }
+    return { tx, ty, scale };
+  }
+
+  // Animate out transforms (simple zoom out for exit)
+  const outStart = layer.duration - (animOut?.duration ?? 0);
+  if (animOut?.duration && relTime > outStart) {
+    const progress = Math.max(0, Math.min(1, (relTime - outStart) / animOut.duration));
+    if (animOut.type === "zoomOut") scale = 1 - progress * 0.3;
+    if (animOut.type === "slideUp") ty = -easeOut(progress) * 200;
+    if (animOut.type === "slideDown") ty = easeOut(progress) * 200;
+  }
+
+  return { tx, ty, scale };
+}
+
+/** Cubic ease-out */
+function easeOut(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
 }
 
 function drawTextLayer(context: CanvasRenderingContext2D, layer: TemplateTimelineLayer) {

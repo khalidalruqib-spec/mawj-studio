@@ -384,7 +384,7 @@
     }
   ],
   "audio": {
-    "music": "/music/focused-ambient.mp3",
+    "music": null,
     "volume": 0.18
   },
   "export": {

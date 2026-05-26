@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 960" width="540" height="960">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a1a12"/>
+      <stop offset="100%" stop-color="#050608"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7ef2bc" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#7ef2bc" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="overlay" x1="0%" y1="60%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#050608" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#050608" stop-opacity="0.95"/>
+    </linearGradient>
+    <filter id="blur1">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="540" height="960" fill="url(#bg)"/>
+
+  <!-- Glow blob top-left -->
+  <ellipse cx="120" cy="180" rx="200" ry="200" fill="#7ef2bc" opacity="0.12" filter="url(#blur1)"/>
+  <!-- Glow blob bottom-right -->
+  <ellipse cx="420" cy="780" rx="160" ry="160" fill="#34d399" opacity="0.10" filter="url(#blur1)"/>
+
+  <!-- Scene strips (visual representation) -->
+  <rect x="35" y="350" width="470" height="4" rx="2" fill="#7ef2bc" opacity="0.15"/>
+  <rect x="35" y="348" width="91" height="8" rx="4" fill="#7ef2bc" opacity="0.7"/>
+  <rect x="129" y="348" width="91" height="8" rx="4" fill="#34d399" opacity="0.7"/>
+  <rect x="223" y="348" width="91" height="8" rx="4" fill="#ffffff" opacity="0.7"/>
+  <rect x="317" y="348" width="91" height="8" rx="4" fill="#7ef2bc" opacity="0.7"/>
+  <rect x="411" y="348" width="91" height="8" rx="4" fill="#34d399" opacity="0.7"/>
+
+  <!-- Decorative lines -->
+  <line x1="35" y1="330" x2="505" y2="330" stroke="#7ef2bc" stroke-width="0.5" opacity="0.20"/>
+
+  <!-- Scene count circles -->
+  <circle cx="35" cy="349" r="5" fill="#7ef2bc" opacity="0.9"/>
+  <circle cx="152" cy="349" r="5" fill="#34d399" opacity="0.9"/>
+  <circle cx="269" cy="349" r="5" fill="#ffffff" opacity="0.9"/>
+  <circle cx="386" cy="349" r="5" fill="#7ef2bc" opacity="0.9"/>
+  <circle cx="503" cy="349" r="5" fill="#34d399" opacity="0.9"/>
+
+  <!-- Top accent bar -->
+  <rect x="0" y="0" width="540" height="5" fill="#7ef2bc" opacity="0.8"/>
+
+  <!-- Gradient overlay bottom -->
+  <rect width="540" height="960" fill="url(#overlay)"/>
+  <rect width="540" height="960" fill="url(#glow)"/>
+
+  <!-- Category chip -->
+  <rect x="32" y="42" width="150" height="32" rx="8" fill="#7ef2bc" opacity="0.15"/>
+  <rect x="32" y="42" width="150" height="32" rx="8" fill="none" stroke="#7ef2bc" stroke-width="1" opacity="0.35"/>
+  <text x="107" y="63" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#7ef2bc" text-anchor="middle" opacity="0.9">TikTok / Reels</text>
+
+  <!-- Duration badge (top-right) -->
+  <rect x="390" y="42" width="84" height="32" rx="8" fill="rgba(0,0,0,0.45)"/>
+  <text x="432" y="63" font-family="system-ui,sans-serif" font-size="13" font-weight="800" fill="white" text-anchor="middle" opacity="0.85">30s</text>
+
+  <!-- Large decorative glyph -->
+  <text x="270" y="420" font-family="system-ui,sans-serif" font-size="160" fill="#7ef2bc" opacity="0.07" text-anchor="middle">▶</text>
+
+  <!-- Template name -->
+  <text x="270" y="750" font-family="system-ui,sans-serif" font-size="38" font-weight="900" fill="white" text-anchor="middle" letter-spacing="-0.5">TikTok Hook Sprint</text>
+
+  <!-- Scene count label -->
+  <text x="270" y="830" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#7ef2bc" text-anchor="middle" opacity="0.8">5 scenes · 30s · 9:16</text>
+
+  <!-- Bottom brand -->
+  <text x="270" y="920" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="white" text-anchor="middle" opacity="0.30">Mawj Studio</text>
+
+  <!-- Safe margin hint -->
+  <rect x="35" y="100" width="470" height="760" rx="2" fill="none" stroke="white" stroke-width="0.5" stroke-dasharray="4,6" opacity="0.08"/>
+</svg>

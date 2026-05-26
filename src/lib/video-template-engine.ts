@@ -79,6 +79,12 @@ export type TemplateLayer = {
   duration?: number;
   color?: string;
   backgroundColor?: string;
+  /** Gradient start color (used when type === "background") */
+  gradientFrom?: string;
+  /** Gradient end color (used when type === "background") */
+  gradientTo?: string;
+  /** Gradient angle in degrees, default 145 */
+  angle?: number;
   borderColor?: string;
   borderRadius?: number;
   opacity?: number;
