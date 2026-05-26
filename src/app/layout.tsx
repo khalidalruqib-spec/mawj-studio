@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { BRAND } from "@/lib/brand";
 import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -33,41 +34,39 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "Mawj Studio — محرر الفيديو بالذكاء الاصطناعي",
-    template: "%s | Mawj Studio",
+    default: BRAND.metaTitle,
+    template: `%s | ${BRAND.nameAr}`,
   },
-  description:
-    "منصة تحرير الفيديو القصير بالذكاء الاصطناعي للمبدعين السعوديين والعرب. حوّل أفكارك إلى محتوى احترافي لـ TikTok وInstagram وYouTube Shorts.",
+  description: BRAND.description,
   keywords: [
     "محرر فيديو", "ذكاء اصطناعي", "تيك توك", "انستقرام", "يوتيوب شورتس",
     "video editor", "AI", "Arabic", "Saudi", "short-form content",
-    "Mawj Studio", "موج ستوديو",
+    BRAND.fullName, "موج", "MAWJ",
   ],
-  authors: [{ name: "Mawj Studio" }],
-  creator: "Mawj Studio",
+  authors: [{ name: BRAND.fullName }],
+  creator: BRAND.fullName,
   metadataBase: new URL(siteUrl),
   openGraph: {
     type: "website",
     locale: "ar_SA",
     alternateLocale: "en_US",
     url: siteUrl,
-    siteName: "Mawj Studio",
-    title: "Mawj Studio — محرر الفيديو بالذكاء الاصطناعي",
-    description:
-      "منصة تحرير الفيديو القصير بالذكاء الاصطناعي للمبدعين السعوديين والعرب.",
+    siteName: BRAND.fullName,
+    title: BRAND.metaTitle,
+    description: BRAND.description,
     images: [
       {
         url: "/og-image.svg",
         width: 1200,
         height: 630,
-        alt: "Mawj Studio — AI Video Editor",
+        alt: `${BRAND.fullName} — AI Video Editor`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mawj Studio — محرر الفيديو بالذكاء الاصطناعي",
-    description: "حوّل أفكارك إلى محتوى احترافي بالذكاء الاصطناعي.",
+    title: BRAND.metaTitle,
+    description: BRAND.taglineAr,
     images: ["/og-image.svg"],
   },
   icons: {

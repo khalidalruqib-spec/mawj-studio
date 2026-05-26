@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
   title: "الاستوديو",
-  description: "محرر Mawj Studio — رفع، قوالب، تايملاين، ذكاء اصطناعي، وتصدير.",
+  description: `محرر ${BRAND.fullName} — رفع، قوالب، تايملاين، ذكاء اصطناعي، وتصدير.`,
 };
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {

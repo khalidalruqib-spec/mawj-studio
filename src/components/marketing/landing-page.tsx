@@ -10,14 +10,16 @@ import {
   Newspaper,
   Rocket,
   ShoppingBag,
-  Sparkles,
   Users,
   WandSparkles,
   Zap,
 } from "lucide-react";
+import { BrandLockup } from "@/components/brand/brand-lockup";
+import { MawjLogo } from "@/components/brand/mawj-logo";
 import { SiteHeader } from "@/components/site/site-header";
 import { Badge } from "@/design-system/badge";
 import { Button } from "@/design-system/button";
+import { BRAND } from "@/lib/brand";
 
 const FEATURES = [
   {
@@ -61,8 +63,8 @@ const STEPS = [
 
 const FAQ = [
   {
-    q: "هل Mawj بديل عن CapCut؟",
-    a: "Mawj مصمم للأتمتة والقوالب العربية داخل المتصفح. الهدف: من رفع الفيديو إلى نسخة جاهزة للنشر بأقل خطوات.",
+    q: "هل مَوج بديل عن CapCut؟",
+    a: `${BRAND.nameAr} مصمم للأتمتة والقوالب العربية داخل المتصفح. الهدف: من رفع الفيديو إلى نسخة جاهزة للنشر بأقل خطوات.`,
   },
   {
     q: "هل أحتاج برامج أو جهاز قوي؟",
@@ -90,8 +92,8 @@ export function LandingPage() {
           <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
             <div>
               <Badge tone="brand" className="mb-5">
-                <Sparkles className="h-3 w-3" aria-hidden="true" />
-                استوديو المحتوى القصير للسوق العربي
+                <MawjLogo className="h-3.5 w-3.5" aria-hidden="true" />
+                {BRAND.taglineAr}
               </Badge>
               <h1 className="text-balance text-4xl font-black leading-[1.15] tracking-tight sm:text-5xl lg:text-[3.25rem]">
                 حوّل فكرتك إلى
@@ -99,7 +101,7 @@ export function LandingPage() {
                 في دقائق
               </h1>
               <p className="mt-5 max-w-xl text-pretty text-base font-semibold leading-7 text-[var(--muted-strong)] sm:text-lg">
-                Mawj Studio يجمع قوالب سعودية جاهزة، تحريراً ذكياً، وكابشن عربي — مصمم لمبدعي تيك توك، المتاجر، العيادات، والوكالات.
+                {BRAND.fullName} يجمع قوالب سعودية جاهزة، تحريراً ذكياً، وكابشن عربي — مصمم لمبدعي تيك توك، المتاجر، العيادات، والوكالات.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Button href="/studio" variant="brand" className="min-h-[3rem] px-6 text-base">
@@ -154,7 +156,7 @@ export function LandingPage() {
         {/* Features */}
         <section id="features" className="border-y border-[var(--line)] bg-[var(--panel)]/50 py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <h2 className="text-center text-2xl font-black sm:text-3xl">لماذا Mawj أقوى من محرر عام؟</h2>
+            <h2 className="text-center text-2xl font-black sm:text-3xl">لماذا {BRAND.nameAr} أقوى من محرر عام؟</h2>
             <p className="mx-auto mt-3 max-w-2xl text-center text-sm font-semibold text-[var(--muted)]">
               ليس مونتاج يدوي فارغ — أتمتة حسب الأسلوب + قوالب محلية + استوديو كامل في المتصفح.
             </p>
@@ -301,9 +303,14 @@ export function LandingPage() {
       </main>
 
       <footer className="border-t border-[var(--line)] py-8">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 text-xs font-semibold text-[var(--muted)] sm:px-6">
-          <p>© {new Date().getFullYear()} Mawj Studio — موج ستوديو</p>
-          <div className="flex gap-4">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <BrandLockup size="sm" showTagline={false} showLatin={false} />
+            <p className="text-xs font-semibold text-[var(--muted)]">
+              © {new Date().getFullYear()} {BRAND.fullName}
+            </p>
+          </div>
+          <div className="flex gap-4 text-xs font-semibold text-[var(--muted)]">
             <Link href="/templates" className="hover:text-[var(--brand)]">
               القوالب
             </Link>

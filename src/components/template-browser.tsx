@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { BrandLockup } from "@/components/brand/brand-lockup";
+import { BRAND } from "@/lib/brand";
 import {
   ArrowLeft,
   ArrowRight,
@@ -216,13 +218,11 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
       <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--brand)] text-black" style={{ boxShadow: "var(--shadow-brand)" }}>
-              <Layers3 className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div>
-              <p className="text-[15px] font-black tracking-tight">Template Marketplace</p>
-              <p className="text-[11px] font-semibold text-[var(--muted)]">قوالب تتحول إلى مشاريع مونتاج كاملة</p>
-            </div>
+            <BrandLockup
+              size="sm"
+              showLatin={false}
+              tagline="سوق القوالب — مشاريع مونتاج جاهزة"
+            />
           </div>
           <button type="button" onClick={() => router.push("/studio")} className="btn-ghost">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -243,7 +243,7 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
                 <div className="mb-4 flex flex-wrap items-center gap-2">
                   <span className="badge badge-brand">
                     <Sparkles className="h-3 w-3" aria-hidden="true" />
-                    Template Marketplace
+                    {BRAND.nameAr} · سوق القوالب
                   </span>
                   <span className="badge badge-muted" dir="ltr">/api/templates</span>
                   <span className="badge badge-violet">RTL + Arabic</span>

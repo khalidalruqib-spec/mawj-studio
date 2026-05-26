@@ -129,6 +129,8 @@ import {
   type AICommandContext,
   type AICommandResponse,
 } from "@/lib/ai-command";
+import { BrandLockup } from "@/components/brand/brand-lockup";
+import { BRAND } from "@/lib/brand";
 
 type Goal = "engagement" | "sales" | "education" | "awareness";
 type PanelId =
@@ -765,7 +767,7 @@ export function ProfessionalVideoStudio() {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("9:16");
   const [languageMode, setLanguageMode] = useState<LanguageMode>("arabic");
   const [goal, setGoal] = useState<Goal>("engagement");
-  const [brandName, setBrandName] = useState("Mawj Studio");
+  const [brandName, setBrandName] = useState<string>(BRAND.displayName);
   const [plan, setPlan] = useState<EditPlan | null>(null);
   const [templateProject, setTemplateProject] = useState<TemplateProject | null>(null);
   const [activeProject, setActiveProject] = useState<StudioProject | null>(null);
@@ -2637,21 +2639,10 @@ export function ProfessionalVideoStudio() {
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/"
-              className="flex min-w-0 items-center gap-3 rounded-lg transition hover:opacity-90"
+              className="min-w-0 rounded-lg transition hover:opacity-90"
               title="الصفحة الرئيسية"
             >
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] text-black"
-                style={{ boxShadow: "var(--shadow-brand)" }}
-              >
-                <Sparkles className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-[15px] font-black leading-5 tracking-tight">Mawj Studio</p>
-                <p className="truncate text-[11px] font-semibold text-[var(--muted)]">
-                  استوديو المونتاج الذكي
-                </p>
-              </div>
+              <BrandLockup size="sm" />
             </Link>
           </div>
 

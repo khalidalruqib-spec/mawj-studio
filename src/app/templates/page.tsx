@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
+import { BRAND } from "@/lib/brand";
 import { TemplateBrowser } from "@/components/template-browser";
 import { getTemplates } from "@/lib/video-template-store";
 
 export const metadata: Metadata = {
-  title: "Template Marketplace — Mawj Studio",
-  description:
-    "24+ قالب فيديو احترافي مستوحى من CapCut وTikTok: ٣ أسباب، Flash Sale، POV، Karaoke، أخبار عاجلة، وأكثر.",
+  title: "سوق القوالب",
+  description: `24+ قالب فيديو احترافي على ${BRAND.nameAr} — CapCut وTikTok: ٣ أسباب، Flash Sale، POV، Karaoke، أخبار عاجلة، وأكثر.`,
 };
 
 export default async function TemplatesPage() {

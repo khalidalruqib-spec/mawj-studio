@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { MawjLogo } from "@/components/brand/mawj-logo";
+import { BrandLockup } from "@/components/brand/brand-lockup";
 import { Button } from "@/design-system/button";
 
 type SiteHeaderProps = {
@@ -13,12 +13,8 @@ export function SiteHeader({ marketing = false, trailing }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--panel)]/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link href="/" className="flex min-w-0 items-center gap-3">
-          <MawjLogo className="h-10 w-10 shrink-0 text-[var(--brand)]" />
-          <div className="min-w-0">
-            <p className="truncate text-[15px] font-black tracking-tight">Mawj Studio</p>
-            <p className="truncate text-[11px] font-semibold text-[var(--muted)]">موج — استوديو المحتوى الذكي</p>
-          </div>
+        <Link href="/" className="min-w-0 transition hover:opacity-90">
+          <BrandLockup size="md" />
         </Link>
 
         {marketing ? (

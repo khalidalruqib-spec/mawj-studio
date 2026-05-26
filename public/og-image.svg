@@ -4,51 +4,59 @@
       <stop offset="0" stop-color="#07080b"/>
       <stop offset="1" stop-color="#0e1017"/>
     </linearGradient>
-    <radialGradient id="glow1" cx="0.25" cy="0.2" r="0.6">
-      <stop offset="0" stop-color="rgba(126,242,188,0.20)"/>
+    <radialGradient id="glow1" cx="0.22" cy="0.18" r="0.55">
+      <stop offset="0" stop-color="rgba(126,242,188,0.22)"/>
       <stop offset="1" stop-color="rgba(126,242,188,0)"/>
     </radialGradient>
-    <radialGradient id="glow2" cx="0.8" cy="0.8" r="0.7">
-      <stop offset="0" stop-color="rgba(167,139,250,0.16)"/>
+    <radialGradient id="glow2" cx="0.85" cy="0.85" r="0.65">
+      <stop offset="0" stop-color="rgba(167,139,250,0.14)"/>
       <stop offset="1" stop-color="rgba(167,139,250,0)"/>
     </radialGradient>
+    <linearGradient id="markGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#9efcd0"/>
+      <stop offset="45%" stop-color="#7ef2bc"/>
+      <stop offset="100%" stop-color="#4dd4a0"/>
+    </linearGradient>
+    <linearGradient id="waveHi" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#b8ffe0"/>
+      <stop offset="100%" stop-color="#7ef2bc"/>
+    </linearGradient>
   </defs>
 
   <rect width="1200" height="630" fill="url(#bg)"/>
   <rect width="1200" height="630" fill="url(#glow1)"/>
   <rect width="1200" height="630" fill="url(#glow2)"/>
 
-  <g transform="translate(86 88)">
-    <rect x="0" y="0" width="132" height="132" rx="40" fill="#7ef2bc"/>
-    <path d="M34 86c14-26 28-40 34-46 6 6 20 20 34 46-10 7-24 14-34 14s-24-7-34-14Z" fill="#060a09"/>
-    <path d="M48 74c7-12 14-20 20-26 6 6 13 14 20 26-5 4-12 7-20 7s-15-3-20-7Z" fill="#7ef2bc" opacity="0.92"/>
+  <!-- Brand mark -->
+  <g transform="translate(80 96) scale(2.8)">
+    <rect width="48" height="48" rx="14" fill="url(#markGrad)"/>
+    <path d="M9 33c5.5-7 11-10 16.5-8.5 3.2 1 6.2 3.8 9 7.5 2.2-4.2 5.8-6.8 10.5-7 4-.2 7.2 1.8 9.5 5.5v4.2c-3.5-3.2-7.2-4.8-11-4.5-4.2.4-7.8 2.8-10.5 6.5-2.8-3.5-6.5-5.8-11-6-4-.2-7.5 1.5-10 4.8V33Z" fill="#071210" opacity="0.88"/>
+    <path d="M10 28.5c4.8-6.5 10-9.2 15.5-7.5 2.8.9 5.2 3 7.2 6 1.8-2.8 4.5-4.5 8-4.8 3.8-.3 7 1.5 9.3 4.8l-3.8 2.8c-1.6-2-3.8-3-6.2-2.8-3 .3-5.2 2-6.5 4.5-2.5-2.5-5.8-4-9.5-3.5-3.2.4-6 2.2-8.2 5v-4.5Z" fill="url(#waveHi)"/>
+    <path d="M31.5 17.5 38 22l-6.5 4.5V17.5Z" fill="#071210"/>
+    <circle cx="14" cy="16" r="2.2" fill="#071210" opacity="0.75"/>
   </g>
 
-  <text x="250" y="170" fill="#f0f2f8" font-family="system-ui, -apple-system, Segoe UI, Arial" font-size="54" font-weight="900">
-    Mawj Studio
-  </text>
-  <text x="250" y="238" fill="#7ef2bc" font-family="system-ui, -apple-system, Segoe UI, Arial" font-size="32" font-weight="800">
-    E-11 'DAJ/JH ('D0C'! 'D'57F'9J
-  </text>
+  <!-- Arabic name -->
+  <text x="260" y="168" fill="#f0f2f8" font-family="IBM Plex Sans Arabic, Noto Kufi Arabic, Tahoma, Arial, sans-serif" font-size="72" font-weight="700" direction="rtl">????</text>
+  <text x="260" y="218" fill="#7ef2bc" font-family="Geist, system-ui, sans-serif" font-size="28" font-weight="800" letter-spacing="8">MAWJ</text>
 
-  <text x="250" y="310" fill="#a0aaba" font-family="system-ui, -apple-system, Segoe UI, Arial" font-size="26" font-weight="700">
-    BH'D( 39H/J) · C'(4F 91(J · *5/J1 TikTok / Reels / Shorts
-  </text>
+  <!-- Tagline -->
+  <text x="260" y="278" fill="#a0aaba" font-family="IBM Plex Sans Arabic, Noto Kufi Arabic, Tahoma, Arial, sans-serif" font-size="30" font-weight="600" direction="rtl">???? ??????? ?????</text>
+  <text x="260" y="330" fill="#7d899e" font-family="IBM Plex Sans Arabic, Noto Kufi Arabic, Tahoma, Arial, sans-serif" font-size="22" font-weight="500" direction="rtl">????? · ????? AI · ????? TikTok / Reels / Shorts</text>
 
-  <g transform="translate(250 360)">
-    <rect x="0" y="0" width="320" height="78" rx="20" fill="rgba(126,242,188,0.14)" stroke="rgba(126,242,188,0.30)"/>
-    <text x="160" y="50" fill="#7ef2bc" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Arial" font-size="24" font-weight="900">
-      'A*- 'D'3*H/JH /studio
-    </text>
+  <!-- CTA pill -->
+  <g transform="translate(260 380)">
+    <rect x="0" y="0" width="340" height="72" rx="18" fill="rgba(126,242,188,0.12)" stroke="rgba(126,242,188,0.32)" stroke-width="1.5"/>
+    <text x="170" y="46" fill="#7ef2bc" text-anchor="middle" font-family="IBM Plex Sans Arabic, Noto Kufi Arabic, Tahoma, Arial, sans-serif" font-size="24" font-weight="700" direction="rtl">mawj-studio.vercel.app</text>
   </g>
 
-  <g opacity="0.55">
-    <rect x="840" y="120" width="280" height="360" rx="28" fill="rgba(19,22,31,0.9)" stroke="rgba(46,52,71,0.8)"/>
-    <rect x="866" y="150" width="228" height="24" rx="12" fill="rgba(126,242,188,0.18)"/>
-    <rect x="866" y="190" width="180" height="18" rx="9" fill="rgba(240,242,248,0.12)"/>
-    <rect x="866" y="226" width="228" height="160" rx="18" fill="rgba(0,0,0,0.22)" stroke="rgba(46,52,71,0.6)"/>
-    <rect x="866" y="404" width="120" height="18" rx="9" fill="rgba(167,139,250,0.18)"/>
-    <rect x="866" y="434" width="228" height="22" rx="11" fill="rgba(126,242,188,0.22)"/>
+  <!-- Phone mock -->
+  <g opacity="0.6" transform="translate(820 100)">
+    <rect x="0" y="0" width="290" height="400" rx="28" fill="rgba(19,22,31,0.92)" stroke="rgba(46,52,71,0.85)"/>
+    <rect x="24" y="28" width="242" height="22" rx="11" fill="rgba(126,242,188,0.2)"/>
+    <rect x="24" y="64" width="190" height="16" rx="8" fill="rgba(240,242,248,0.1)"/>
+    <rect x="24" y="96" width="242" height="180" rx="18" fill="rgba(0,0,0,0.25)" stroke="rgba(46,52,71,0.55)"/>
+    <rect x="24" y="296" width="130" height="16" rx="8" fill="rgba(167,139,250,0.18)"/>
+    <rect x="24" y="324" width="242" height="20" rx="10" fill="rgba(126,242,188,0.22)"/>
   </g>
 </svg>
-
