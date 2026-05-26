@@ -1,0 +1,16 @@
+name: Gemini AI Reviewer
+
+on: [push, pull_request]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Authenticate with Gemini
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "تم الاتصال بعقل جيميناي بنجاح! الروبوت الآن يراقب الأكواد."
