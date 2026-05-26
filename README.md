@@ -1,5 +1,9 @@
 # Mawj Studio
 
+**Production:** [https://mawj-studio.vercel.app](https://mawj-studio.vercel.app) — Landing على `/`، المحرر على `/studio`، القوالب على `/templates`.
+
+في إعدادات Vercel للمشروع، عيّن `NEXT_PUBLIC_APP_URL=https://mawj-studio.vercel.app` حتى تُعرض روابط OG والـ metadata بشكل صحيح.
+
 Mawj Studio is a professional AI video editing platform for short-form content. The first web MVP gives creators and businesses a studio workflow: upload raw footage, choose an editing style, generate an AI edit plan, inspect captions/timeline/tools, and prepare exports for TikTok, Reels, Shorts, and Snapchat.
 
 ## Current MVP

@@ -5,5 +5,16 @@
     "deploymentEnabled": {
       "main": true
     }
+  },
+  "experimentalServices": {
+    "frontend": {
+      "routePrefix": "/",
+      "framework": "nextjs"
+    },
+    "ai-processing": {
+      "root": "services/ai-processing",
+      "entrypoint": "app.main:app",
+      "routePrefix": "/_/ai-processing"
+    }
   }
 }
