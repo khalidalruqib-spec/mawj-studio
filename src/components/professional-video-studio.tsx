@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertTriangle,
   BadgeCheck,
   BadgeDollarSign,
   Bot,
@@ -142,7 +143,8 @@ type PanelId =
   | "brand"
   | "dashboard"
   | "collaboration"
-  | "exports";
+  | "exports"
+  | "stock";
 
 type MediaAsset = {
   id: string;
@@ -155,6 +157,37 @@ type MediaAsset = {
   width?: number;
   height?: number;
   persisted?: boolean;
+};
+
+type StockMediaResult = {
+  id: string;
+  source: "pexels" | "pixabay" | "demo";
+  type: "photo" | "video";
+  width: number;
+  height: number;
+  duration?: number;
+  url: string;
+  previewUrl: string;
+  mediumUrl?: string;
+  thumbUrl?: string;
+  photographer?: string;
+  videographer?: string;
+  alt: string;
+};
+
+type StockSearchResponse = {
+  results: StockMediaResult[];
+  totalResults: number;
+  source: "pexels" | "pixabay" | "demo";
+};
+
+type ClipSuggestion = {
+  id: string;
+  label: string;
+  start: number;
+  end: number;
+  duration: number;
+  transcript: TranscriptSegment[];
 };
 
 type AssistantMessage = {
@@ -340,6 +373,7 @@ const PANELS: Array<{ id: PanelId; label: string; description: string; icon: Luc
   { id: "dashboard", label: "Dashboard", description: "Projects", icon: LayoutDashboard },
   { id: "collaboration", label: "Collab", description: "Team", icon: Users },
   { id: "exports", label: "Export", description: "MP4/SRT", icon: MonitorUp },
+  { id: "stock", label: "Stock", description: "Photos/Videos", icon: ImageIcon },
 ];
 
 const CREATOR_STARTERS = [
@@ -744,6 +778,7 @@ const VERSION_HISTORY = [
 export function ProfessionalVideoStudio() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const restoredMediaOnceRef = useRef(false);
   const [activePanel, setActivePanel] = useState<PanelId>("editor");
   const [studioFile, setStudioFile] = useState<StudioFile | null>(null);
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
@@ -789,6 +824,7 @@ export function ProfessionalVideoStudio() {
       "جاهز. جرب: أضف كابشن عربي، احذف الصمت، استخرج أفضل 5 لحظات، أو أنشئ نسخة إعلانية.",
     ),
   ]);
+  const [clipSuggestions, setClipSuggestions] = useState<ClipSuggestion[]>([]);
   const [isAssistantRunning, setIsAssistantRunning] = useState(false);
   const [assistantEngineState, setAssistantEngineState] = useState<AIEngineState | null>(null);
   const [exportTier, setExportTier] = useState("Creator");
@@ -912,16 +948,48 @@ export function ProfessionalVideoStudio() {
   }, [renderResult?.url]);
 
   useEffect(() => {
+    if (restoredMediaOnceRef.current) return;
+    restoredMediaOnceRef.current = true;
+
     let cancelled = false;
 
     listMediaRecords()
       .then((records) => {
         if (cancelled || !records.length) return;
 
+        const restoredAssets = records.slice(0, 12).map(storedMediaRecordToAsset);
         setMediaAssets((assets) => {
           if (assets.length) return assets;
-          return records.slice(0, 12).map(storedMediaRecordToAsset);
+          return restoredAssets;
         });
+
+        const firstVideoAsset = restoredAssets.find((asset) => asset.kind === "video");
+        if (!studioFile && firstVideoAsset) {
+          const durationSeconds = Math.max(1, Math.round(firstVideoAsset.durationSeconds ?? 60));
+          setStudioFile({
+            file: firstVideoAsset.file,
+            url: firstVideoAsset.url,
+            durationSeconds,
+          });
+          setActiveProject(null);
+          setTemplateProject(null);
+          setEngineProject(
+            createVideoProjectFromMediaAssets({
+              name: firstVideoAsset.name,
+              aspectRatio,
+              assets: restoredAssets.map(mediaAssetToBridgeAsset),
+              primaryVideoAssetId: firstVideoAsset.id,
+              durationSeconds,
+            }),
+            { resetHistory: true },
+          );
+          setPlan(null);
+          setPreviewTime(0);
+          setTimelineUndo([]);
+          setTimelineRedo([]);
+          setTimelineTracks(createTimelineForAssets(restoredAssets, firstVideoAsset.id));
+        }
+
         setProjectStatus(`${records.length} media assets restored from browser storage`);
       })
       .catch(() => undefined);
@@ -929,7 +997,7 @@ export function ProfessionalVideoStudio() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [aspectRatio, setEngineProject, studioFile]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1477,14 +1545,56 @@ export function ProfessionalVideoStudio() {
     setProjectStatus("AI is building an edit plan...");
 
     try {
-      const project = await ensureProjectUploaded();
+      let project: StudioProject | null = null;
+      let planningWithoutUpload = false;
+
+      try {
+        project = await ensureProjectUploaded();
+      } catch (uploadError) {
+        const now = new Date().toISOString();
+        planningWithoutUpload = true;
+        project = {
+          id: crypto.randomUUID(),
+          title: `${brandName || "Untitled"} · ${activeStyle.arabicName}`,
+          status: "draft",
+          styleId,
+          platform,
+          aspectRatio,
+          sourceFileName: studioFile.file.name,
+          sourceFileSize: studioFile.file.size,
+          sourceMimeType: studioFile.file.type || "video/mp4",
+          sourceDurationSeconds: studioFile.durationSeconds,
+          storageBucket: "browser-local",
+          storagePath: null,
+          editPlan: null,
+          createdAt: now,
+          updatedAt: now,
+        };
+        setActiveProject(project);
+        setProjectStatus("Supabase upload skipped. Generating plan from local metadata...");
+        setAssistantMessages((messages) =>
+          [
+            createAssistantMessage(
+              "assistant",
+              `تعذر رفع الفيديو للسحابة، بكمل الخطة محليًا من بيانات الملف. ${uploadError instanceof Error ? cleanOpenAIError(uploadError.message) : ""}`.trim(),
+            ),
+            ...messages,
+          ].slice(0, 12),
+        );
+      }
+
       const response = await fetch("/api/edit-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectId: project.id,
+          projectUrl: planningWithoutUpload ? null : project.storagePath,
           fileName: studioFile.file.name,
           durationSeconds: studioFile.durationSeconds,
+          mediaCount: mediaAssets.length || 1,
+          imageCount: mediaAssets.filter((asset) => asset.kind === "image").length,
+          audioCount: mediaAssets.filter((asset) => asset.kind === "audio").length,
+          hasCloudUpload: !planningWithoutUpload,
           platform,
           aspectRatio,
           languageMode,
@@ -1508,7 +1618,16 @@ export function ProfessionalVideoStudio() {
         ),
         ...messages,
       ].slice(0, 12));
-      if (data.project) setActiveProject(data.project);
+      if (data.project) {
+        setActiveProject(data.project);
+      } else if (project) {
+        setActiveProject({
+          ...project,
+          status: "planned",
+          editPlan: data.plan,
+          updatedAt: new Date().toISOString(),
+        });
+      }
       await loadProjects();
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Unexpected AI planning error.");
@@ -1739,6 +1858,7 @@ export function ProfessionalVideoStudio() {
 
     try {
       const result = await renderEditedVideo({
+        sourceFile: studioFile.file,
         sourceUrl: studioFile.url,
         sourceFileName: studioFile.file.name,
         sourceDurationSeconds: studioFile.durationSeconds,
@@ -1753,6 +1873,52 @@ export function ProfessionalVideoStudio() {
       setActivePanel("exports");
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Could not render video.");
+    } finally {
+      setIsRendering(false);
+    }
+  }
+
+  async function exportClipSuggestion(clip: ClipSuggestion) {
+    if (!studioFile) {
+      setError("ارفع فيديو أولاً حتى أقدر أصدّر المقطع المحدد.");
+      return;
+    }
+
+    const clipPlan = createClipExportPlan({
+      clip,
+      style: activeStyle,
+      aspectRatio,
+      brandName,
+    });
+
+    setIsRendering(true);
+    setError("");
+    setRenderResult(null);
+    setRenderProgress({
+      percent: 0,
+      label: `Preparing ${clip.label}`,
+      elapsedSeconds: 0,
+      outputSeconds: clip.duration,
+    });
+    setProjectStatus(`Exporting ${clip.label} with FFmpeg cuts...`);
+
+    try {
+      const result = await renderEditedVideo({
+        sourceFile: studioFile.file,
+        sourceUrl: studioFile.url,
+        sourceFileName: `${clip.label}-${studioFile.file.name}`,
+        sourceDurationSeconds: studioFile.durationSeconds,
+        aspectRatio,
+        style: activeStyle,
+        brandName,
+        plan: clipPlan,
+        onProgress: setRenderProgress,
+      });
+      setRenderResult(result);
+      setProjectStatus(`${clip.label} export ready`);
+      setActivePanel("exports");
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not export selected clip.");
     } finally {
       setIsRendering(false);
     }
@@ -1930,80 +2096,83 @@ export function ProfessionalVideoStudio() {
   }
 
   function removeLongPauses() {
-    // Detect real silence gaps from actual transcript segments
-    const activeTranscript = transcript.filter((seg) => !seg.deleted);
+    const activeTranscript = transcript.filter((seg) => !seg.deleted && !seg.id.startsWith("silence-gap-"));
     const sorted = [...activeTranscript].sort((a, b) => a.start - b.start);
-    const silenceMarkers: TimelineLayer[] = [];
+    const gaps: Array<{ start: number; end: number }> = [];
 
     for (let i = 0; i < sorted.length - 1; i++) {
       const gapStart = sorted[i].end;
       const gapEnd = sorted[i + 1].start;
       const gap = gapEnd - gapStart;
-      if (gap >= 0.5) {
-        silenceMarkers.push({
-          id: crypto.randomUUID(),
-          type: "effect",
-          name: `Silence ${formatDuration(gapStart)}–${formatDuration(gapEnd)}`,
-          start: gapStart,
-          duration: gap,
-          color: "#60a5fa",
-        });
+      if (gap > 0.5) {
+        gaps.push({ start: gapStart, end: gapEnd });
       }
     }
 
-    // If no transcript available, use plan timeline gaps or duration-based estimates
-    if (!silenceMarkers.length) {
-      const total = Math.max(15, studioFile?.durationSeconds ?? totalTimelineSeconds);
-
-      if (plan?.timeline?.length) {
-        for (let i = 0; i < plan.timeline.length - 1; i++) {
-          const gap = plan.timeline[i + 1].start - plan.timeline[i].end;
-          if (gap >= 0.5) {
-            silenceMarkers.push({
-              id: crypto.randomUUID(),
-              type: "effect",
-              name: `Pause at ${formatDuration(plan.timeline[i].end)}`,
-              start: plan.timeline[i].end,
-              duration: gap,
-              color: "#60a5fa",
-            });
-          }
-        }
-      }
-
-      if (!silenceMarkers.length) {
-        // Duration-based estimate when no transcript/plan data
-        const positions = [
-          { start: Math.min(Math.round(total * 0.22), total - 3), duration: Math.min(2, total * 0.07) },
-          { start: Math.min(Math.round(total * 0.55), total - 3), duration: Math.min(1.5, total * 0.05) },
-        ];
-        positions.forEach((pos, i) => {
-          if (pos.start > 0 && pos.start < total) {
-            silenceMarkers.push({
-              id: crypto.randomUUID(),
-              type: "effect",
-              name: `Estimated pause ${i + 1} — ارفع فيديو للكشف الحقيقي`,
-              start: pos.start,
-              duration: pos.duration,
-              color: "#60a5fa",
-            });
-          }
-        });
-      }
+    if (!gaps.length) {
+      setProjectStatus("No silence detected in current transcript");
+      setAssistantMessages((messages) =>
+        [
+          createAssistantMessage(
+            "assistant",
+            "ما لقيت فجوات صمت أطول من 0.5 ثانية في النص الحالي. شغّل Auto-caption على الفيديو الحقيقي للحصول على كشف أدق.",
+          ),
+          ...messages,
+        ].slice(0, 12),
+      );
+      return;
     }
 
-    const count = silenceMarkers.length;
+    const silenceMarkers: TimelineLayer[] = gaps.map((gap) => ({
+      id: crypto.randomUUID(),
+      type: "effect",
+      name: `Silence ${formatDuration(gap.start)}–${formatDuration(gap.end)}`,
+      start: gap.start,
+      duration: gap.end - gap.start,
+      color: "#60a5fa",
+    }));
+    const silenceSegments: TranscriptSegment[] = gaps.map((gap, index) => ({
+      id: `silence-gap-${Math.round(gap.start * 1000)}-${index}`,
+      start: gap.start,
+      end: gap.end,
+      speaker: "Silence",
+      text: `صمت محذوف ${formatDuration(gap.start)}–${formatDuration(gap.end)}`,
+      deleted: true,
+    }));
+
+    setTranscript((segments) =>
+      [...segments.filter((segment) => !segment.id.startsWith("silence-gap-")), ...silenceSegments]
+        .sort((a, b) => a.start - b.start),
+    );
+    setPlan(
+      createSilenceRemovalPlan({
+        transcript: sorted,
+        gaps,
+        style: activeStyle,
+        aspectRatio,
+        brandName,
+      }),
+    );
+
     commitTimeline((tracks) =>
       tracks.map((track) =>
         track.kind === "effects"
           ? { ...track, layers: [...track.layers, ...silenceMarkers] }
-          : track,
+        : track,
       ),
     );
-    setProjectStatus(
-      count > 0
-        ? `${count} silence region${count !== 1 ? "s" : ""} marked on timeline`
-        : "No silence detected in current transcript",
+    setProjectStatus(`تم تحديد ${gaps.length} فترة صمت للحذف`);
+    setAssistantMessages((messages) =>
+      [
+        createAssistantMessage(
+          "assistant",
+          `تم تحديد ${gaps.length} فترة صمت للحذف:\n${gaps
+            .map((gap) => `• ${formatDuration(gap.start)}–${formatDuration(gap.end)}`)
+            .join("\n")}\n\nتم تجهيز خطة قص حقيقية، والتصدير القادم سيستخدم FFmpeg لقص هذه الفجوات من الفيديو.`,
+          [{ type: "REMOVE_SILENCE", label: `${gaps.length} silence gaps selected` }],
+        ),
+        ...messages,
+      ].slice(0, 12),
     );
   }
 
@@ -2438,12 +2607,32 @@ export function ProfessionalVideoStudio() {
 
       if (action.type === "IMPROVE_AUDIO") {
         setActivePanel("audio");
-        applyAudioEnhancementChain();
+        setProjectStatus("ميزة تحسين الصوت تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro.");
+        setAssistantMessages((messages) =>
+          [
+            createAssistantMessage(
+              "assistant",
+              "ميزة تحسين الصوت تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro. فتحت لك لوحة الصوت للتحكم اليدوي الحالي.",
+              [action],
+            ),
+            ...messages,
+          ].slice(0, 12),
+        );
       }
 
       if (action.type === "REMOVE_BACKGROUND") {
         setActivePanel("background");
-        applyBackgroundReplacement("Studio gradient");
+        setProjectStatus("ميزة إزالة الخلفية تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro.");
+        setAssistantMessages((messages) =>
+          [
+            createAssistantMessage(
+              "assistant",
+              "ميزة إزالة الخلفية من الفيديو تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro. فتحت لك لوحة الخلفية للتجهيز اليدوي.",
+              [action],
+            ),
+            ...messages,
+          ].slice(0, 12),
+        );
       }
 
       if (action.type === "CREATE_AD_VERSION") {
@@ -2782,9 +2971,11 @@ export function ProfessionalVideoStudio() {
           <AssistantPanel
             command={assistantCommand}
             messages={assistantMessages}
+            clipSuggestions={clipSuggestions}
             isRunning={isAssistantRunning}
             onCommandChange={setAssistantCommand}
             onRunCommand={runAssistantCommand}
+            onExportClip={exportClipSuggestion}
           />
           {error ? (
             <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-200">
@@ -2888,6 +3079,27 @@ export function ProfessionalVideoStudio() {
       return <BrandKitPanel brandKit={brandKit} onChange={setBrandKit} brandName={brandName} onBrandNameChange={setBrandName} />;
     }
 
+    if (activePanel === "stock") {
+      return (
+        <StockMediaPanel
+          onAddToTimeline={(asset) => {
+            setMediaAssets((prev) => {
+              const exists = prev.some((a) => a.id === asset.id);
+              return exists ? prev : [asset, ...prev];
+            });
+            addMediaAssetToTimeline(asset);
+          }}
+          onAddToMediaBin={(asset) => {
+            setMediaAssets((prev) => {
+              const exists = prev.some((a) => a.id === asset.id);
+              return exists ? prev : [asset, ...prev];
+            });
+            setProjectStatus(`${asset.name} added to media bin`);
+          }}
+        />
+      );
+    }
+
     if (activePanel === "exports") {
       return (
         <ExportsPanel
@@ -2929,38 +3141,18 @@ export function ProfessionalVideoStudio() {
 
   function handleAiAction(actionId: string) {
     if (actionId === "shorts") {
-      const total = Math.max(15, studioFile?.durationSeconds ?? totalTimelineSeconds);
+      const total = Math.max(1, studioFile?.durationSeconds ?? totalTimelineSeconds);
+      const suggestions = createClipSuggestions({ total, plan, transcript });
+      setClipSuggestions(suggestions);
 
-      // Use plan timeline to anchor the first scene start; fallback to 0
-      const firstSceneStart = plan?.timeline?.[0]?.start ?? 0;
-      const midStart = plan?.timeline?.find((t) => t.intensity === "high")?.start ?? Math.round(total * 0.2);
-
-      const clips: TimelineLayer[] = [
-        {
-          id: crypto.randomUUID(),
-          type: "effect" as const,
-          name: `15s clip · ${formatDuration(firstSceneStart)}–${formatDuration(firstSceneStart + 15)}`,
-          start: firstSceneStart,
-          duration: Math.min(15, total - firstSceneStart),
-          color: "#8ef7c2",
-        },
-        {
-          id: crypto.randomUUID(),
-          type: "effect" as const,
-          name: `30s clip · ${formatDuration(midStart)}–${formatDuration(midStart + 30)}`,
-          start: midStart,
-          duration: Math.min(30, total - midStart),
-          color: "#a78bfa",
-        },
-        {
-          id: crypto.randomUUID(),
-          type: "effect" as const,
-          name: `60s cut · 0–${formatDuration(Math.min(60, total))}`,
-          start: 0,
-          duration: Math.min(60, total),
-          color: "#fbbf24",
-        },
-      ].filter((clip) => clip.duration >= 3);
+      const clips: TimelineLayer[] = suggestions.map((clip, index) => ({
+        id: clip.id,
+        type: "effect" as const,
+        name: `${clip.label} · ${formatDuration(clip.start)}–${formatDuration(clip.end)}`,
+        start: clip.start,
+        duration: clip.duration,
+        color: index === 0 ? "#8ef7c2" : index === 1 ? "#a78bfa" : "#fbbf24",
+      }));
 
       commitTimeline((tracks) =>
         tracks.map((track) =>
@@ -2969,7 +3161,22 @@ export function ProfessionalVideoStudio() {
             : track,
         ),
       );
-      setProjectStatus(`${clips.length} clip versions marked on timeline (15s, 30s, 60s)`);
+      const summary = suggestions
+        .map((clip) => `${formatDuration(clip.start)}-${formatDuration(clip.end)} (${clip.label})`)
+        .join("، ");
+      setProjectStatus(`تم تحديد ${suggestions.length} مقاطع: ${summary}`);
+      setAssistantMessages((messages) =>
+        [
+          createAssistantMessage(
+            "assistant",
+            `تم تحديد ${suggestions.length} مقاطع:\n${suggestions
+              .map((clip) => `• ${formatDuration(clip.start)}-${formatDuration(clip.end)} ثانية (${clip.label})`)
+              .join("\n")}\n\nتقدر تصدر نسخة 30s من زر Export 30s Clip في لوحة المساعد.`,
+            [{ type: "EXTRACT_CLIPS", label: "3 clip ranges prepared" }],
+          ),
+          ...messages,
+        ].slice(0, 12),
+      );
     }
 
     if (actionId === "titles") {
@@ -3166,7 +3373,16 @@ export function ProfessionalVideoStudio() {
 
     if (tool.id === "clean-audio") {
       setActivePanel("audio");
-      applyAudioEnhancementChain();
+      setProjectStatus("ميزة تحسين الصوت تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro.");
+      setAssistantMessages((messages) =>
+        [
+          createAssistantMessage(
+            "assistant",
+            "ميزة تحسين الصوت تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro. فتحت لك لوحة الصوت للتحكم اليدوي الحالي.",
+          ),
+          ...messages,
+        ].slice(0, 12),
+      );
       return;
     }
 
@@ -3187,7 +3403,16 @@ export function ProfessionalVideoStudio() {
 
     if (tool.id === "remove-background") {
       setActivePanel("background");
-      applyBackgroundReplacement("Studio gradient");
+      setProjectStatus("ميزة إزالة الخلفية تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro.");
+      setAssistantMessages((messages) =>
+        [
+          createAssistantMessage(
+            "assistant",
+            "ميزة إزالة الخلفية من الفيديو تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro. فتحت لك لوحة الخلفية للتجهيز اليدوي.",
+          ),
+          ...messages,
+        ].slice(0, 12),
+      );
       return;
     }
 
@@ -3806,6 +4031,15 @@ function AiStudioPanel({
   );
 }
 
+function DemoModeBanner() {
+  return (
+    <div className="mb-3 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-black leading-5 text-amber-300">
+      <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <span>هذا النص تجريبي وهمي — ارفع فيديو وأضف OpenAI API Key لتفعيل الترجمة الحقيقية</span>
+    </div>
+  );
+}
+
 function TranscriptPanel({
   transcript,
   query,
@@ -3843,6 +4077,7 @@ function TranscriptPanel({
         {isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Captions className="h-4 w-4" />}
         {isTranscribing ? "Reading video..." : "Auto-caption from video"}
       </button>
+      {transcriptionMode === "demo" ? <DemoModeBanner /> : null}
       {transcriptionMode ? (
         <p className="mb-3 rounded-lg border border-[var(--line)] bg-black/20 p-2 text-xs font-bold text-[var(--muted)]">
           Mode: {getTranscriptionModeLabel(transcriptionMode)}
@@ -3929,6 +4164,7 @@ function CaptionsPanel({
         {isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic2 className="h-4 w-4" />}
         {isTranscribing ? "Transcribing..." : "Read video and generate captions"}
       </button>
+      {transcriptionMode === "demo" ? <DemoModeBanner /> : null}
       {transcriptionMode ? (
         <p className="mb-3 rounded-lg border border-[var(--line)] bg-black/20 p-2 text-xs font-bold text-[var(--muted)]">
           {getTranscriptionModeDescription(transcriptionMode)}
@@ -4049,6 +4285,166 @@ function AudioPanel({
         <Volume2 className="h-4 w-4" aria-hidden="true" />
         Apply audio chain
       </button>
+    </section>
+  );
+}
+
+function StockMediaPanel({
+  onAddToTimeline,
+  onAddToMediaBin,
+}: {
+  onAddToTimeline: (asset: MediaAsset) => void;
+  onAddToMediaBin: (asset: MediaAsset) => void;
+}) {
+  const [query, setQuery] = useState("Saudi creator");
+  const [mediaType, setMediaType] = useState<"photo" | "video">("photo");
+  const [results, setResults] = useState<StockMediaResult[]>([]);
+  const [source, setSource] = useState<StockSearchResponse["source"]>("demo");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [addingId, setAddingId] = useState("");
+
+  const searchStock = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const params = new URLSearchParams({
+        q: query.trim() || "Saudi creator",
+        type: mediaType,
+        per_page: "12",
+      });
+      const response = await fetch(`/api/stock?${params.toString()}`);
+      const data = (await response.json()) as StockSearchResponse & { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Could not load stock media.");
+      setResults(data.results);
+      setSource(data.source);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not load stock media.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [mediaType, query]);
+
+  useEffect(() => {
+    void searchStock();
+  }, [searchStock]);
+
+  async function addStockAsset(item: StockMediaResult, target: "bin" | "timeline") {
+    setAddingId(`${target}-${item.id}`);
+    setError("");
+
+    try {
+      const asset = await stockResultToMediaAsset(item);
+      if (target === "timeline") {
+        onAddToTimeline(asset);
+      } else {
+        onAddToMediaBin(asset);
+      }
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not add this stock asset.");
+    } finally {
+      setAddingId("");
+    }
+  }
+
+  return (
+    <section className="panel p-4">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <PanelHeading icon={ImageIcon} title="Stock media" />
+        <span className="rounded-md bg-[var(--brand-soft)] px-2 py-1 text-xs font-black text-[var(--brand)]">
+          {source}
+        </span>
+      </div>
+      <div className="mb-3 grid gap-2 md:grid-cols-[1fr_auto_auto]">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void searchStock();
+            }}
+            className="control-input pl-9"
+            placeholder="Search stock media"
+          />
+        </div>
+        <select
+          value={mediaType}
+          onChange={(event) => setMediaType(event.target.value as "photo" | "video")}
+          className="control-select min-w-28"
+        >
+          <option value="photo">Photos</option>
+          <option value="video">Videos</option>
+        </select>
+        <button
+          type="button"
+          onClick={() => void searchStock()}
+          disabled={isLoading}
+          className="btn-brand min-h-11 justify-center"
+        >
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Search className="h-4 w-4" aria-hidden="true" />}
+          Search
+        </button>
+      </div>
+      {error ? (
+        <p className="mb-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-200">
+          {error}
+        </p>
+      ) : null}
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {results.map((item) => {
+          const preview = item.previewUrl || item.thumbUrl || item.url;
+          const isAddingToBin = addingId === `bin-${item.id}`;
+          const isAddingToTimeline = addingId === `timeline-${item.id}`;
+
+          return (
+            <article key={item.id} className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel-soft)]">
+              <div
+                className="relative aspect-[9/12] bg-cover bg-center"
+                style={{ backgroundImage: `url("${preview}")` }}
+                aria-label={item.alt || item.id}
+              >
+                <span className="absolute left-2 top-2 rounded-md bg-black/65 px-2 py-1 text-[11px] font-black uppercase">
+                  {item.type}
+                </span>
+                {item.type === "video" ? (
+                  <span className="absolute right-2 top-2 rounded-md bg-black/65 px-2 py-1 text-[11px] font-black">
+                    {formatDuration(item.duration ?? 0)}
+                  </span>
+                ) : null}
+              </div>
+              <div className="space-y-2 p-3">
+                <p className="line-clamp-2 min-h-10 text-sm font-black leading-5">
+                  {item.alt || item.photographer || item.videographer || item.id}
+                </p>
+                <p className="text-[11px] font-bold text-[var(--muted)]">
+                  {item.width}x{item.height} · {item.source}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void addStockAsset(item, "bin")}
+                    disabled={Boolean(addingId)}
+                    className="rounded-lg border border-[var(--line)] bg-black/20 px-2 py-2 text-xs font-black transition hover:border-[var(--brand)] disabled:opacity-50"
+                  >
+                    {isAddingToBin ? "Adding..." : "Media bin"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void addStockAsset(item, "timeline")}
+                    disabled={Boolean(addingId)}
+                    className="rounded-lg bg-[var(--brand)] px-2 py-2 text-xs font-black text-black transition hover:bg-white disabled:opacity-50"
+                  >
+                    {isAddingToTimeline ? "Adding..." : "Timeline"}
+                  </button>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+      {!isLoading && !results.length ? <EmptyMini label="No stock media found for this search." /> : null}
     </section>
   );
 }
@@ -4678,16 +5074,25 @@ function NumberField({
 function AssistantPanel({
   command,
   messages,
+  clipSuggestions,
   isRunning,
   onCommandChange,
   onRunCommand,
+  onExportClip,
 }: {
   command: string;
   messages: AssistantMessage[];
+  clipSuggestions: ClipSuggestion[];
   isRunning: boolean;
   onCommandChange: (command: string) => void;
   onRunCommand: (commandOverride?: string) => void;
+  onExportClip: (clip: ClipSuggestion) => void;
 }) {
+  const thirtySecondClip =
+    clipSuggestions.find((clip) => Math.round(clip.duration) === 30) ??
+    clipSuggestions.find((clip) => clip.label.includes("30")) ??
+    null;
+
   return (
     <section className="panel p-4">
       <PanelHeading icon={Bot} title="AI assistant" />
@@ -4725,6 +5130,17 @@ function AssistantPanel({
           </button>
         ))}
       </div>
+      {thirtySecondClip ? (
+        <button
+          type="button"
+          onClick={() => onExportClip(thirtySecondClip)}
+          disabled={isRunning}
+          className="btn-brand mb-3 w-full justify-center"
+        >
+          <Download className="h-4 w-4" aria-hidden="true" />
+          Export 30s Clip
+        </button>
+      ) : null}
       <div className="max-h-64 space-y-2 overflow-auto pr-1">
         {isRunning ? (
           <div className="msg-assistant fade-in flex items-center gap-2">
@@ -5504,6 +5920,168 @@ function getPreparedFileNotice(preparedFile: PreparedTranscriptionFile) {
   return preparedFile.note;
 }
 
+function createSilenceRemovalPlan({
+  transcript,
+  gaps,
+  style,
+  aspectRatio,
+  brandName,
+}: {
+  transcript: TranscriptSegment[];
+  gaps: Array<{ start: number; end: number }>;
+  style: VideoStyle;
+  aspectRatio: AspectRatio;
+  brandName: string;
+}): EditPlan {
+  const speechSegments = [...transcript]
+    .filter((segment) => !segment.deleted && segment.end - segment.start > 0.1)
+    .sort((a, b) => a.start - b.start);
+
+  let outputCursor = 0;
+  const captions = speechSegments.map((segment) => {
+    const caption = {
+      at: Number(outputCursor.toFixed(2)),
+      text: segment.text,
+      emphasis: [],
+    };
+    outputCursor += Math.max(0, segment.end - segment.start);
+    return caption;
+  });
+  const targetDurationSeconds = Math.max(1, Number(outputCursor.toFixed(2)));
+
+  return {
+    id: `silence-removal-${Date.now()}`,
+    title: `${brandName || "Mawj Studio"} silence cut`,
+    hook: speechSegments[0]?.text ?? "Silence removed cut",
+    summary: `Removed ${gaps.length} long pause${gaps.length === 1 ? "" : "s"} from the transcript timeline.`,
+    targetDurationSeconds,
+    styleId: style.id,
+    confidence: 90,
+    renderSettings: {
+      aspectRatio,
+      resolution: aspectRatio === "16:9" ? "1920x1080" : aspectRatio === "1:1" ? "1080x1080" : "1080x1920",
+      fps: 30,
+      loudness: "-14 LUFS",
+      safeMargins: "12% captions / 8% UI safe zones",
+    },
+    timeline: speechSegments.map((segment, index) => ({
+      id: `speech-cut-${segment.id}`,
+      label: `Speech ${index + 1}`,
+      start: segment.start,
+      end: segment.end,
+      action: `Keep speech and remove neighboring silence around ${formatDuration(segment.start)}.`,
+      intensity: index === 0 ? "high" : "medium",
+    })),
+    captions,
+    aiTools: [
+      { name: "Remove silence", status: "ready", detail: `${gaps.length} long pauses marked for FFmpeg trimming.` },
+      { name: "FFmpeg trim", status: "ready", detail: "Export will concatenate the kept speech ranges." },
+    ],
+    exportVariants: [
+      { platform: "MP4", duration: `${Math.round(targetDurationSeconds)}s`, caption: "Speech-only cut with long pauses removed." },
+      { platform: "SRT", duration: `${Math.round(targetDurationSeconds)}s`, caption: "Captions aligned to the shortened edit." },
+    ],
+  };
+}
+
+function createClipSuggestions({
+  total,
+  plan,
+  transcript,
+}: {
+  total: number;
+  plan: EditPlan | null;
+  transcript: TranscriptSegment[];
+}): ClipSuggestion[] {
+  const safeTotal = Math.max(1, total);
+  const highIntensityStart =
+    plan?.timeline.find((item) => item.intensity === "high" && item.start > 0)?.start ??
+    Math.max(0, Math.round(safeTotal * 0.18));
+  const ranges = [
+    { label: "15s", start: plan?.timeline[0]?.start ?? 0, target: 15 },
+    { label: "30s", start: highIntensityStart, target: 30 },
+    { label: "60s", start: 0, target: 60 },
+  ];
+
+  return ranges
+    .map((range) => {
+      const targetDuration = Math.min(range.target, safeTotal);
+      const preferredStart = range.target >= safeTotal ? 0 : range.start;
+      const latestStart = Math.max(0, safeTotal - targetDuration);
+      const start = Math.max(0, Math.min(preferredStart, latestStart));
+      const end = Math.min(safeTotal, start + targetDuration);
+      const duration = Math.max(0, end - start);
+      const clipTranscript = transcript
+        .filter((segment) => !segment.deleted && segment.end > start && segment.start < end)
+        .map((segment) => ({
+          ...segment,
+          id: `${range.label}-${segment.id}`,
+          start: Math.max(0, Number((segment.start - start).toFixed(2))),
+          end: Math.max(0, Number((Math.min(segment.end, end) - start).toFixed(2))),
+        }));
+
+      return {
+        id: `clip-${range.label}-${Math.round(start * 1000)}`,
+        label: range.label,
+        start,
+        end,
+        duration,
+        transcript: clipTranscript,
+      };
+    })
+    .filter((clip) => clip.duration >= 3);
+}
+
+function createClipExportPlan({
+  clip,
+  style,
+  aspectRatio,
+  brandName,
+}: {
+  clip: ClipSuggestion;
+  style: VideoStyle;
+  aspectRatio: AspectRatio;
+  brandName: string;
+}): EditPlan {
+  return {
+    id: `clip-export-${clip.id}`,
+    title: `${brandName || "Mawj Studio"} ${clip.label} clip`,
+    hook: clip.transcript[0]?.text ?? `${clip.label} creator cut`,
+    summary: `A real FFmpeg cut from ${formatDuration(clip.start)} to ${formatDuration(clip.end)}.`,
+    targetDurationSeconds: clip.duration,
+    styleId: style.id,
+    confidence: 92,
+    renderSettings: {
+      aspectRatio,
+      resolution: aspectRatio === "16:9" ? "1920x1080" : aspectRatio === "1:1" ? "1080x1080" : "1080x1920",
+      fps: 30,
+      loudness: "-14 LUFS",
+      safeMargins: "12% captions / 8% UI safe zones",
+    },
+    timeline: [
+      {
+        id: clip.id,
+        label: clip.label,
+        start: clip.start,
+        end: clip.end,
+        action: "Export this selected highlight as a real trimmed clip.",
+        intensity: "high",
+      },
+    ],
+    captions: clip.transcript.map((segment) => ({
+      at: segment.start,
+      text: segment.text,
+      emphasis: [],
+    })),
+    aiTools: [
+      { name: "FFmpeg trim", status: "ready", detail: "The exported file uses real source cut points." },
+    ],
+    exportVariants: [
+      { platform: "MP4", duration: `${Math.round(clip.duration)}s`, caption: `${clip.label} highlight export.` },
+    ],
+  };
+}
+
 function createCaptionRenderPlan({
   captions,
   style,
@@ -6075,4 +6653,357 @@ function formatDuration(seconds: number) {
 function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+/* ── Stock Media Panel ─────────────────────────────────────────────── */
+
+type StockItem = {
+  id: string;
+  type: "photo" | "video";
+  url: string;
+  previewUrl: string;
+  thumbUrl: string;
+  alt: string;
+  width: number;
+  height: number;
+  duration?: number;
+  creator: string;
+  source: "pexels" | "pixabay" | "demo";
+};
+
+type StockApiResponse = {
+  results: Array<{
+    id: string;
+    type: "photo" | "video";
+    url: string;
+    previewUrl: string;
+    thumbUrl: string;
+    width: number;
+    height: number;
+    duration?: number;
+    source: "pexels" | "pixabay" | "demo";
+    alt?: string;
+    photographer?: string;
+    videographer?: string;
+  }>;
+  nextPage: boolean;
+  source: "pexels" | "pixabay" | "demo";
+};
+
+const STOCK_CATS = [
+  { ar: "أشخاص", en: "people" },
+  { ar: "طبيعة", en: "nature" },
+  { ar: "أعمال", en: "business" },
+  { ar: "طعام", en: "food" },
+  { ar: "مدن", en: "city" },
+  { ar: "تقنية", en: "technology" },
+  { ar: "رياضة", en: "sport" },
+  { ar: "سفر", en: "travel" },
+] as const;
+
+function StockMediaPanel({
+  onAddToTimeline,
+  onAddToMediaBin,
+}: {
+  onAddToTimeline: (asset: MediaAsset) => void;
+  onAddToMediaBin: (asset: MediaAsset) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [mediaType, setMediaType] = useState<"photo" | "video">("photo");
+  const [items, setItems] = useState<StockItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [sourceLabel, setSourceLabel] = useState<"pexels" | "pixabay" | "demo" | "">("");
+  const [addedSet, setAddedSet] = useState<Set<string>>(new Set());
+  const [activeCategory, setActiveCategory] = useState("");
+
+  // Load default results when component mounts or media type tab changes
+  useEffect(() => {
+    void fetchStock("", mediaType, 1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediaType]);
+
+  async function fetchStock(q: string, type: "photo" | "video", p: number, append: boolean) {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams({ q, type, page: String(p), per_page: "18" });
+      const res = await fetch(`/api/stock?${params}`);
+      if (!res.ok) throw new Error("stock api failed");
+      const data = (await res.json()) as StockApiResponse;
+      const mapped: StockItem[] = data.results.map((r) => ({
+        id: r.id,
+        type: r.type,
+        url: r.url,
+        previewUrl: r.previewUrl,
+        thumbUrl: r.thumbUrl,
+        alt: r.alt ?? "",
+        width: r.width,
+        height: r.height,
+        duration: r.duration,
+        creator: r.photographer ?? r.videographer ?? "",
+        source: r.source,
+      }));
+      setItems((prev) => (append ? [...prev, ...mapped] : mapped));
+      setHasMore(data.nextPage);
+      setSourceLabel(data.source);
+      setPage(p);
+    } catch {
+      // silently keep existing results on error
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    setActiveCategory("");
+    void fetchStock(query, mediaType, 1, false);
+  }
+
+  function handleCat(en: string) {
+    setQuery(en);
+    setActiveCategory(en);
+    void fetchStock(en, mediaType, 1, false);
+  }
+
+  function stockToAsset(item: StockItem): MediaAsset {
+    const ext = item.type === "video" ? "mp4" : "jpg";
+    const mime = item.type === "video" ? "video/mp4" : "image/jpeg";
+    const name = `${item.source}-${item.id}.${ext}`;
+    return {
+      id: `stock-${item.id}`,
+      name,
+      file: new File([""], name, { type: mime }),
+      url: item.type === "photo" ? item.previewUrl : item.url,
+      kind: item.type === "video" ? "video" : "image",
+      size: 0,
+      width: item.width,
+      height: item.height,
+      ...(item.duration ? { durationSeconds: item.duration } : {}),
+    };
+  }
+
+  function markAdded(id: string) {
+    setAddedSet((prev) => new Set([...prev, id]));
+    setTimeout(
+      () =>
+        setAddedSet((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        }),
+      2000,
+    );
+  }
+
+  return (
+    <section className="panel flex h-full flex-col gap-3 overflow-hidden p-3">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <PanelHeading icon={ImageIcon} title="Stock Media" />
+        {sourceLabel && (
+          <span
+            className={`badge text-[10px] ${
+              sourceLabel === "demo" ? "badge-muted" : "badge-brand"
+            }`}
+          >
+            {sourceLabel === "demo"
+              ? "Demo"
+              : sourceLabel === "pexels"
+                ? "Pexels"
+                : "Pixabay"}
+          </span>
+        )}
+      </div>
+
+      {/* Photo / Video tabs */}
+      <div className="grid grid-cols-2 gap-1 rounded-lg bg-[var(--panel-soft)] p-1">
+        {(["photo", "video"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setMediaType(t)}
+            className={`rounded-md py-1 text-xs font-black transition ${
+              mediaType === t
+                ? "bg-[var(--brand)] text-black"
+                : "text-[var(--muted)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            {t === "photo" ? "📷 صور" : "🎬 فيديو"}
+          </button>
+        ))}
+      </div>
+
+      {/* Search bar */}
+      <form onSubmit={handleSearch} className="flex gap-1.5">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="ابحث بالإنجليزية..."
+          dir="rtl"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-2.5 py-1.5 text-xs text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--brand)] focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="toolbar-btn flex items-center gap-1 px-2.5"
+          aria-label="Search"
+        >
+          {isLoading ? (
+            <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+          ) : (
+            <Search className="h-3 w-3" aria-hidden="true" />
+          )}
+        </button>
+      </form>
+
+      {/* Category quick filters */}
+      <div className="flex flex-wrap gap-1">
+        {STOCK_CATS.map((cat) => (
+          <button
+            key={cat.en}
+            type="button"
+            onClick={() => handleCat(cat.en)}
+            className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold transition ${
+              activeCategory === cat.en
+                ? "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]"
+                : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+            }`}
+          >
+            {cat.ar}
+          </button>
+        ))}
+      </div>
+
+      {/* Results grid */}
+      <div className="flex-1 overflow-y-auto">
+        {items.length === 0 && !isLoading ? (
+          <div className="empty-state py-8">
+            <ImageIcon className="h-10 w-10 opacity-30" aria-hidden="true" />
+            <p className="empty-state-text mt-2">ابحث عن صور أو فيديوهات</p>
+            <p className="empty-state-sub">ملايين الأصول المجانية</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-1.5">
+              {items.map((item) => {
+                const added = addedSet.has(item.id);
+                const isPortrait = item.height >= item.width;
+                return (
+                  <div
+                    key={item.id}
+                    className={`group relative overflow-hidden rounded-lg bg-[var(--panel-soft)] ${
+                      isPortrait ? "aspect-[3/4]" : "aspect-video"
+                    }`}
+                  >
+                    {/* Thumbnail */}
+                    <img
+                      src={item.thumbUrl || item.previewUrl}
+                      alt={item.alt}
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:brightness-50"
+                    />
+
+                    {/* Video duration badge */}
+                    {item.type === "video" && item.duration !== undefined && (
+                      <span className="absolute left-1 top-1 rounded bg-black/70 px-1 py-0.5 text-[9px] font-black text-white">
+                        {Math.floor(item.duration / 60)}:
+                        {String(item.duration % 60).padStart(2, "0")}
+                      </span>
+                    )}
+
+                    {/* Source badge */}
+                    <span className="absolute right-1 top-1 rounded bg-black/50 px-1 py-0.5 text-[8px] font-bold uppercase text-white/70">
+                      {item.source === "demo" ? "free" : item.source}
+                    </span>
+
+                    {/* Action overlay — revealed on hover */}
+                    <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onAddToTimeline(stockToAsset(item));
+                          markAdded(item.id);
+                        }}
+                        className="flex w-full items-center justify-center gap-1 rounded bg-[var(--brand)] px-2 py-1 text-[10px] font-black text-black"
+                      >
+                        {added ? (
+                          "✓ تمت الإضافة"
+                        ) : (
+                          <>
+                            <Plus className="h-3 w-3" aria-hidden="true" />
+                            أضف للتايملاين
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onAddToMediaBin(stockToAsset(item))}
+                        className="flex w-full items-center justify-center gap-1 rounded border border-white/30 bg-black/60 px-2 py-1 text-[10px] font-black text-white"
+                      >
+                        <FolderOpen className="h-3 w-3" aria-hidden="true" />
+                        حفظ في الوسائط
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Load more */}
+            {hasMore && !isLoading && (
+              <button
+                type="button"
+                onClick={() => void fetchStock(query, mediaType, page + 1, true)}
+                className="mt-3 w-full rounded-lg border border-[var(--line)] py-2 text-xs font-black text-[var(--muted)] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
+              >
+                تحميل المزيد ↓
+              </button>
+            )}
+
+            {/* Append-loading spinner */}
+            {isLoading && items.length > 0 && (
+              <div className="flex justify-center py-4">
+                <Loader2
+                  className="h-5 w-5 animate-spin text-[var(--brand)]"
+                  aria-hidden="true"
+                />
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Full-panel initial loading spinner */}
+        {isLoading && items.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-3 py-12">
+            <Loader2
+              className="h-8 w-8 animate-spin text-[var(--brand)]"
+              aria-hidden="true"
+            />
+            <p className="text-xs text-[var(--muted)]">جارٍ التحميل...</p>
+          </div>
+        )}
+      </div>
+
+      {/* Attribution footer */}
+      {sourceLabel && sourceLabel !== "demo" && (
+        <p className="text-center text-[9px] text-[var(--muted)]">
+          Photos &amp; videos by{" "}
+          <a
+            href={
+              sourceLabel === "pexels"
+                ? "https://www.pexels.com"
+                : "https://pixabay.com"
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--brand)] hover:underline"
+          >
+            {sourceLabel === "pexels" ? "Pexels" : "Pixabay"}
+          </a>
+        </p>
+      )}
+    </section>
+  );
 }
