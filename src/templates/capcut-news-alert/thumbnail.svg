@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 960" width="540" height="960">
+  <rect width="540" height="960" fill="#0a0a0a"/>
+  <rect x="0" y="80" width="540" height="60" fill="#dc2626"/>
+  <text x="270" y="118" font-family="system-ui" font-size="16" font-weight="900" fill="white" text-anchor="middle">=4 9',D | BREAKING</text>
+  <text x="270" y="760" font-family="system-ui" font-size="28" font-weight="900" fill="white" text-anchor="middle">News Alert</text>
+  <text x="270" y="830" font-family="system-ui" font-size="14" font-weight="700" fill="#dc2626" text-anchor="middle">News · 12s</text>
+</svg>

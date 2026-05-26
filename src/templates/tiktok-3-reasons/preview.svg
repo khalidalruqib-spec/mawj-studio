@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 960" width="540" height="960">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0a0a0a"/><stop offset="1" stop-color="#1a1a2e"/></linearGradient></defs>
+  <rect width="540" height="960" fill="url(#bg)"/>
+  <rect x="0" y="0" width="540" height="5" fill="#7ef2bc"/>
+  <rect x="32" y="42" width="140" height="32" rx="8" fill="rgba(126,242,188,0.15)" stroke="#7ef2bc" stroke-width="1"/>
+  <text x="102" y="63" font-family="system-ui" font-size="12" font-weight="700" fill="#7ef2bc" text-anchor="middle">TikTok / Reels</text>
+  <text x="270" y="420" font-size="140" font-weight="900" fill="#7ef2bc" opacity="0.15" text-anchor="middle">c</text>
+  <text x="270" y="760" font-family="system-ui" font-size="32" font-weight="900" fill="white" text-anchor="middle">c #3('(  CapCut</text>
+  <text x="270" y="830" font-family="system-ui" font-size="14" font-weight="700" fill="#7ef2bc" text-anchor="middle">5 scenes · 14s · 9:16</text>
+</svg>

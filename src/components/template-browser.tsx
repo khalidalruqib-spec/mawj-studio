@@ -87,13 +87,13 @@ function getCategoryMeta(category: string): CategoryMeta {
 
 /* Featured template IDs — shown with a ★ badge */
 const FEATURED_IDS = new Set([
-  "tiktok-hook-sprint",
-  "product-ad",
+  "tiktok-3-reasons",
+  "capcut-flash-sale",
+  "capcut-karaoke-captions",
+  "tiktok-pov-story",
+  "capcut-news-alert",
   "ugc-testimonial",
-  "course-launch",
-  "luxury-brand-reveal",
-  "podcast-short",
-  "clinic-appointment",
+  "tiktok-hook-sprint",
 ]);
 
 /* Scene palette — rotates through per-scene */

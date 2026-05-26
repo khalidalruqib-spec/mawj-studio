@@ -42,13 +42,13 @@
       "key": "restaurantName",
       "label": "Restaurant Name",
       "type": "text",
-      "default": "Restaurant Name"
+      "default": "مطعم الذوق"
     },
     {
       "key": "offerTitle",
       "label": "Offer Title",
       "type": "text",
-      "default": "Lunch Offer"
+      "default": "عرض الغداء"
     },
     {
       "key": "foodImage",
@@ -59,13 +59,13 @@
       "key": "price",
       "label": "Price",
       "type": "text",
-      "default": "SAR 39"
+      "default": "٣٩ ر.س"
     },
     {
       "key": "location",
       "label": "Location",
       "type": "text",
-      "default": "Khobar"
+      "default": "الرياض — حي النخيل"
     },
     {
       "key": "orderNumber",

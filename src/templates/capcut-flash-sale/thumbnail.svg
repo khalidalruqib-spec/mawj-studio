@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 960" width="540" height="960">
+  <rect width="540" height="960" fill="#0a0a0a"/>
+  <rect x="0" y="80" width="540" height="50" fill="#ff3b5c"/>
+  <text x="270" y="112" font-family="system-ui" font-size="16" font-weight="900" fill="white" text-anchor="middle">¡ FLASH SALE</text>
+  <circle cx="400" cy="280" r="60" fill="#ff3b5c"/>
+  <text x="400" y="290" font-family="system-ui" font-size="22" font-weight="900" fill="white" text-anchor="middle">-50%</text>
+  <text x="270" y="760" font-family="system-ui" font-size="30" font-weight="900" fill="white" text-anchor="middle">Flash Sale</text>
+  <text x="270" y="830" font-family="system-ui" font-size="14" font-weight="700" fill="#ff3b5c" text-anchor="middle">Product Ads · 12s</text>
+</svg>
