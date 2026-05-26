@@ -204,7 +204,7 @@
           "type": "text",
           "content": "{{body}}",
           "x": 70,
-          "y": 1330,
+          "y": 1280,
           "width": 940,
           "height": 360,
           "fontSize": 40,
