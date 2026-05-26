@@ -57,7 +57,7 @@ export const metadata: Metadata = {
       "منصة تحرير الفيديو القصير بالذكاء الاصطناعي للمبدعين السعوديين والعرب.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.svg",
         width: 1200,
         height: 630,
         alt: "Mawj Studio — AI Video Editor",
@@ -68,14 +68,13 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Mawj Studio — محرر الفيديو بالذكاء الاصطناعي",
     description: "حوّل أفكارك إلى محتوى احترافي بالذكاء الاصطناعي.",
-    images: ["/og-image.png"],
+    images: ["/og-image.svg"],
   },
   icons: {
     icon: [
       { url: "/favicon.ico" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/mawj-icon.svg", type: "image/svg+xml" },
     ],
-    apple: "/apple-touch-icon.png",
   },
   robots: {
     index: true,
