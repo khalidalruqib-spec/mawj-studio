@@ -1,13 +1,16 @@
 # مهام Codex — تنفيذ متوازي مع Cursor
 
-انسخ البرومبت المناسب إلى Codex **على فرع منفصل** ثم افتح PR. Cursor يراجع الـ PR بعد الدمج أو قبله.
+> **Handover كامل:** اقرأ [`CODEX_HANDOVER.md`](./CODEX_HANDOVER.md) أولاً — يحتوي حالة المشروع، PR #3، الأولويات، وبرومпт البداية.
+
+انسخ البرومبت المناسب إلى Codex **على فرع منفصل** ثم افتح PR. Cursor يراجع الـ PR بعد الدمج أو قبلhe.
 
 ---
 
-## المهمة 1 — تقسيم الاستوديو (أولوية عالية)
+## المهمة 1 — تقسيم الاستوديو ✅ (Codex — PR #3 مفتوح)
 
 **الفرع:** `refactor/split-studio-components`  
-**لا تلمس:** `src/components/marketing/`, `src/app/page.tsx`, `src/app/studio/`
+**PR:** https://github.com/khalidalruqib-spec/mawj-studio/pull/3  
+**الحالة:** يحتاج rebase + sync lockfile قبل merge — راجع `CODEX_HANDOVER.md` §2
 
 ### البرومبت لـ Codex
 
@@ -90,12 +93,13 @@ PR body: خطوات اختبار يدوية + SQL migration كاملة.
 
 ## ترتيب التنفيذ المقترح
 
-| # | المهمة | من ينفّذ | الفرع |
-|---|--------|---------|-------|
-| 1 | Landing + design system + /studio | Cursor | `feat/landing-design-system-v2` |
-| 2 | تقسيم الاستوديو | Codex | `refactor/split-studio-components` |
-| 3 | Auth + RLS | Codex | `feat/auth-rls-projects` |
-| 4 | مراجعة PRs | Cursor / أنت | — |
+| # | المهمة | من | الفرع | الحالة |
+|---|--------|-----|-------|--------|
+| 1 | Landing + /studio | Cursor | `feat/landing-design-system-v2` | ✅ merged |
+| 2 | تقسيم الاستوديو | Codex | `refactor/split-studio-components` | 🟡 PR #3 |
+| 3 | Auth + RLS | Codex | `feat/auth-rls-projects` | ⏳ التالي |
+| 4 | ترقية قوالب قديمة | Codex/Cursor | `feat/upgrade-legacy-templates` | ⏳ |
+| 5 | مراجعة PRs | Cursor | — | ongoing |
 
 ---
 
