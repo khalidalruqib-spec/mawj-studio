@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  BadgeCheck,
   Building2,
   Captions,
   Clapperboard,
@@ -47,7 +48,8 @@ const TEMPLATE_CATEGORIES = [
   { icon: Building2, label: "عقار ومطاعم", count: "2 قوالب" },
   { icon: Mic, label: "بودكاست", count: "1 قالب" },
   { icon: Newspaper, label: "أخبار", count: "2 قالب" },
-  { icon: Users, label: "براند شخصي", count: "2 قالب" },
+  { icon: Users, label: "براند شخصي", count: "2 قوالب" },
+  { icon: BadgeCheck, label: "عيادات", count: "1 قالب" },
 ] as const;
 
 const STEPS = [
