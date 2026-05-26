@@ -27,7 +27,7 @@ const FEATURES = [
   },
   {
     icon: Layers3,
-    title: "١٨+ قالب احترافي",
+    title: "١٩+ قالب احترافي",
     body: "تيك توك، إعلانات، عقار، مطاعم، بودكاست، أخبار — كل قالب يتحول لمشروع مونتاج كامل.",
   },
   {
@@ -57,6 +57,21 @@ const STEPS = [
   { n: "02", title: "خصّص النص والعلامة", body: "عبّئ الحقول العربية — الشعار والألوان لاحقاً في Brand Kit." },
   { n: "03", title: "ولّد وعدّل", body: "الذكاء الاصطناعي يقترح القص؛ أنت تتحكم بالتايملاين." },
   { n: "04", title: "صدّر للمنصات", body: "TikTok، Reels، Shorts — بنسبة العرض الصحيحة." },
+] as const;
+
+const FAQ = [
+  {
+    q: "هل Mawj بديل عن CapCut؟",
+    a: "Mawj مصمم للأتمتة والقوالب العربية داخل المتصفح. الهدف: من رفع الفيديو إلى نسخة جاهزة للنشر بأقل خطوات.",
+  },
+  {
+    q: "هل أحتاج برامج أو جهاز قوي؟",
+    a: "لا. تقدر تبدأ من المتصفح. بعض عمليات التصدير قد تعتمد على قدرات جهازك أو الرندر السحابي حسب الإعداد.",
+  },
+  {
+    q: "هل يدعم العربية بالكامل؟",
+    a: "نعم — واجهة RTL وخطوط عربية وقوالب عربية. الترجمة تعمل عبر Whisper (اختياري) أو OpenAI أو وضع تجريبي.",
+  },
 ] as const;
 
 export function LandingPage() {
@@ -215,6 +230,71 @@ export function LandingPage() {
               <Button href="/studio" variant="brand" className="min-h-[3rem] px-8 text-base">
                 ادخل الاستوديو الآن
               </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing teaser */}
+        <section className="border-t border-[var(--line)] py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 className="text-2xl font-black sm:text-3xl">ابدأ مجاناً ثم ارتقِ عند الحاجة</h2>
+              <p className="mt-3 text-sm font-semibold text-[var(--muted)]">
+                هذه صفحة تسويقية للـ MVP — التسعير النهائي يتحدد لاحقاً. حالياً ركّزنا على جودة القوالب وتجربة الاستوديو.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-4 lg:grid-cols-3">
+              <div className="panel p-6">
+                <p className="text-xs font-black text-[var(--muted)]">Free</p>
+                <p className="mt-2 text-2xl font-black">0</p>
+                <ul className="mt-4 space-y-2 text-xs font-semibold text-[var(--muted-strong)]">
+                  <li>قوالب مختارة</li>
+                  <li>تجربة الاستوديو</li>
+                  <li>تصدير أساسي</li>
+                </ul>
+              </div>
+              <div className="panel-raised p-6">
+                <p className="text-xs font-black text-[var(--brand)]">Creator</p>
+                <p className="mt-2 text-2xl font-black">للصنّاع</p>
+                <ul className="mt-4 space-y-2 text-xs font-semibold text-[var(--muted-strong)]">
+                  <li>بدون علامة مائية</li>
+                  <li>قوالب أكثر + Brand Kit</li>
+                  <li>تصدير 1080p</li>
+                </ul>
+              </div>
+              <div className="panel p-6">
+                <p className="text-xs font-black text-[var(--muted)]">Pro</p>
+                <p className="mt-2 text-2xl font-black">للفِرق</p>
+                <ul className="mt-4 space-y-2 text-xs font-semibold text-[var(--muted-strong)]">
+                  <li>قوالب Premium</li>
+                  <li>تعاون ومراجعات</li>
+                  <li>تصدير أعلى</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-10 text-center">
+              <Button href="/studio" variant="brand" className="min-h-[3rem] px-8 text-base">
+                جرّب الاستوديو
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section className="border-t border-[var(--line)] bg-[var(--panel)]/40 py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <h2 className="text-center text-2xl font-black">أسئلة سريعة</h2>
+            <div className="mx-auto mt-8 max-w-3xl space-y-3">
+              {FAQ.map((item) => (
+                <details key={item.q} className="panel p-5">
+                  <summary className="cursor-pointer text-sm font-black text-[var(--foreground)]">
+                    {item.q}
+                  </summary>
+                  <p className="mt-3 text-xs font-semibold leading-6 text-[var(--muted)]">{item.a}</p>
+                </details>
+              ))}
             </div>
           </div>
         </section>
