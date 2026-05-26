@@ -73,6 +73,7 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
   "Legal Services":         { label: "خدمات قانونية",   icon: Scale,          accent: "#94a3b8", gradFrom: "rgba(148,163,184,0.18)" },
   "Before / After":         { label: "قبل وبعد",         icon: ArrowRight,     accent: "#7ef2bc", gradFrom: "rgba(126,242,188,0.18)" },
   "YouTube Shorts":         { label: "يوتيوب شورتس",    icon: Film,           accent: "#ff647c", gradFrom: "rgba(255,100,124,0.18)" },
+  "Clinics":                { label: "عيادات",           icon: BadgeCheck,     accent: "#2dd4bf", gradFrom: "rgba(45,212,191,0.18)"  },
 };
 
 function getCategoryMeta(category: string): CategoryMeta {
@@ -92,6 +93,7 @@ const FEATURED_IDS = new Set([
   "course-launch",
   "luxury-brand-reveal",
   "podcast-short",
+  "clinic-appointment",
 ]);
 
 /* Scene palette — rotates through per-scene */
@@ -204,7 +206,7 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
     const project = createProjectFromTemplate(selectedTemplate, inputValues);
     window.sessionStorage.setItem("mawj-template-project-draft", JSON.stringify(project));
     window.localStorage.setItem("mawj-template-project-draft", JSON.stringify(project));
-    router.push(`/?templateProject=${encodeURIComponent(project.id)}`);
+    router.push(`/studio?templateProject=${encodeURIComponent(project.id)}`);
   }
 
   return (
@@ -222,9 +224,9 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
               <p className="text-[11px] font-semibold text-[var(--muted)]">قوالب تتحول إلى مشاريع مونتاج كاملة</p>
             </div>
           </div>
-          <button type="button" onClick={() => router.push("/")} className="btn-ghost">
+          <button type="button" onClick={() => router.push("/studio")} className="btn-ghost">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            العودة للمحرر
+            العودة للاستوديو
           </button>
         </div>
       </header>

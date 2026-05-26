@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 960" width="540" height="960">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0d9488"/>
+      <stop offset="100%" stop-color="#042f2e"/>
+    </linearGradient>
+  </defs>
+  <rect width="540" height="960" fill="url(#bg)"/>
+  <text x="270" y="400" font-family="system-ui,sans-serif" font-size="42" font-weight="900" fill="white" text-anchor="middle">*#,D* 2J'1*C DD7(J(</text>
+  <text x="270" y="520" font-family="system-ui,sans-serif" font-size="28" font-weight="700" fill="#7ef2bc" text-anchor="middle">A-5 4'ED + '3*4'1)</text>
+  <rect x="120" y="700" width="300" height="72" rx="16" fill="#7ef2bc"/>
+  <text x="270" y="748" font-family="system-ui,sans-serif" font-size="22" font-weight="900" fill="#060a09" text-anchor="middle">'-,2 H'*3'(</text>
+</svg>

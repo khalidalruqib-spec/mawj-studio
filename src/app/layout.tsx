@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
+
+const siteUrl = getSiteUrl();
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,12 +45,12 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Mawj Studio" }],
   creator: "Mawj Studio",
-  metadataBase: new URL("https://ai-video-studio-woad.vercel.app"),
+  metadataBase: new URL(siteUrl),
   openGraph: {
     type: "website",
     locale: "ar_SA",
     alternateLocale: "en_US",
-    url: "https://ai-video-studio-woad.vercel.app",
+    url: siteUrl,
     siteName: "Mawj Studio",
     title: "Mawj Studio — محرر الفيديو بالذكاء الاصطناعي",
     description:

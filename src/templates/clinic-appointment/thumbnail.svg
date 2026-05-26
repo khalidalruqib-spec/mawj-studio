@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 960" width="540" height="960">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#042f2e"/>
+      <stop offset="100%" stop-color="#050608"/>
+    </linearGradient>
+    <linearGradient id="overlay" x1="0%" y1="60%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#050608" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#050608" stop-opacity="0.95"/>
+    </linearGradient>
+    <filter id="blur1"><feGaussianBlur stdDeviation="28"/></filter>
+  </defs>
+  <rect width="540" height="960" fill="url(#bg)"/>
+  <ellipse cx="140" cy="200" rx="180" ry="180" fill="#7ef2bc" opacity="0.14" filter="url(#blur1)"/>
+  <rect x="0" y="0" width="540" height="5" fill="#7ef2bc" opacity="0.85"/>
+  <rect x="32" y="42" width="120" height="32" rx="8" fill="#7ef2bc" opacity="0.12" stroke="#7ef2bc" stroke-width="1" opacity="0.35"/>
+  <text x="92" y="63" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#7ef2bc" text-anchor="middle">Clinics</text>
+  <rect x="390" y="42" width="84" height="32" rx="8" fill="rgba(0,0,0,0.45)"/>
+  <text x="432" y="63" font-family="system-ui,sans-serif" font-size="13" font-weight="800" fill="white" text-anchor="middle">20s</text>
+  <text x="270" y="420" font-family="system-ui,sans-serif" font-size="120" fill="#7ef2bc" opacity="0.12" text-anchor="middle">+</text>
+  <rect width="540" height="960" fill="url(#overlay)"/>
+  <text x="270" y="750" font-family="system-ui,sans-serif" font-size="34" font-weight="900" fill="white" text-anchor="middle">-,2 9J'/) 9:16</text>
+  <text x="270" y="830" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#7ef2bc" text-anchor="middle" opacity="0.85">4 scenes · 20s · 9:16</text>
+  <text x="270" y="920" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="white" text-anchor="middle" opacity="0.30">Mawj Studio</text>
+</svg>

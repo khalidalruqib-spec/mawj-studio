@@ -5,6 +5,16 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
+  async redirects() {
+    return [
+      {
+        source: "/",
+        has: [{ type: "query", key: "templateProject" }],
+        destination: "/studio",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

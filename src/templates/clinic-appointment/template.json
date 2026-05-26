@@ -1,0 +1,256 @@
+{
+  "language": "arabic",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "zoomIn",
+    "pop"
+  ],
+  "transitions": ["cut", "fade", "slide"],
+  "id": "clinic-appointment",
+  "name": "حجز عيادة 9:16",
+  "category": "Clinics",
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "duration": 20,
+  "description": "قالب عربي للعيادات: سؤال hook، الخدمة، الثقة، المواعيد، واتساب.",
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "requiredInputs": [
+    {
+      "key": "clinicName",
+      "label": "اسم العيادة",
+      "type": "text",
+      "default": "عيادة النخبة",
+      "required": true
+    },
+    {
+      "key": "hookQuestion",
+      "label": "سؤال الافتتاح",
+      "type": "textarea",
+      "default": "تأجلت زيارتك للطبيب؟",
+      "required": true
+    },
+    {
+      "key": "serviceTitle",
+      "label": "الخدمة",
+      "type": "text",
+      "default": "فحص شامل + استشارة",
+      "required": true
+    },
+    {
+      "key": "doctorName",
+      "label": "اسم الطبيب",
+      "type": "text",
+      "default": "د. سارة العتيبي",
+      "required": true
+    },
+    {
+      "key": "phone",
+      "label": "رقم الحجز / واتساب",
+      "type": "text",
+      "default": "05xxxxxxxx",
+      "required": true
+    },
+    {
+      "key": "logo",
+      "label": "الشعار",
+      "type": "image"
+    },
+    {
+      "key": "brandColor",
+      "label": "لون العيادة",
+      "type": "color",
+      "default": "#0d9488"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "hook",
+      "name": "Hook",
+      "start": 0,
+      "duration": 5,
+      "background": {
+        "type": "gradient",
+        "from": "#042f2e",
+        "to": "{{brandColor}}"
+      },
+      "transition": { "type": "fade", "duration": 0.35 },
+      "layers": [
+        {
+          "id": "hook-text",
+          "type": "text",
+          "content": "{{hookQuestion}}",
+          "x": 90,
+          "y": 380,
+          "width": 900,
+          "height": 200,
+          "fontSize": 64,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": { "type": "slideUp", "duration": 0.45 }
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "name": "Service",
+      "start": 5,
+      "duration": 5,
+      "background": { "type": "color", "value": "#f0fdfa" },
+      "transition": { "type": "slide", "duration": 0.3 },
+      "layers": [
+        {
+          "id": "clinic",
+          "type": "text",
+          "content": "{{clinicName}}",
+          "x": 90,
+          "y": 280,
+          "width": 900,
+          "height": 90,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": { "type": "fadeIn", "duration": 0.35 }
+        },
+        {
+          "id": "service-title",
+          "type": "text",
+          "content": "{{serviceTitle}}",
+          "x": 90,
+          "y": 420,
+          "width": 900,
+          "height": 140,
+          "fontSize": 56,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+        }
+      ]
+    },
+    {
+      "id": "trust",
+      "name": "Trust",
+      "start": 10,
+      "duration": 5,
+      "background": { "type": "color", "value": "#ffffff" },
+      "transition": { "type": "fade", "duration": 0.3 },
+      "layers": [
+        {
+          "id": "doctor",
+          "type": "text",
+          "content": "{{doctorName}}",
+          "x": 90,
+          "y": 400,
+          "width": 900,
+          "height": 100,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": { "type": "zoomIn", "duration": 0.5 }
+        },
+        {
+          "id": "trust-line",
+          "type": "text",
+          "content": "معتمدون · مواعيد سريعة · رعاية متخصصة",
+          "x": 90,
+          "y": 540,
+          "width": 900,
+          "height": 80,
+          "fontSize": 36,
+          "fontWeight": "600",
+          "color": "#64748b",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": { "type": "fadeIn", "duration": 0.35 }
+        },
+        {
+          "id": "logo-trust",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 400,
+          "y": 720,
+          "width": 280,
+          "height": 140,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "name": "CTA",
+      "start": 15,
+      "duration": 5,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#042f2e"
+      },
+      "transition": { "type": "fade", "duration": 0.3 },
+      "layers": [
+        {
+          "id": "cta-label",
+          "type": "text",
+          "content": "احجز عبر واتساب",
+          "x": 90,
+          "y": 420,
+          "width": 900,
+          "height": 90,
+          "fontSize": 48,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": { "type": "pop", "duration": 0.4 }
+        },
+        {
+          "id": "phone",
+          "type": "text",
+          "content": "{{phone}}",
+          "x": 90,
+          "y": 540,
+          "width": 900,
+          "height": 100,
+          "fontSize": 56,
+          "fontWeight": "bold",
+          "color": "#7ef2bc",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": { "type": "fadeIn", "duration": 0.35 }
+        }
+      ]
+    }
+  ],
+  "audio": {
+    "music": "/audio/placeholder.mp3",
+    "volume": 0.35
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "high"
+  }
+}

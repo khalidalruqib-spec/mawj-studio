@@ -5,7 +5,7 @@ import { getTemplates } from "@/lib/video-template-store";
 export const metadata: Metadata = {
   title: "Template Marketplace — Mawj Studio",
   description:
-    "18+ قالب فيديو احترافي: تيك توك، إعلانات، بودكاست، عقار، فعاليات وأكثر. كل قالب يتحول إلى مشروع مونتاج كامل قابل للتعديل.",
+    "19+ قالب فيديو احترافي: تيك توك، إعلانات، عيادات، بودكاست، عقار، فعاليات وأكثر. كل قالب يتحول إلى مشروع مونتاج كامل قابل للتعديل.",
 };
 
 export default async function TemplatesPage() {

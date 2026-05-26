@@ -2635,18 +2635,24 @@ export function ProfessionalVideoStudio() {
       <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <span
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] text-black"
-              style={{ boxShadow: "var(--shadow-brand)" }}
+            <Link
+              href="/"
+              className="flex min-w-0 items-center gap-3 rounded-lg transition hover:opacity-90"
+              title="الصفحة الرئيسية"
             >
-              <Sparkles className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-[15px] font-black leading-5 tracking-tight">Mawj Studio</p>
-              <p className="truncate text-[11px] font-semibold text-[var(--muted)]">
-                استوديو المونتاج الذكي
-              </p>
-            </div>
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] text-black"
+                style={{ boxShadow: "var(--shadow-brand)" }}
+              >
+                <Sparkles className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-[15px] font-black leading-5 tracking-tight">Mawj Studio</p>
+                <p className="truncate text-[11px] font-semibold text-[var(--muted)]">
+                  استوديو المونتاج الذكي
+                </p>
+              </div>
+            </Link>
           </div>
 
           <div className="hidden items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 xl:flex">
