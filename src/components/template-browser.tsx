@@ -346,7 +346,7 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
         {query || category !== "All" ? (
           <div className="mb-4 flex items-center gap-2 text-sm font-black text-[var(--muted)]">
             <span>{filteredTemplates.length} قالب</span>
-            {query && <span>· "{query}"</span>}
+            {query && <span>· &quot;{query}&quot;</span>}
             {category !== "All" && <span>· {getCategoryMeta(category).label}</span>}
           </div>
         ) : null}
