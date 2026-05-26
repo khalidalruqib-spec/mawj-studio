@@ -6697,8 +6697,16 @@ function StockMediaPanel({
         {items.length === 0 && !isLoading ? (
           <div className="empty-state py-8">
             <ImageIcon className="h-10 w-10 opacity-30" aria-hidden="true" />
-            <p className="empty-state-text mt-2">ابحث عن صور أو فيديوهات</p>
-            <p className="empty-state-sub">ملايين الأصول المجانية</p>
+            <p className="empty-state-text mt-2">
+              {sourceLabel === "demo" && mediaType === "video"
+                ? "فيديوهات الستوك تحتاج مفتاح Pexels أو Pixabay"
+                : "ابحث عن صور أو فيديوهات"}
+            </p>
+            <p className="empty-state-sub">
+              {sourceLabel === "demo" && mediaType === "video"
+                ? "أضف PEXELS_API_KEY لتفعيل البحث الحي عن الفيديو"
+                : "ملايين الأصول المجانية"}
+            </p>
           </div>
         ) : (
           <>
@@ -6802,12 +6810,12 @@ function StockMediaPanel({
       </div>
 
       {/* Attribution footer */}
-      {sourceLabel && sourceLabel !== "demo" && (
+      {sourceLabel && (sourceLabel !== "demo" || mediaType === "photo") && (
         <p className="text-center text-[9px] text-[var(--muted)]">
-          Photos &amp; videos by{" "}
+          {sourceLabel === "demo" ? "Demo photos from " : "Photos & videos by "}
           <a
             href={
-              sourceLabel === "pexels"
+              sourceLabel === "pexels" || sourceLabel === "demo"
                 ? "https://www.pexels.com"
                 : "https://pixabay.com"
             }
@@ -6815,7 +6823,7 @@ function StockMediaPanel({
             rel="noopener noreferrer"
             className="text-[var(--brand)] hover:underline"
           >
-            {sourceLabel === "pexels" ? "Pexels" : "Pixabay"}
+            {sourceLabel === "pixabay" ? "Pixabay" : "Pexels"}
           </a>
         </p>
       )}

@@ -58,16 +58,16 @@ export type StockSearchResponse = {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query   = (searchParams.get("q") ?? "").trim();
-  const type    = (searchParams.get("type") ?? "photo") as StockMediaType;
-  const page    = Math.max(1, Number(searchParams.get("page") ?? 1));
-  const perPage = Math.min(40, Math.max(8, Number(searchParams.get("per_page") ?? 20)));
+  const type    = searchParams.get("type") === "video" ? "video" : "photo";
+  const page    = getPositiveInteger(searchParams.get("page"), 1);
+  const perPage = Math.min(40, Math.max(1, getPositiveInteger(searchParams.get("per_page"), 20)));
 
   // Try Pexels first
   const pexelsKey = process.env.PEXELS_API_KEY;
   if (pexelsKey) {
     try {
       const data = await searchPexels({ query, type, page, perPage, apiKey: pexelsKey });
-      return NextResponse.json(data);
+      return stockJson(data);
     } catch (err) {
       console.warn("[stock] Pexels error:", err);
     }
@@ -78,14 +78,32 @@ export async function GET(request: Request) {
   if (pixabayKey) {
     try {
       const data = await searchPixabay({ query, type, page, perPage, apiKey: pixabayKey });
-      return NextResponse.json(data);
+      return stockJson(data);
     } catch (err) {
       console.warn("[stock] Pixabay error:", err);
     }
   }
 
   // Demo mode — curated set of real Pexels CDN thumbnails (no key needed)
-  return NextResponse.json(buildDemoResults(query, type, page, perPage));
+  return stockJson(buildDemoResults(query, type, page, perPage));
+}
+
+function stockJson(data: StockSearchResponse) {
+  return NextResponse.json(data, {
+    headers: {
+      "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=600",
+    },
+  });
+}
+
+function getPositiveInteger(value: string | null, fallback: number) {
+  const parsed = Number(value ?? fallback);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
+
+function proxyStockUrl(url: string) {
+  if (!url) return "";
+  return `/api/stock/proxy?url=${encodeURIComponent(url)}`;
 }
 
 /* ── Pexels ─────────────────────────────────────────────────────────── */
@@ -139,10 +157,10 @@ function mapPexelsPhoto(p: PexelsPhoto): StockPhoto {
     type: "photo",
     width: p.width,
     height: p.height,
-    url: p.src.original,
-    previewUrl: p.src.large,
-    mediumUrl: p.src.medium,
-    thumbUrl: p.src.tiny,
+    url: proxyStockUrl(p.src.original),
+    previewUrl: proxyStockUrl(p.src.large),
+    mediumUrl: proxyStockUrl(p.src.medium),
+    thumbUrl: proxyStockUrl(p.src.tiny),
     photographer: p.photographer,
     photographerUrl: p.photographer_url,
     alt: p.alt ?? "",
@@ -162,9 +180,9 @@ function mapPexelsVideo(v: PexelsVideo): StockVideo {
     width: v.width,
     height: v.height,
     duration: v.duration,
-    url: hd?.link ?? "",
-    previewUrl: v.image,
-    thumbUrl: v.image,
+    url: proxyStockUrl(hd?.link ?? ""),
+    previewUrl: proxyStockUrl(v.image),
+    thumbUrl: proxyStockUrl(v.image),
     videographer: v.user?.name ?? "Pexels",
     videographerUrl: `https://www.pexels.com/@${v.user?.url ?? ""}`,
     alt: `Stock video ${v.id}`,
@@ -217,10 +235,10 @@ function mapPixabayPhoto(h: PixabayHit): StockPhoto {
     type: "photo",
     width: h.imageWidth ?? h.webformatWidth ?? 800,
     height: h.imageHeight ?? h.webformatHeight ?? 600,
-    url: h.largeImageURL ?? h.webformatURL,
-    previewUrl: h.webformatURL,
-    mediumUrl: h.webformatURL,
-    thumbUrl: h.previewURL,
+    url: proxyStockUrl(h.largeImageURL ?? h.webformatURL),
+    previewUrl: proxyStockUrl(h.webformatURL),
+    mediumUrl: proxyStockUrl(h.webformatURL),
+    thumbUrl: proxyStockUrl(h.previewURL),
     photographer: h.user ?? "Pixabay",
     photographerUrl: `https://pixabay.com/users/${h.user ?? ""}`,
     alt: h.tags ?? "",
@@ -237,9 +255,9 @@ function mapPixabayVideo(h: PixabayHit): StockVideo {
     width: mp4?.width ?? 640,
     height: mp4?.height ?? 360,
     duration: h.duration ?? 10,
-    url: mp4?.url ?? "",
-    previewUrl: h.webformatURL ?? h.previewURL ?? "",
-    thumbUrl: h.previewURL ?? "",
+    url: proxyStockUrl(mp4?.url ?? ""),
+    previewUrl: proxyStockUrl(h.webformatURL ?? h.previewURL ?? ""),
+    thumbUrl: proxyStockUrl(h.previewURL ?? ""),
     videographer: h.user ?? "Pixabay",
     videographerUrl: `https://pixabay.com/users/${h.user ?? ""}`,
     alt: h.tags ?? "",
@@ -277,14 +295,25 @@ function buildDemoResults(
   const filtered = query
     ? DEMO_PHOTOS.filter((p) => p.alt.toLowerCase().includes(query.toLowerCase())).slice(0, perPage)
     : DEMO_PHOTOS.slice((page - 1) * perPage, page * perPage);
+  const results = filtered.length ? filtered : DEMO_PHOTOS.slice(0, perPage);
 
   return {
-    results: filtered.length ? filtered : DEMO_PHOTOS.slice(0, perPage),
+    results: results.map(proxyDemoPhoto),
     totalResults: DEMO_PHOTOS.length,
     page,
     perPage,
     nextPage: false,
     source: "demo",
+  };
+}
+
+function proxyDemoPhoto(photo: StockPhoto): StockPhoto {
+  return {
+    ...photo,
+    url: proxyStockUrl(photo.url),
+    previewUrl: proxyStockUrl(photo.previewUrl),
+    mediumUrl: proxyStockUrl(photo.mediumUrl),
+    thumbUrl: proxyStockUrl(photo.thumbUrl),
   };
 }
 
