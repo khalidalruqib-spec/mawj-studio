@@ -1,4 +1,5 @@
 import type { EditPlan } from "@/lib/edit-plan";
+import { trimVideoWithFFmpeg, type FFmpegCut } from "@/lib/ffmpeg-renderer";
 import { resolveMediaDuration } from "@/lib/media-duration";
 import type { AspectRatio, VideoStyle } from "@/lib/video-styles";
 
@@ -21,6 +22,7 @@ export type BrowserRenderResult = {
 };
 
 type RenderEditedVideoOptions = {
+  sourceFile?: File;
   sourceUrl: string;
   sourceFileName: string;
   sourceDurationSeconds: number;
@@ -32,6 +34,7 @@ type RenderEditedVideoOptions = {
 };
 
 export async function renderEditedVideo({
+  sourceFile,
   sourceUrl,
   sourceFileName,
   sourceDurationSeconds,
@@ -45,17 +48,61 @@ export async function renderEditedVideo({
     throw new Error("محرك الرندر يعمل داخل المتصفح فقط.");
   }
 
-  if (!window.MediaRecorder) {
-    throw new Error("المتصفح الحالي لا يدعم تصدير الفيديو. جرّب Chrome أو Edge.");
-  }
-
   const video = document.createElement("video");
   video.src = sourceUrl;
   video.preload = "auto";
   video.playsInline = true;
 
-  const canvas = document.createElement("canvas");
   const dimensions = getRenderDimensions(aspectRatio);
+
+  await waitForVideoEvent(video, "loadedmetadata");
+
+  const realDuration = await resolveMediaDuration(video, Math.max(1, sourceDurationSeconds));
+  const ffmpegCuts = getPlanCuts(plan, realDuration);
+
+  if (sourceFile && ffmpegCuts.length > 0) {
+    try {
+      const outputSeconds = ffmpegCuts.reduce((total, cut) => total + Math.max(0, cut.end - cut.start), 0);
+      const blob = await trimVideoWithFFmpeg(sourceFile, ffmpegCuts, (percent) => {
+        onProgress?.({
+          percent,
+          label: "Cutting video with FFmpeg",
+          elapsedSeconds: Math.round((percent / 100) * outputSeconds),
+          outputSeconds,
+        });
+      });
+
+      onProgress?.({
+        percent: 100,
+        label: "FFmpeg cut ready",
+        elapsedSeconds: outputSeconds,
+        outputSeconds,
+      });
+
+      return {
+        blob,
+        url: URL.createObjectURL(blob),
+        fileName: `${safeBaseName(sourceFileName)}-mawj-cut.mp4`,
+        mimeType: "video/mp4",
+        durationSeconds: Math.max(1, Math.round(outputSeconds)),
+        resolution: `${dimensions.width}x${dimensions.height}`,
+      };
+    } catch (caughtError) {
+      console.warn("FFmpeg render failed; falling back to canvas renderer.", caughtError);
+      onProgress?.({
+        percent: 3,
+        label: "FFmpeg unavailable, falling back to browser render",
+        elapsedSeconds: 0,
+        outputSeconds: plan?.targetDurationSeconds ?? realDuration,
+      });
+    }
+  }
+
+  if (!window.MediaRecorder) {
+    throw new Error("المتصفح الحالي لا يدعم تصدير الفيديو. جرّب Chrome أو Edge.");
+  }
+
+  const canvas = document.createElement("canvas");
   canvas.width = dimensions.width;
   canvas.height = dimensions.height;
 
@@ -64,9 +111,6 @@ export async function renderEditedVideo({
     throw new Error("تعذر تجهيز Canvas لتصدير الفيديو.");
   }
 
-  await waitForVideoEvent(video, "loadedmetadata");
-
-  const realDuration = await resolveMediaDuration(video, Math.max(1, sourceDurationSeconds));
   const playbackRate = getPlaybackRate(style.pace);
   const desiredSourceSeconds = Math.max(4, Math.min(plan?.targetDurationSeconds ?? realDuration, 60));
   const sourceSeconds = Math.min(realDuration, desiredSourceSeconds);
@@ -187,6 +231,18 @@ export async function renderEditedVideo({
     durationSeconds: Math.round(outputSeconds),
     resolution: `${dimensions.width}x${dimensions.height}`,
   };
+}
+
+function getPlanCuts(plan: EditPlan | null, realDuration: number): FFmpegCut[] {
+  if (!plan?.timeline.length) return [];
+
+  return plan.timeline
+    .map((item) => ({
+      start: Math.max(0, Math.min(realDuration, item.start)),
+      end: Math.max(0, Math.min(realDuration, item.end)),
+      label: item.label,
+    }))
+    .filter((cut) => cut.end - cut.start > 0.1);
 }
 
 export function getPreviewFilter(styleId: VideoStyle["id"]) {

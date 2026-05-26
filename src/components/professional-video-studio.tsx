@@ -159,28 +159,6 @@ type MediaAsset = {
   persisted?: boolean;
 };
 
-type StockMediaResult = {
-  id: string;
-  source: "pexels" | "pixabay" | "demo";
-  type: "photo" | "video";
-  width: number;
-  height: number;
-  duration?: number;
-  url: string;
-  previewUrl: string;
-  mediumUrl?: string;
-  thumbUrl?: string;
-  photographer?: string;
-  videographer?: string;
-  alt: string;
-};
-
-type StockSearchResponse = {
-  results: StockMediaResult[];
-  totalResults: number;
-  source: "pexels" | "pixabay" | "demo";
-};
-
 type ClipSuggestion = {
   id: string;
   label: string;
@@ -4289,166 +4267,6 @@ function AudioPanel({
   );
 }
 
-function StockMediaPanel({
-  onAddToTimeline,
-  onAddToMediaBin,
-}: {
-  onAddToTimeline: (asset: MediaAsset) => void;
-  onAddToMediaBin: (asset: MediaAsset) => void;
-}) {
-  const [query, setQuery] = useState("Saudi creator");
-  const [mediaType, setMediaType] = useState<"photo" | "video">("photo");
-  const [results, setResults] = useState<StockMediaResult[]>([]);
-  const [source, setSource] = useState<StockSearchResponse["source"]>("demo");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [addingId, setAddingId] = useState("");
-
-  const searchStock = useCallback(async () => {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const params = new URLSearchParams({
-        q: query.trim() || "Saudi creator",
-        type: mediaType,
-        per_page: "12",
-      });
-      const response = await fetch(`/api/stock?${params.toString()}`);
-      const data = (await response.json()) as StockSearchResponse & { error?: string };
-      if (!response.ok) throw new Error(data.error ?? "Could not load stock media.");
-      setResults(data.results);
-      setSource(data.source);
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Could not load stock media.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [mediaType, query]);
-
-  useEffect(() => {
-    void searchStock();
-  }, [searchStock]);
-
-  async function addStockAsset(item: StockMediaResult, target: "bin" | "timeline") {
-    setAddingId(`${target}-${item.id}`);
-    setError("");
-
-    try {
-      const asset = await stockResultToMediaAsset(item);
-      if (target === "timeline") {
-        onAddToTimeline(asset);
-      } else {
-        onAddToMediaBin(asset);
-      }
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Could not add this stock asset.");
-    } finally {
-      setAddingId("");
-    }
-  }
-
-  return (
-    <section className="panel p-4">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <PanelHeading icon={ImageIcon} title="Stock media" />
-        <span className="rounded-md bg-[var(--brand-soft)] px-2 py-1 text-xs font-black text-[var(--brand)]">
-          {source}
-        </span>
-      </div>
-      <div className="mb-3 grid gap-2 md:grid-cols-[1fr_auto_auto]">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") void searchStock();
-            }}
-            className="control-input pl-9"
-            placeholder="Search stock media"
-          />
-        </div>
-        <select
-          value={mediaType}
-          onChange={(event) => setMediaType(event.target.value as "photo" | "video")}
-          className="control-select min-w-28"
-        >
-          <option value="photo">Photos</option>
-          <option value="video">Videos</option>
-        </select>
-        <button
-          type="button"
-          onClick={() => void searchStock()}
-          disabled={isLoading}
-          className="btn-brand min-h-11 justify-center"
-        >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Search className="h-4 w-4" aria-hidden="true" />}
-          Search
-        </button>
-      </div>
-      {error ? (
-        <p className="mb-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-200">
-          {error}
-        </p>
-      ) : null}
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {results.map((item) => {
-          const preview = item.previewUrl || item.thumbUrl || item.url;
-          const isAddingToBin = addingId === `bin-${item.id}`;
-          const isAddingToTimeline = addingId === `timeline-${item.id}`;
-
-          return (
-            <article key={item.id} className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel-soft)]">
-              <div
-                className="relative aspect-[9/12] bg-cover bg-center"
-                style={{ backgroundImage: `url("${preview}")` }}
-                aria-label={item.alt || item.id}
-              >
-                <span className="absolute left-2 top-2 rounded-md bg-black/65 px-2 py-1 text-[11px] font-black uppercase">
-                  {item.type}
-                </span>
-                {item.type === "video" ? (
-                  <span className="absolute right-2 top-2 rounded-md bg-black/65 px-2 py-1 text-[11px] font-black">
-                    {formatDuration(item.duration ?? 0)}
-                  </span>
-                ) : null}
-              </div>
-              <div className="space-y-2 p-3">
-                <p className="line-clamp-2 min-h-10 text-sm font-black leading-5">
-                  {item.alt || item.photographer || item.videographer || item.id}
-                </p>
-                <p className="text-[11px] font-bold text-[var(--muted)]">
-                  {item.width}x{item.height} · {item.source}
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void addStockAsset(item, "bin")}
-                    disabled={Boolean(addingId)}
-                    className="rounded-lg border border-[var(--line)] bg-black/20 px-2 py-2 text-xs font-black transition hover:border-[var(--brand)] disabled:opacity-50"
-                  >
-                    {isAddingToBin ? "Adding..." : "Media bin"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void addStockAsset(item, "timeline")}
-                    disabled={Boolean(addingId)}
-                    className="rounded-lg bg-[var(--brand)] px-2 py-2 text-xs font-black text-black transition hover:bg-white disabled:opacity-50"
-                  >
-                    {isAddingToTimeline ? "Adding..." : "Timeline"}
-                  </button>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-      {!isLoading && !results.length ? <EmptyMini label="No stock media found for this search." /> : null}
-    </section>
-  );
-}
-
 function TemplatesPanel({
   activeTemplateId,
   onApply,
@@ -6718,10 +6536,8 @@ function StockMediaPanel({
   const [addedSet, setAddedSet] = useState<Set<string>>(new Set());
   const [activeCategory, setActiveCategory] = useState("");
 
-  // Load default results when component mounts or media type tab changes
   useEffect(() => {
     void fetchStock("", mediaType, 1, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaType]);
 
   async function fetchStock(q: string, type: "photo" | "video", p: number, append: boolean) {
@@ -6897,12 +6713,11 @@ function StockMediaPanel({
                       isPortrait ? "aspect-[3/4]" : "aspect-video"
                     }`}
                   >
-                    {/* Thumbnail */}
-                    <img
-                      src={item.thumbUrl || item.previewUrl}
-                      alt={item.alt}
-                      loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:brightness-50"
+                    <div
+                      role="img"
+                      aria-label={item.alt || item.id}
+                      className="absolute inset-0 bg-cover bg-center transition duration-300 group-hover:brightness-50"
+                      style={{ backgroundImage: `url("${item.thumbUrl || item.previewUrl}")` }}
                     />
 
                     {/* Video duration badge */}
