@@ -5,13 +5,19 @@ This document records what Mawj Studio should learn from real video-editor libra
 ## Sources Studied
 
 - Remotion Player, Captions, render APIs, and Editor Starter docs.
+- Remotion Renderer for server/worker MP4 export.
 - OpenTimelineIO timeline structure docs.
 - React Konva Transformer, drag/drop, and canvas export docs.
 - dnd-kit overview and sortable docs.
 - ffmpeg.wasm overview, usage, and performance notes.
+- Fluent FFmpeg as a Node worker command builder.
+- Playwright Core for browser-driven preview capture in workers.
 - Wavesurfer.js docs and plugin notes.
 - GSAP Timeline docs.
+- Anime.js timeline/keyframe patterns.
 - Airbnb `lottie-web` README.
+- Fabric.js serialization/canvas object model as a future Canva-like reference.
+- Three.js scene/layer patterns for future 3D effects.
 - `designcombo/react-video-editor`.
 - `ncounterspecialist/twick`.
 - `sambowenhughes/a-react-video-editor`.
