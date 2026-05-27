@@ -288,6 +288,36 @@ export function createVideoProjectFromEditorTimeline({
   };
 }
 
+export function videoProjectToEditorTimeline(project: VideoProject): EditorTimelineTrackInput[] {
+  const layersById = new Map(project.layers.map((layer) => [layer.id, layer]));
+  const assetsById = new Map(project.assets.map((asset) => [asset.id, asset]));
+
+  return project.tracks
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .map((track) => ({
+      id: track.id,
+      name: track.name,
+      kind: projectTrackTypeToEditorTrackKind(track.type),
+      layers: track.items
+        .slice()
+        .sort((a, b) => a.start - b.start || a.zIndex - b.zIndex)
+        .map((item) => {
+          const layer = layersById.get(item.layerId);
+          if (!layer) return null;
+
+          return videoLayerToEditorTimelineLayer({
+            layer,
+            item,
+            asset: layer.assetId ? assetsById.get(layer.assetId) : undefined,
+            sceneId: project.scenes.find((scene) => scene.layerIds.includes(layer.id))?.id,
+          });
+        })
+        .filter((layer): layer is EditorTimelineLayerInput => Boolean(layer)),
+    }))
+    .filter((track) => track.layers.length > 0 || isBaseTrack(track.id));
+}
+
 export function editorLayerPatchToVideoLayerPatch(
   patch: Partial<EditorTimelineLayerInput>,
 ): Partial<Layer> {
@@ -312,6 +342,47 @@ export function editorLayerPatchToVideoLayerPatch(
     duration: patch.duration,
     style: Object.keys(cleanStyle).length ? cleanStyle : undefined,
   });
+}
+
+function videoLayerToEditorTimelineLayer({
+  layer,
+  item,
+  asset,
+  sceneId,
+}: {
+  layer: Layer;
+  item: TimelineItem;
+  asset?: Asset;
+  sceneId?: string;
+}): EditorTimelineLayerInput {
+  const type = projectLayerTypeToEditorLayerType(layer.type);
+  const label =
+    layer.content ??
+    asset?.name ??
+    (type === "text" ? "Text layer" : `${type[0].toUpperCase()}${type.slice(1)} layer`);
+
+  return {
+    id: layer.id,
+    type,
+    name: label,
+    start: item.start,
+    duration: item.duration,
+    color: layer.style?.color ?? colorForLayerType(type),
+    muted: item.hidden || layer.hidden,
+    content: layer.content,
+    src: layer.src ?? asset?.src,
+    sceneId,
+    x: layer.x,
+    y: layer.y,
+    width: layer.width,
+    height: layer.height,
+    fontSize: layer.style?.fontSize,
+    fontWeight: layer.style?.fontWeight,
+    textColor: layer.style?.color,
+    backgroundColor: layer.style?.backgroundColor,
+    borderRadius: layer.style?.borderRadius,
+    opacity: layer.opacity,
+  };
 }
 
 function createBaseTracks(): Track[] {
@@ -683,6 +754,19 @@ function editorTrackTypeToProjectTrackType(track: EditorTimelineTrackInput): Tra
   return "effects";
 }
 
+function projectTrackTypeToEditorTrackKind(type: TrackType): EditorTimelineTrackInput["kind"] {
+  const kind: Record<TrackType, EditorTimelineTrackInput["kind"]> = {
+    video: "video",
+    audio: "audio",
+    text: "text",
+    image: "image",
+    captions: "caption",
+    effects: "effects",
+  };
+
+  return kind[type];
+}
+
 function templateLayerTypeToProjectLayerType(type: TemplateLayer["type"]): LayerType {
   if (type === "captions") return "captions";
   return type;
@@ -692,6 +776,32 @@ function editorLayerTypeToProjectLayerType(type: EditorTimelineLayerInput["type"
   if (type === "caption") return "captions";
   if (type === "effect") return "shape";
   return type;
+}
+
+function projectLayerTypeToEditorLayerType(type: LayerType): EditorTimelineLayerInput["type"] {
+  if (type === "captions") return "caption";
+  if (type === "lottie" || type === "sticker") return "effect";
+  return type;
+}
+
+function colorForLayerType(type: EditorTimelineLayerInput["type"]) {
+  const colors: Record<EditorTimelineLayerInput["type"], string> = {
+    video: "#2563eb",
+    audio: "#16a34a",
+    text: "#f59e0b",
+    image: "#8b5cf6",
+    caption: "#06b6d4",
+    effect: "#ef4444",
+    shape: "#ec4899",
+    background: "#64748b",
+    waveform: "#22c55e",
+  };
+
+  return colors[type];
+}
+
+function isBaseTrack(id: string) {
+  return id === "track-video" || id === "track-image" || id === "track-text" || id === "track-captions" || id === "track-audio" || id === "track-effects";
 }
 
 function templateLayerAssetType(layer: TemplateLayer): Asset["type"] {
