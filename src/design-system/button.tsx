@@ -34,7 +34,10 @@ export function Button(props: ButtonProps | LinkButtonProps) {
     );
   }
 
-  const { children, variant: _variant, className: _className, ...rest } = props;
+  const { children, variant: omittedVariant, className: omittedClassName, ...rest } = props;
+  void omittedVariant;
+  void omittedClassName;
+
   return (
     <button type="button" className={classes} {...rest}>
       {children}

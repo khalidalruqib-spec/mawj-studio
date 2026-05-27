@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getAuthContext } from "@/lib/auth-context";
 import { createRenderJob, listRenderJobs } from "@/lib/render-jobs";
 
 const renderJobSchema = z.object({
@@ -14,7 +15,12 @@ const renderJobSchema = z.object({
 });
 
 export async function GET() {
-  return NextResponse.json({ jobs: listRenderJobs() });
+  const auth = await getAuthContext();
+  if (auth.isAuthEnabled && !auth.userId) {
+    return NextResponse.json({ error: "يجب تسجيل الدخول أولاً." }, { status: 401 });
+  }
+
+  return NextResponse.json({ jobs: listRenderJobs(auth.userId) });
 }
 
 export async function POST(request: Request) {
@@ -25,6 +31,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid render job input." }, { status: 400 });
   }
 
-  const job = createRenderJob(parsed.data);
+  const auth = await getAuthContext();
+  if (auth.isAuthEnabled && !auth.userId) {
+    return NextResponse.json({ error: "يجب تسجيل الدخول أولاً." }, { status: 401 });
+  }
+
+  const job = createRenderJob(parsed.data, auth.userId);
   return NextResponse.json({ job }, { status: 202 });
 }

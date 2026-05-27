@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAuthContext, isUnauthenticatedError } from "@/lib/auth-context";
 import { createDemoEditPlan } from "@/lib/edit-plan";
 import { enhanceEditPlanWithOpenAI } from "@/lib/openai-edit";
 import { updateProjectPlan } from "@/lib/projects";
@@ -17,9 +18,21 @@ export async function POST(request: Request) {
 
   const basePlan = createDemoEditPlan(parsed.data);
   const plan = await enhanceEditPlanWithOpenAI(basePlan, parsed.data);
-  const project = parsed.data.projectId
-    ? await updateProjectPlan(parsed.data.projectId, plan).catch(() => null)
-    : null;
+  let project = null;
+
+  if (parsed.data.projectId) {
+    const auth = await getAuthContext();
+
+    try {
+      project = await updateProjectPlan(parsed.data.projectId, plan, auth.userId);
+    } catch (error) {
+      if (isUnauthenticatedError(error)) {
+        return NextResponse.json({ error: "يجب تسجيل الدخول أولاً." }, { status: 401 });
+      }
+
+      project = null;
+    }
+  }
 
   return NextResponse.json({
     plan,

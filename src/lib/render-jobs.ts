@@ -15,6 +15,7 @@ export type RenderJobInput = {
 
 export type RenderJob = {
   id: string;
+  userId?: string | null;
   status: RenderJobStatus;
   input: RenderJobInput;
   ffmpegPlan: string[];
@@ -27,14 +28,17 @@ export type RenderJob = {
 
 const renderJobs = new Map<string, RenderJob>();
 
-export function listRenderJobs() {
-  return [...renderJobs.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+export function listRenderJobs(userId?: string | null) {
+  return [...renderJobs.values()]
+    .filter((job) => !userId || job.userId === userId)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-export function createRenderJob(input: RenderJobInput) {
+export function createRenderJob(input: RenderJobInput, userId?: string | null) {
   const now = new Date().toISOString();
   const job: RenderJob = {
     id: crypto.randomUUID(),
+    userId: userId ?? null,
     status: "queued",
     input,
     ffmpegPlan: buildFfmpegPlan(input),

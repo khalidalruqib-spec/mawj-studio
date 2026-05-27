@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { getAuthContext, isUnauthenticatedError } from "@/lib/auth-context";
 import { getProject, updateProjectUpload } from "@/lib/projects";
-import { getSupabaseServerClient, VIDEO_BUCKET } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getSupabaseAdminClient, VIDEO_BUCKET } from "@/lib/supabase/server";
 import { uploadUrlSchema } from "@/lib/validation";
 
 type RouteContext = {
@@ -16,7 +17,18 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "بيانات الرفع غير مكتملة." }, { status: 400 });
   }
 
-  const project = await getProject(id);
+  const auth = await getAuthContext();
+  let project = null;
+
+  try {
+    project = await getProject(id, auth.userId);
+  } catch (error) {
+    if (isUnauthenticatedError(error)) {
+      return NextResponse.json({ error: "يجب تسجيل الدخول أولاً." }, { status: 401 });
+    }
+    throw error;
+  }
+
   if (!project) {
     return NextResponse.json({ error: "المشروع غير موجود." }, { status: 404 });
   }
@@ -25,11 +37,13 @@ export async function POST(request: Request, context: RouteContext) {
     .replace(/[^\w.\-\u0600-\u06FF]+/g, "-")
     .replace(/-+/g, "-")
     .slice(0, 120);
-  const storagePath = `${id}/source/${Date.now()}-${safeName}`;
-  const supabase = getSupabaseServerClient();
+  const storagePath = auth.userId
+    ? `${auth.userId}/${id}/source/${Date.now()}-${safeName}`
+    : `${id}/source/${Date.now()}-${safeName}`;
+  const supabase = getSupabaseAdminClient() ?? (await createSupabaseServerClient());
 
   if (!supabase) {
-    const updatedProject = await updateProjectUpload(id, storagePath);
+    const updatedProject = await updateProjectUpload(id, storagePath, auth.userId);
     return NextResponse.json({
       mode: "local-preview",
       bucket: "local-preview",
@@ -47,7 +61,7 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const updatedProject = await updateProjectUpload(id, storagePath);
+  const updatedProject = await updateProjectUpload(id, storagePath, auth.userId);
 
   return NextResponse.json({
     mode: "supabase",

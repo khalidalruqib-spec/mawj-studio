@@ -6,6 +6,7 @@ export type Database = {
       projects: {
         Row: {
           id: string;
+          user_id: string;
           title: string;
           status: "draft" | "uploaded" | "planned" | "rendering" | "completed" | "failed";
           style_id:
