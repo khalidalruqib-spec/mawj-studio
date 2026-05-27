@@ -73,6 +73,7 @@ import {
   createVideoProjectFromEditorTimeline,
   createVideoProjectFromMediaAssets,
   createVideoProjectFromTemplateProject,
+  videoProjectToEditorTimeline,
   type MediaAssetInput,
 } from "@/lib/video-project-bridge";
 import type { VideoProject } from "@/lib/video-project-model";
@@ -152,8 +153,6 @@ export function ProfessionalVideoStudio() {
   const [activeProject, setActiveProject] = useState<StudioProject | null>(null);
   const [recentProjects, setRecentProjects] = useState<StudioProject[]>([]);
   const [timelineTracks, setTimelineTracks] = useState<TimelineTrack[]>(() => createDefaultTimeline());
-  const [timelineUndo, setTimelineUndo] = useState<TimelineTrack[][]>([]);
-  const [timelineRedo, setTimelineRedo] = useState<TimelineTrack[][]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState("clip-main");
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
@@ -208,6 +207,8 @@ export function ProfessionalVideoStudio() {
   const setEngineZoom = useVideoProjectStore((state) => state.setZoom);
   const undoEngineProject = useVideoProjectStore((state) => state.undo);
   const redoEngineProject = useVideoProjectStore((state) => state.redo);
+  const enginePastCount = useVideoProjectStore((state) => state.past.length);
+  const engineFutureCount = useVideoProjectStore((state) => state.future.length);
 
   const activeStyle = useMemo(
     () => VIDEO_STYLES.find((style) => style.id === styleId) ?? VIDEO_STYLES[0],
@@ -300,6 +301,11 @@ export function ProfessionalVideoStudio() {
     );
   }, [aspectRatio, brandName, setEngineProject, timelineTracks, totalTimelineSeconds]);
 
+  useEffect(() => {
+    if (!engineProject) return;
+    syncEditorTimelineFromEngineProject(engineProject);
+  }, [engineProject]);
+
   const restorePersistedMedia = useCallback(async (isCancelled: () => boolean) => {
     const records = await listMediaRecords();
     if (isCancelled() || !records.length) return;
@@ -332,8 +338,6 @@ export function ProfessionalVideoStudio() {
       );
       setPlan(null);
       setPreviewTime(0);
-      setTimelineUndo([]);
-      setTimelineRedo([]);
       setTimelineTracks(createTimelineForAssets(restoredAssets, firstVideoAsset.id));
     }
 
@@ -402,6 +406,17 @@ export function ProfessionalVideoStudio() {
     setRenderProgress(null);
   }
 
+  function syncEditorTimelineFromEngineProject(project: VideoProject) {
+    const nextTracks = videoProjectToEditorTimeline(project);
+    const nextSelectedLayerId =
+      project.selectedLayerId ??
+      nextTracks.flatMap((track) => track.layers)[0]?.id ??
+      "";
+
+    setTimelineTracks(nextTracks);
+    setSelectedLayerId(nextSelectedLayerId);
+  }
+
   function commitTimeline(nextTracks: TimelineTrack[] | ((current: TimelineTrack[]) => TimelineTrack[])) {
     const resolvedTracks = typeof nextTracks === "function" ? nextTracks(timelineTracks) : nextTracks;
     const currentEngineProject = useVideoProjectStore.getState().currentProject;
@@ -416,8 +431,6 @@ export function ProfessionalVideoStudio() {
       ),
     });
 
-    setTimelineUndo((history) => [timelineTracks, ...history].slice(0, 25));
-    setTimelineRedo([]);
     setTimelineTracks(resolvedTracks);
     useVideoProjectStore.getState().setCurrentProject(syncedProject);
     clearRenderedOutput();
@@ -425,22 +438,20 @@ export function ProfessionalVideoStudio() {
   }
 
   function undoTimeline() {
-    const [previous, ...rest] = timelineUndo;
-    if (!previous) return;
-    setTimelineRedo((history) => [timelineTracks, ...history].slice(0, 25));
-    setTimelineUndo(rest);
-    setTimelineTracks(previous);
+    if (!enginePastCount) return;
     undoEngineProject();
+    const project = useVideoProjectStore.getState().currentProject;
+    if (project) syncEditorTimelineFromEngineProject(project);
+    clearRenderedOutput();
     setProjectStatus("Undo applied");
   }
 
   function redoTimeline() {
-    const [next, ...rest] = timelineRedo;
-    if (!next) return;
-    setTimelineUndo((history) => [timelineTracks, ...history].slice(0, 25));
-    setTimelineRedo(rest);
-    setTimelineTracks(next);
+    if (!engineFutureCount) return;
     redoEngineProject();
+    const project = useVideoProjectStore.getState().currentProject;
+    if (project) syncEditorTimelineFromEngineProject(project);
+    clearRenderedOutput();
     setProjectStatus("Redo applied");
   }
 
@@ -505,8 +516,6 @@ export function ProfessionalVideoStudio() {
     setEngineProject(createVideoProjectFromTemplateProject(project), { resetHistory: true });
     selectEngineLayer(firstEditableLayer?.id ?? null);
     setTimelineTracks(tracks);
-    setTimelineUndo([]);
-    setTimelineRedo([]);
     setSelectedLayerId(firstEditableLayer?.id ?? "clip-main");
     setCaptions(options?.captions ?? templateProjectToCaptions(project));
     setPlan(options?.plan ?? templateProjectToEditPlan(project));
@@ -2204,8 +2213,8 @@ export function ProfessionalVideoStudio() {
               <section className="panel overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-4 py-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <ToolbarButton label="Undo" icon={Undo2} onClick={undoTimeline} disabled={!timelineUndo.length} />
-                    <ToolbarButton label="Redo" icon={Redo2} onClick={redoTimeline} disabled={!timelineRedo.length} />
+                    <ToolbarButton label="Undo" icon={Undo2} onClick={undoTimeline} disabled={!enginePastCount} />
+                    <ToolbarButton label="Redo" icon={Redo2} onClick={redoTimeline} disabled={!engineFutureCount} />
                     <ToolbarButton label="Trim" icon={Scissors} onClick={trimSelectedLayer} />
                     <ToolbarButton label="Split" icon={Crop} onClick={splitSelectedLayer} />
                     <ToolbarButton label="Merge" icon={Layers3} onClick={mergeVideoLayers} />
