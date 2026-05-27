@@ -494,6 +494,28 @@ export function ProfessionalVideoStudio() {
 
   }
 
+  function updateTimelineLayerTiming(
+    layerId: string,
+    patch: Pick<TimelineLayer, "start" | "duration">,
+  ) {
+    setSelectedLayerId(layerId);
+    selectEngineLayer(layerId);
+    commitTimeline((tracks) =>
+      tracks.map((track) => ({
+        ...track,
+        layers: track.layers.map((layer) =>
+          layer.id === layerId
+            ? {
+                ...layer,
+                start: patch.start,
+                duration: patch.duration,
+              }
+            : layer,
+        ),
+      })),
+    );
+  }
+
   const applyTemplateProject = useCallback((
     project: TemplateProject,
     options?: {
@@ -2293,6 +2315,7 @@ export function ProfessionalVideoStudio() {
                 zoom={timelineZoom}
                 totalSeconds={totalTimelineSeconds}
                 onSelectLayer={selectTimelineLayer}
+                onUpdateLayerTiming={updateTimelineLayerTiming}
               />
             </>
           )}
