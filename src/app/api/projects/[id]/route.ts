@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAuthContext, isUnauthenticatedError } from "@/lib/auth-context";
 import { deleteProject, getProject, updateProject } from "@/lib/projects";
 import { updateProjectSchema } from "@/lib/validation";
 
@@ -8,7 +9,17 @@ type ProjectRouteContext = {
 
 export async function GET(_request: Request, context: ProjectRouteContext) {
   const { id } = await context.params;
-  const project = await getProject(id);
+  const auth = await getAuthContext();
+
+  let project = null;
+  try {
+    project = await getProject(id, auth.userId);
+  } catch (error) {
+    if (isUnauthenticatedError(error)) {
+      return NextResponse.json({ error: "يجب تسجيل الدخول أولاً." }, { status: 401 });
+    }
+    throw error;
+  }
 
   if (!project) {
     return NextResponse.json({ error: "المشروع غير موجود." }, { status: 404 });
@@ -27,7 +38,8 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
   }
 
   try {
-    const project = await updateProject(id, parsed.data);
+    const auth = await getAuthContext();
+    const project = await updateProject(id, parsed.data, auth.userId);
 
     if (!project) {
       return NextResponse.json({ error: "المشروع غير موجود." }, { status: 404 });
@@ -35,6 +47,10 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
 
     return NextResponse.json({ project });
   } catch (error) {
+    if (isUnauthenticatedError(error)) {
+      return NextResponse.json({ error: "يجب تسجيل الدخول أولاً." }, { status: 401 });
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "تعذر تحديث المشروع." },
       { status: 500 },
@@ -46,9 +62,14 @@ export async function DELETE(_request: Request, context: ProjectRouteContext) {
   const { id } = await context.params;
 
   try {
-    await deleteProject(id);
+    const auth = await getAuthContext();
+    await deleteProject(id, auth.userId);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (isUnauthenticatedError(error)) {
+      return NextResponse.json({ error: "يجب تسجيل الدخول أولاً." }, { status: 401 });
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "تعذر حذف المشروع." },
       { status: 500 },

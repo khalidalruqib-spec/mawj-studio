@@ -6,7 +6,7 @@ import {
   updateLocalProject,
   type StudioProject,
 } from "@/lib/project-store";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
 import type { EditPlan } from "@/lib/edit-plan";
 
@@ -28,13 +28,15 @@ export type UpdateProjectInput = {
   status?: StudioProject["status"];
 };
 
-export async function listProjects() {
-  const supabase = getSupabaseServerClient();
+export async function listProjects(userId?: string | null) {
+  const supabase = await createSupabaseServerClient();
   if (!supabase) return listLocalProjects();
+  assertUserId(userId);
 
   const { data, error } = await supabase
     .from("projects")
     .select("*")
+    .eq("user_id", userId)
     .order("updated_at", { ascending: false })
     .limit(30);
 
@@ -46,8 +48,8 @@ export async function listProjects() {
   return data.map(rowToProject);
 }
 
-export async function createProject(input: CreateProjectInput) {
-  const supabase = getSupabaseServerClient();
+export async function createProject(input: CreateProjectInput, userId?: string | null) {
+  const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
     return createLocalProject({
@@ -58,10 +60,11 @@ export async function createProject(input: CreateProjectInput) {
       editPlan: null,
     });
   }
+  assertUserId(userId);
 
   const { data, error } = await supabase
     .from("projects")
-    .insert(projectInputToRow(input))
+    .insert(projectInputToRow(input, userId))
     .select("*")
     .single();
 
@@ -69,18 +72,24 @@ export async function createProject(input: CreateProjectInput) {
   return rowToProject(data);
 }
 
-export async function getProject(id: string) {
-  const supabase = getSupabaseServerClient();
+export async function getProject(id: string, userId?: string | null) {
+  const supabase = await createSupabaseServerClient();
   if (!supabase) return getLocalProject(id);
+  assertUserId(userId);
 
-  const { data, error } = await supabase.from("projects").select("*").eq("id", id).single();
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .single();
 
   if (error) return null;
   return rowToProject(data);
 }
 
-export async function updateProjectUpload(id: string, storagePath: string) {
-  const supabase = getSupabaseServerClient();
+export async function updateProjectUpload(id: string, storagePath: string, userId?: string | null) {
+  const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
     return updateLocalProject(id, {
@@ -89,6 +98,7 @@ export async function updateProjectUpload(id: string, storagePath: string) {
       storagePath,
     });
   }
+  assertUserId(userId);
 
   const { data, error } = await supabase
     .from("projects")
@@ -98,6 +108,7 @@ export async function updateProjectUpload(id: string, storagePath: string) {
       storage_path: storagePath,
     })
     .eq("id", id)
+    .eq("user_id", userId)
     .select("*")
     .single();
 
@@ -105,8 +116,8 @@ export async function updateProjectUpload(id: string, storagePath: string) {
   return rowToProject(data);
 }
 
-export async function updateProjectPlan(id: string, editPlan: EditPlan) {
-  const supabase = getSupabaseServerClient();
+export async function updateProjectPlan(id: string, editPlan: EditPlan, userId?: string | null) {
+  const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
     return updateLocalProject(id, {
@@ -114,6 +125,7 @@ export async function updateProjectPlan(id: string, editPlan: EditPlan) {
       editPlan,
     });
   }
+  assertUserId(userId);
 
   const { data, error } = await supabase
     .from("projects")
@@ -122,6 +134,7 @@ export async function updateProjectPlan(id: string, editPlan: EditPlan) {
       edit_plan: editPlan,
     })
     .eq("id", id)
+    .eq("user_id", userId)
     .select("*")
     .single();
 
@@ -129,12 +142,13 @@ export async function updateProjectPlan(id: string, editPlan: EditPlan) {
   return rowToProject(data);
 }
 
-export async function updateProject(id: string, input: UpdateProjectInput) {
-  const supabase = getSupabaseServerClient();
+export async function updateProject(id: string, input: UpdateProjectInput, userId?: string | null) {
+  const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
     return updateLocalProject(id, input);
   }
+  assertUserId(userId);
 
   const update: Database["public"]["Tables"]["projects"]["Update"] = {
     updated_at: new Date().toISOString(),
@@ -147,6 +161,7 @@ export async function updateProject(id: string, input: UpdateProjectInput) {
     .from("projects")
     .update(update)
     .eq("id", id)
+    .eq("user_id", userId)
     .select("*")
     .single();
 
@@ -154,21 +169,26 @@ export async function updateProject(id: string, input: UpdateProjectInput) {
   return rowToProject(data);
 }
 
-export async function deleteProject(id: string) {
-  const supabase = getSupabaseServerClient();
+export async function deleteProject(id: string, userId?: string | null) {
+  const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
     return deleteLocalProject(id);
   }
+  assertUserId(userId);
 
-  const { error } = await supabase.from("projects").delete().eq("id", id);
+  const { error } = await supabase.from("projects").delete().eq("id", id).eq("user_id", userId);
   if (error) throw new Error(error.message);
   return true;
 }
 
-function projectInputToRow(input: CreateProjectInput): Database["public"]["Tables"]["projects"]["Insert"] {
+function projectInputToRow(
+  input: CreateProjectInput,
+  userId: string,
+): Database["public"]["Tables"]["projects"]["Insert"] {
   return {
     id: crypto.randomUUID(),
+    user_id: userId,
     title: input.title,
     status: "draft",
     style_id: input.styleId,
@@ -182,6 +202,12 @@ function projectInputToRow(input: CreateProjectInput): Database["public"]["Table
     storage_path: null,
     edit_plan: null,
   };
+}
+
+function assertUserId(userId: string | null | undefined): asserts userId is string {
+  if (!userId) {
+    throw new Error("UNAUTHENTICATED");
+  }
 }
 
 function rowToProject(row: ProjectRow): StudioProject {
