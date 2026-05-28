@@ -1947,6 +1947,25 @@ export function ProfessionalVideoStudio() {
     clearRenderedOutput();
   }
 
+  function updateCaptionTiming(id: string, patch: Pick<CaptionLine, "start" | "end">) {
+    const nextCaptions = captions.map((caption) => {
+      if (caption.id !== id) return caption;
+
+      const nextStart = clampCaptionTime(patch.start);
+      const nextEnd = Math.max(nextStart + 0.2, clampCaptionTime(patch.end));
+
+      return {
+        ...caption,
+        start: roundTimelineSeconds(nextStart),
+        end: roundTimelineSeconds(nextEnd),
+      };
+    });
+
+    setCaptions(nextCaptions);
+    syncCaptionTimingToTimeline(id, nextCaptions);
+    clearRenderedOutput();
+  }
+
   function syncCaptionTextToTimeline(id: string, text: string, nextCaptions: CaptionLine[]) {
     let didUpdate = false;
 
@@ -1973,6 +1992,36 @@ export function ProfessionalVideoStudio() {
         : ensureCaptionLayer(nextTracks, nextCaptions, studioFile?.durationSeconds ?? totalTimelineSeconds),
     );
     setProjectStatus("Caption text synced to timeline");
+  }
+
+  function syncCaptionTimingToTimeline(id: string, nextCaptions: CaptionLine[]) {
+    const nextCaption = nextCaptions.find((caption) => caption.id === id);
+    if (!nextCaption) return;
+
+    let didUpdate = false;
+    const nextTracks = timelineTracks.map((track) => {
+      if (track.kind !== "caption") return track;
+
+      return {
+        ...track,
+        layers: track.layers.map((layer) => {
+          if (layer.id !== captionLayerId(id)) return layer;
+          didUpdate = true;
+          return {
+            ...layer,
+            start: nextCaption.start,
+            duration: Math.max(0.2, nextCaption.end - nextCaption.start),
+          };
+        }),
+      };
+    });
+
+    commitTimeline(
+      didUpdate
+        ? nextTracks
+        : ensureCaptionLayer(nextTracks, nextCaptions, studioFile?.durationSeconds ?? totalTimelineSeconds),
+    );
+    setProjectStatus("Caption timing synced to timeline");
   }
 
   function downloadSrt() {
@@ -2820,6 +2869,7 @@ export function ProfessionalVideoStudio() {
           template={captionTemplate}
           onTemplateChange={setCaptionTemplate}
           onCaptionChange={updateCaption}
+          onCaptionTimingChange={updateCaptionTiming}
           onAutoTranscribe={() => transcribeVideo()}
           onImportSrt={(file) => void importSrtFile(file)}
           onDownloadSrt={downloadSrt}
@@ -4904,6 +4954,11 @@ function createLayerDuplicateId(sourceId: string) {
 
 function roundTimelineSeconds(value: number) {
   return Math.round(value * 10) / 10;
+}
+
+function clampCaptionTime(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(24 * 60 * 60, value));
 }
 
 function isEditorTypingTarget(target: EventTarget | null) {
