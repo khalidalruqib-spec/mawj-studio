@@ -131,7 +131,7 @@ import { BrandKitPanel } from "@/components/studio/panels/brand";
 import { DashboardPanel } from "@/components/studio/panels/projects";
 import { CollaborationPanel } from "@/components/studio/panels/collaboration";
 import { ExportsPanel } from "@/components/studio/panels/exports";
-import { LayerInspector, ProjectSettingsPanel } from "@/components/studio/panels/settings";
+import { LayerInspector, ProjectSettingsPanel, type LayerAlignmentAction } from "@/components/studio/panels/settings";
 import { AssistantPanel } from "@/components/studio/panels/assistant";
 import { StockMediaPanel } from "@/components/studio/panels/stock";
 import { useProjectPersistence } from "@/components/studio/hooks/use-project-persistence";
@@ -1475,6 +1475,35 @@ export function ProfessionalVideoStudio() {
     setProjectStatus(`Layer nudged ${deltaX || ""}${deltaY ? `/${deltaY}` : ""}px`);
   }
 
+  function alignSelectedLayer(action: LayerAlignmentAction) {
+    if (!selectedLayer) return;
+
+    const canvas = getAspectCanvasDimensions(aspectRatio);
+    const safeMargins = getSafeMarginsForAspect(aspectRatio);
+    const geometry = getTimelineLayerGeometry(selectedLayer, aspectRatio);
+    const nextGeometry = { ...geometry };
+
+    if (action === "center-x") {
+      nextGeometry.x = Math.round((canvas.width - geometry.width) / 2);
+    }
+
+    if (action === "center-y") {
+      nextGeometry.y = Math.round((canvas.height - geometry.height) / 2);
+    }
+
+    if (action === "safe-width") {
+      nextGeometry.x = safeMargins.left;
+      nextGeometry.width = Math.max(1, canvas.width - safeMargins.left - safeMargins.right);
+    }
+
+    if (action === "safe-bottom") {
+      nextGeometry.y = Math.max(safeMargins.top, canvas.height - safeMargins.bottom - geometry.height);
+    }
+
+    updateTimelineLayerGeometry(selectedLayer.id, nextGeometry);
+    setProjectStatus(`Layer aligned: ${action}`);
+  }
+
   function deleteSelectedLayer() {
     if (!selectedLayer) {
       if (templateProject) {
@@ -2780,7 +2809,12 @@ export function ProfessionalVideoStudio() {
           onLanguageChange={setLanguageMode}
           onGoalChange={setGoal}
         />
-        <LayerInspector layer={selectedLayer} onChange={updateSelectedLayer} onDelete={deleteSelectedLayer} />
+        <LayerInspector
+          layer={selectedLayer}
+          onChange={updateSelectedLayer}
+          onAlign={alignSelectedLayer}
+          onDelete={deleteSelectedLayer}
+        />
       </>
     );
   }
@@ -3556,6 +3590,18 @@ function getAspectCanvasDimensions(aspectRatio: AspectRatio) {
   if (aspectRatio === "16:9") return { width: 1920, height: 1080 };
   if (aspectRatio === "1:1") return { width: 1080, height: 1080 };
   return { width: 1080, height: 1920 };
+}
+
+function getSafeMarginsForAspect(aspectRatio: AspectRatio) {
+  if (aspectRatio === "9:16") {
+    return { top: 160, bottom: 260, left: 70, right: 70 };
+  }
+
+  if (aspectRatio === "1:1") {
+    return { top: 92, bottom: 120, left: 76, right: 76 };
+  }
+
+  return { top: 72, bottom: 72, left: 96, right: 96 };
 }
 
 function clampTimelineNumber(value: number, min: number, max: number) {

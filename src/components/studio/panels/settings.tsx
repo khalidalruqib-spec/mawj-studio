@@ -100,10 +100,12 @@ export function ProjectSettingsPanel({
 export function LayerInspector({
   layer,
   onChange,
+  onAlign,
   onDelete,
 }: {
   layer: TimelineLayer | null;
   onChange: (patch: Partial<TimelineLayer>) => void;
+  onAlign: (action: LayerAlignmentAction) => void;
   onDelete: () => void;
 }) {
   if (!layer) {
@@ -156,6 +158,14 @@ export function LayerInspector({
         <NumberField label="Width" value={layer.width ?? 0} onChange={(width) => onChange({ width })} />
         <NumberField label="Height" value={layer.height ?? 0} onChange={(height) => onChange({ height })} />
       </div>
+      <Field label="Align">
+        <div className="grid grid-cols-2 gap-2">
+          <AlignButton label="Center X" onClick={() => onAlign("center-x")} />
+          <AlignButton label="Center Y" onClick={() => onAlign("center-y")} />
+          <AlignButton label="Safe width" onClick={() => onAlign("safe-width")} />
+          <AlignButton label="Safe bottom" onClick={() => onAlign("safe-bottom")} />
+        </div>
+      </Field>
       {layer.type === "text" || layer.type === "caption" ? (
         <div className="grid grid-cols-2 gap-2">
           <NumberField label="Font size" value={layer.fontSize ?? 48} min={12} onChange={(fontSize) => onChange({ fontSize })} />
@@ -220,6 +230,20 @@ export function LayerInspector({
         Delete selected layer
       </button>
     </section>
+  );
+}
+
+export type LayerAlignmentAction = "center-x" | "center-y" | "safe-width" | "safe-bottom";
+
+function AlignButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-10 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-2 text-xs font-black text-[var(--muted)] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
+    >
+      {label}
+    </button>
   );
 }
 
