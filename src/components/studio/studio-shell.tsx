@@ -477,7 +477,10 @@ export function ProfessionalVideoStudio() {
   }, [activePanel, loadProjects]);
 
   function clearRenderedOutput() {
-    setRenderResult(null);
+    setRenderResult((currentResult) => {
+      revokeObjectUrl(currentResult?.url);
+      return null;
+    });
     setRenderProgress(null);
   }
 
@@ -718,6 +721,42 @@ export function ProfessionalVideoStudio() {
     setIsPlaying(false);
   }
 
+  function resetStudioProject() {
+    const assetsToRemove = mediaAssets;
+
+    videoRef.current?.pause();
+    revokeObjectUrl(studioFile?.url);
+    assetsToRemove.forEach((asset) => revokeObjectUrl(asset.url));
+    void Promise.all(assetsToRemove.map((asset) => deleteMediaRecord(asset.id))).catch(() => undefined);
+
+    const nextTracks = createDefaultTimeline();
+    const blankProject = createBlankVideoProject({ name: brandName || BRAND.displayName, aspectRatio });
+
+    setStudioFile(null);
+    setMediaAssets([]);
+    setActiveProject(null);
+    setTemplateProject(null);
+    setActiveTemplateId(null);
+    setPlan(null);
+    setTranscript([]);
+    setTranscriptSearch("");
+    setCaptions([]);
+    setClipSuggestions([]);
+    setAssistantEngineState(null);
+    setTranscriptionMode(null);
+    setTranscriptionNotice("");
+    setError("");
+    setIsPlaying(false);
+    setPreviewTime(0);
+    setTimelineTracks(nextTracks);
+    setSelectedLayerId("clip-main");
+    setEngineProject(blankProject, { resetHistory: true });
+    selectEngineLayer("clip-main");
+    clearRenderedOutput();
+    setActivePanel("editor");
+    setProjectStatus("New empty project ready");
+  }
+
   useTemplateDraftLoader({
     onLoad: applyTemplateProject,
     onError: () => setProjectStatus("Could not load template project"),
@@ -864,6 +903,19 @@ export function ProfessionalVideoStudio() {
 
   function addMediaAssetToTimeline(asset: MediaAsset) {
     if (asset.kind === "image") {
+      if (!studioFile && (!templateProject || templateProject.templateId === "image-storyboard-generated")) {
+        const nextImageAssets = uniqueMediaAssetsById([asset, ...mediaAssets]).filter(
+          (item) => item.kind === "image",
+        );
+
+        openImageStoryboardProject(
+          nextImageAssets,
+          `${asset.name} opened in an editable image video storyboard`,
+        );
+        setError("");
+        return;
+      }
+
       const imageLayer = createEditableImageLayer({
         asset,
         aspectRatio,
@@ -2722,6 +2774,15 @@ export function ProfessionalVideoStudio() {
               <LayoutTemplate className="h-4 w-4" aria-hidden="true" />
               <span>Templates</span>
             </Link>
+            <button
+              type="button"
+              onClick={resetStudioProject}
+              className="icon-button"
+              aria-label="New empty project"
+              title="New empty project"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+            </button>
             <button type="button" onClick={saveProjectSnapshot} className="icon-button" aria-label="Save project">
               <Save className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -4406,6 +4467,15 @@ function revokeObjectUrl(url?: string) {
   if (url?.startsWith("blob:")) {
     URL.revokeObjectURL(url);
   }
+}
+
+function uniqueMediaAssetsById(assets: MediaAsset[]) {
+  const seen = new Set<string>();
+  return assets.filter((asset) => {
+    if (seen.has(asset.id)) return false;
+    seen.add(asset.id);
+    return true;
+  });
 }
 
 function createAssistantMessage(

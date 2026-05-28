@@ -670,6 +670,16 @@ export function TemplatePreviewLayer({
             decoding="async"
             className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "contain")}`}
           />
+        ) : src && layer.type === "video" ? (
+          <video
+            src={src}
+            muted
+            loop
+            playsInline
+            autoPlay
+            preload="metadata"
+            className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "cover")}`}
+          />
         ) : (
           <div className="grid h-full w-full place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70">
             {layer.type.toUpperCase()}
