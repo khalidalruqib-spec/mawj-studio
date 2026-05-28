@@ -1132,6 +1132,7 @@ function TemplateMotionPreview({
 }) {
   const [sceneIndex, setSceneIndex] = useState(0);
   const scene = template.scenes[sceneIndex] ?? template.scenes[0];
+  const previewInputs = useMemo(() => buildTemplateInputs(template, {}), [template]);
 
   useEffect(() => {
     if (template.scenes.length <= 1) return;
@@ -1154,7 +1155,7 @@ function TemplateMotionPreview({
             : "aspect-[9/16] max-h-[620px] w-full max-w-[350px]"
       }`}
     >
-      <PreviewBackground key={`${scene.id}-bg`} scene={scene} />
+      <PreviewBackground key={`${scene.id}-bg`} scene={scene} inputs={previewInputs} />
       <TemplateSceneChrome template={template} sceneName={scene.name} sceneIndex={sceneIndex} />
       {!compact && <SafeMarginOverlay template={template} />}
       {scene.layers.map((layer, i) => (
@@ -1162,6 +1163,7 @@ function TemplateMotionPreview({
           key={`${scene.id}-${layer.id}-${sceneIndex}`}
           layer={layer}
           template={template}
+          inputs={previewInputs}
           compact={compact}
           layerIndex={i}
         />
@@ -1179,16 +1181,44 @@ function TemplateMotionPreview({
   );
 }
 
-function PreviewBackground({ scene }: { scene: ReturnType<typeof renderTemplatePreview>["scene"] }) {
+function PreviewBackground({
+  scene,
+  inputs,
+}: {
+  scene: ReturnType<typeof renderTemplatePreview>["scene"];
+  inputs: TemplateUserInputs;
+}) {
   if (scene.background.type === "gradient") {
     return (
       <div
         className="template-bg-drift absolute inset-0"
-        style={{ background: `linear-gradient(145deg, ${cleanPreviewValue(scene.background.from) || "#111827"}, ${cleanPreviewValue(scene.background.to) || "#000000"})` }}
+        style={{ background: `linear-gradient(145deg, ${resolvePreviewValue(scene.background.from, inputs) || "#111827"}, ${resolvePreviewValue(scene.background.to, inputs) || "#000000"})` }}
       />
     );
   }
   if (scene.background.type === "image" || scene.background.type === "video") {
+    const src = resolvePreviewValue(scene.background.src ?? scene.background.value, inputs);
+    if (src) {
+      return scene.background.type === "video" ? (
+        <video
+          className="template-bg-drift absolute inset-0 h-full w-full object-cover"
+          src={src}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        />
+      ) : (
+        <img
+          className="template-bg-drift absolute inset-0 h-full w-full object-cover"
+          src={src}
+          alt=""
+          loading="lazy"
+        />
+      );
+    }
+
     return (
       <div className="absolute inset-0 bg-[var(--panel-soft)]">
         <div className="template-bg-drift absolute inset-0 bg-[linear-gradient(145deg,rgba(142,247,194,0.20),rgba(167,139,250,0.16),rgba(251,191,36,0.10))]" />
@@ -1199,7 +1229,7 @@ function PreviewBackground({ scene }: { scene: ReturnType<typeof renderTemplateP
   return (
     <div
       className="template-bg-drift absolute inset-0"
-      style={{ background: cleanPreviewValue(scene.background.value) || "#111827" }}
+      style={{ background: resolvePreviewValue(scene.background.value, inputs) || "#111827" }}
     />
   );
 }
@@ -1207,11 +1237,13 @@ function PreviewBackground({ scene }: { scene: ReturnType<typeof renderTemplateP
 function PreviewLayer({
   layer,
   template,
+  inputs,
   compact,
   layerIndex,
 }: {
   layer: TemplateLayer;
   template: VideoTemplate;
+  inputs: TemplateUserInputs;
   compact: boolean;
   layerIndex: number;
 }) {
@@ -1224,18 +1256,18 @@ function PreviewLayer({
         className={`template-motion-layer ${motionClass} absolute grid place-items-center overflow-hidden text-center font-black leading-tight`}
         style={{
           ...style,
-          color: cleanPreviewValue(layer.color) || "#ffffff",
+          color: resolvePreviewValue(layer.color, inputs) || "#ffffff",
           fontSize: `${Math.max(compact ? 8 : 10, (layer.fontSize ?? 42) * (compact ? 0.12 : 0.18))}px`,
           direction: layer.direction === "ltr" ? "ltr" : "rtl",
         }}
       >
         {layer.type === "captions" ? (
           <span className="rounded-md bg-black/65 px-2 py-1 shadow-xl backdrop-blur">
-            {previewText(layer.content ?? "كابشن تلقائي")}
+            {previewText(layer.content ?? "كابشن تلقائي", inputs)}
           </span>
         ) : (
           <span className="line-clamp-3 px-1 drop-shadow-[0_6px_18px_rgba(0,0,0,0.65)]">
-            {previewText(layer.content ?? layer.name ?? layer.id)}
+            {previewText(layer.content ?? layer.name ?? layer.id, inputs)}
           </span>
         )}
       </div>
@@ -1243,20 +1275,38 @@ function PreviewLayer({
   }
 
   if (layer.type === "image" || layer.type === "video") {
+    const src = resolvePreviewValue(layer.src ?? layer.source, inputs);
+    const objectFit = layer.fit === "fill" ? "object-fill" : layer.fit === "contain" ? "object-contain" : "object-cover";
+
     return (
       <div
-        className={`template-motion-layer ${motionClass} absolute grid place-items-center overflow-hidden border border-white/20 bg-white/10 text-center text-[10px] font-black text-white/80 shadow-2xl`}
+        className={`template-motion-layer ${motionClass} absolute grid place-items-center overflow-hidden border border-white/20 bg-black/30 text-center text-[10px] font-black text-white/80 shadow-2xl`}
         style={{ ...style, borderRadius: layer.borderRadius ? `${layer.borderRadius / 12}px` : "10px" }}
       >
-        <div className="absolute inset-0 template-media-sheen bg-[linear-gradient(135deg,rgba(255,255,255,0.26),rgba(255,255,255,0.05),rgba(142,247,194,0.18))]" />
-        <div className="absolute h-1/2 w-1/2 rounded-full border border-white/20 bg-white/10" />
-        {layer.type === "video" ? (
-          <span className="relative grid h-10 w-10 place-items-center rounded-full bg-black/50 text-white">▶</span>
+        {src && layer.type === "image" ? (
+          <img src={src} alt={layer.name ?? layer.id} className={`absolute inset-0 h-full w-full ${objectFit}`} loading="lazy" />
+        ) : src && layer.type === "video" ? (
+          <video
+            src={src}
+            className={`absolute inset-0 h-full w-full ${objectFit}`}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          />
         ) : (
-          <span className="relative rounded-md bg-black/50 px-2 py-1 text-white">
-            {layer.id.toLowerCase().includes("logo") ? "LOGO" : "MEDIA"}
-          </span>
+          <>
+            <div className="absolute inset-0 template-media-sheen bg-[linear-gradient(135deg,rgba(255,255,255,0.26),rgba(255,255,255,0.05),rgba(142,247,194,0.18))]" />
+            <div className="absolute h-1/2 w-1/2 rounded-full border border-white/20 bg-white/10" />
+            <span className="relative rounded-md bg-black/50 px-2 py-1 text-white">
+              {layer.type === "video" ? "VIDEO" : layer.id.toLowerCase().includes("logo") ? "LOGO" : "MEDIA"}
+            </span>
+          </>
         )}
+        {layer.type === "video" && src ? (
+          <span className="absolute left-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/55 text-white backdrop-blur">▶</span>
+        ) : null}
       </div>
     );
   }
@@ -1280,7 +1330,7 @@ function PreviewLayer({
       className={`template-motion-layer ${motionClass} absolute`}
       style={{
         ...style,
-        background: cleanPreviewValue(layer.color) || "rgba(255,255,255,0.2)",
+        background: resolvePreviewValue(layer.color, inputs) || "rgba(255,255,255,0.2)",
         borderRadius: layer.borderRadius ? `${layer.borderRadius / 10}px` : "10px",
         opacity: layer.opacity ?? 0.9,
       }}
@@ -1386,13 +1436,13 @@ function layerToPreviewStyle(layer: TemplateLayer, template: VideoTemplate): Rea
   };
 }
 
-function cleanPreviewValue(value?: string) {
-  if (!value || value.includes("{{")) return undefined;
-  return value;
+function resolvePreviewValue(value: string | undefined, inputs: TemplateUserInputs) {
+  if (!value) return undefined;
+  return value.replace(/\{\{(.*?)\}\}/g, (_, key: string) => inputs[key.trim()] ?? "");
 }
 
-function previewText(value: string) {
-  return value.replace(/\{\{(.*?)\}\}/g, (_, key: string) => key.trim());
+function previewText(value: string, inputs: TemplateUserInputs) {
+  return resolvePreviewValue(value, inputs) || value.replace(/\{\{(.*?)\}\}/g, (_, key: string) => key.trim());
 }
 
 function animationClass(type: TemplateAnimationType | undefined, index: number) {

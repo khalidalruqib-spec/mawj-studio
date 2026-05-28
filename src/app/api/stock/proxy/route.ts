@@ -26,11 +26,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Stock asset host is not allowed." }, { status: 400 });
   }
 
+  const isVideoAsset = assetUrl.hostname === "videos.pexels.com" || /\.(mp4|webm|mov)$/i.test(assetUrl.pathname);
   const response = await fetch(assetUrl, {
     headers: {
       "User-Agent": "MawjStudio/1.0",
     },
-    next: { revalidate: 86_400 },
+    ...(isVideoAsset ? { cache: "no-store" as const } : { next: { revalidate: 86_400 } }),
   });
 
   if (!response.ok || !response.body) {
