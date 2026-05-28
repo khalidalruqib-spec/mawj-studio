@@ -1,4 +1,4 @@
-import { Captions, Download, FileUp, Loader2, Mic2, MonitorUp } from "lucide-react";
+import { Captions, Download, FileUp, Loader2, Mic2, MonitorUp, Plus, Trash2 } from "lucide-react";
 import { CAPTION_TEMPLATES } from "../foundation";
 import type { CaptionLine, TranscriptionMode } from "../foundation";
 import { CompactButton, DemoModeBanner, PanelHeading } from "../ui";
@@ -10,6 +10,8 @@ export function CaptionsPanel({
   onTemplateChange,
   onCaptionChange,
   onCaptionTimingChange,
+  onAddCaption,
+  onDeleteCaption,
   onAutoTranscribe,
   onImportSrt,
   onDownloadSrt,
@@ -23,6 +25,8 @@ export function CaptionsPanel({
   onTemplateChange: (template: string) => void;
   onCaptionChange: (id: string, text: string) => void;
   onCaptionTimingChange: (id: string, patch: Pick<CaptionLine, "start" | "end">) => void;
+  onAddCaption: () => void;
+  onDeleteCaption: (id: string) => void;
   onAutoTranscribe: () => void;
   onImportSrt: (file: File) => void;
   onDownloadSrt: () => void;
@@ -71,6 +75,7 @@ export function CaptionsPanel({
         ))}
       </div>
       <div className="mb-3 flex gap-2">
+        <CompactButton label="Add caption" icon={Plus} onClick={onAddCaption} />
         <label className="toolbar-btn justify-center px-2 text-[11px]">
           <FileUp className="h-3.5 w-3.5" aria-hidden="true" />
           Import SRT
@@ -90,9 +95,17 @@ export function CaptionsPanel({
       </div>
       <div className="max-h-[380px] space-y-2 overflow-auto pr-1">
         {captions.map((caption) => (
-          <label key={caption.id} className="block rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-2">
-            <span className="mb-2 block text-[11px] font-black text-[var(--brand)]">
-              {formatDuration(caption.start)}-{formatDuration(caption.end)}
+          <div key={caption.id} className="block rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-2">
+            <span className="mb-2 flex items-center justify-between gap-2 text-[11px] font-black text-[var(--brand)]">
+              <span>{formatDuration(caption.start)}-{formatDuration(caption.end)}</span>
+              <button
+                type="button"
+                onClick={() => onDeleteCaption(caption.id)}
+                className="rounded-md border border-red-400/30 bg-red-500/10 p-1 text-red-100 transition hover:border-red-300"
+                aria-label="Delete caption"
+              >
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
             </span>
             <div className="mb-2 grid grid-cols-2 gap-2">
               <CaptionTimeInput
@@ -112,7 +125,7 @@ export function CaptionsPanel({
               dir="rtl"
               className="min-h-20 w-full resize-none rounded-md border border-[var(--line)] bg-black/25 p-2 text-sm font-bold leading-6 outline-none focus:border-[var(--brand)]"
             />
-          </label>
+          </div>
         ))}
       </div>
     </section>
