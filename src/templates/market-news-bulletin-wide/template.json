@@ -1,0 +1,354 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "pop",
+    "bounce",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "width": 1920,
+  "height": 1080,
+  "safeMargins": {
+    "top": 80,
+    "bottom": 90,
+    "left": 110,
+    "right": 110
+  },
+  "audio": {
+    "music": null,
+    "volume": 0.35
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "market-news-bulletin-wide",
+  "name": "Market News Bulletin 16:9",
+  "category": "News Style",
+  "aspectRatio": "16:9",
+  "duration": 16,
+  "description": "Original modern news bulletin with breaking opener, headline, details, source strap, and closing bug.",
+  "requiredInputs": [
+    {
+      "key": "newsTitle",
+      "label": "العنوان",
+      "type": "text",
+      "default": "خبر عاجل في السوق المحلي"
+    },
+    {
+      "key": "newsSummary",
+      "label": "الملخص",
+      "type": "textarea",
+      "default": "تفاصيل موجزة وواضحة تظهر على الشاشة بطريقة إخبارية احترافية."
+    },
+    {
+      "key": "sourceName",
+      "label": "المصدر",
+      "type": "text",
+      "default": "Mawj Newsroom"
+    },
+    {
+      "key": "imageOrVideo",
+      "label": "الصورة أو الفيديو",
+      "type": "image"
+    },
+    {
+      "key": "logo",
+      "label": "الشعار",
+      "type": "image"
+    },
+    {
+      "key": "brandColor",
+      "label": "لون الهوية",
+      "type": "color",
+      "default": "#dc2626"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "breaking",
+      "name": "Breaking Opener",
+      "start": 0,
+      "duration": 3,
+      "background": {
+        "type": "color",
+        "value": "#111111"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0.1
+      },
+      "layers": [
+        {
+          "id": "red-bar",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "color": "{{brandColor}}",
+          "opacity": 0.18,
+          "borderRadius": 0,
+          "safeMargin": false
+        },
+        {
+          "id": "breaking-text",
+          "type": "text",
+          "content": "BREAKING",
+          "x": 180,
+          "y": 330,
+          "width": 1560,
+          "height": 150,
+          "fontSize": 118,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.45
+          }
+        },
+        {
+          "id": "source",
+          "type": "text",
+          "content": "{{sourceName}}",
+          "x": 180,
+          "y": 510,
+          "width": 1560,
+          "height": 80,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#fecaca",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "headline",
+      "name": "Headline",
+      "start": 3,
+      "duration": 5,
+      "background": {
+        "type": "gradient",
+        "from": "#f8fafc",
+        "to": "#e5e7eb"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "news-media",
+          "type": "image",
+          "src": "{{imageOrVideo}}",
+          "x": 95,
+          "y": 110,
+          "width": 820,
+          "height": 860,
+          "fit": "cover",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.45
+          },
+          "borderRadius": 30
+        },
+        {
+          "id": "headline-text",
+          "type": "text",
+          "content": "{{newsTitle}}",
+          "x": 1000,
+          "y": 190,
+          "width": 810,
+          "height": 220,
+          "fontSize": 70,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "right",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "lower-third",
+          "type": "shape",
+          "shape": "rect",
+          "x": 1000,
+          "y": 500,
+          "width": 740,
+          "height": 88,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 44,
+          "safeMargin": true
+        },
+        {
+          "id": "lower-text",
+          "type": "text",
+          "content": "{{sourceName}}",
+          "x": 1000,
+          "y": 520,
+          "width": 740,
+          "height": 48,
+          "fontSize": 32,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "details",
+      "name": "Details",
+      "start": 8,
+      "duration": 5,
+      "background": {
+        "type": "color",
+        "value": "#0f172a"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.22
+      },
+      "layers": [
+        {
+          "id": "summary",
+          "type": "text",
+          "content": "{{newsSummary}}",
+          "x": 200,
+          "y": 260,
+          "width": 1520,
+          "height": 250,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "ticker",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 860,
+          "width": 1920,
+          "height": 110,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 0,
+          "safeMargin": false
+        },
+        {
+          "id": "ticker-text",
+          "type": "text",
+          "content": "{{newsTitle}}",
+          "x": 120,
+          "y": 887,
+          "width": 1680,
+          "height": 56,
+          "fontSize": 38,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "close",
+      "name": "Closing",
+      "start": 13,
+      "duration": 3,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#020617"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.22
+      },
+      "layers": [
+        {
+          "id": "logo",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 790,
+          "y": 330,
+          "width": 340,
+          "height": 170,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.45
+          }
+        },
+        {
+          "id": "close-source",
+          "type": "text",
+          "content": "{{sourceName}}",
+          "x": 360,
+          "y": 570,
+          "width": 1200,
+          "height": 96,
+          "fontSize": 64,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    }
+  ]
+}

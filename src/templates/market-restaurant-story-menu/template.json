@@ -1,0 +1,352 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "pop",
+    "bounce",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 0.35
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "market-restaurant-story-menu",
+  "name": "Market Restaurant Story Menu 9:16",
+  "category": "Restaurants",
+  "aspectRatio": "9:16",
+  "duration": 16,
+  "description": "Original restaurant offer story with food closeup, combo cards, price flash, location, and order CTA.",
+  "requiredInputs": [
+    {
+      "key": "restaurantName",
+      "label": "اسم المطعم",
+      "type": "text",
+      "default": "مطعم النخبة"
+    },
+    {
+      "key": "offerTitle",
+      "label": "عنوان العرض",
+      "type": "text",
+      "default": "وجبة تكفي 4 أشخاص"
+    },
+    {
+      "key": "foodImage",
+      "label": "صورة الأكل",
+      "type": "image",
+      "required": true
+    },
+    {
+      "key": "price",
+      "label": "السعر",
+      "type": "text",
+      "default": "99 ر.س"
+    },
+    {
+      "key": "items",
+      "label": "العناصر",
+      "type": "textarea",
+      "default": "رز بخاري | دجاج مشوي | سلطة | مشروب"
+    },
+    {
+      "key": "location",
+      "label": "الموقع",
+      "type": "text",
+      "default": "الخبر - شارع الملك سلمان"
+    },
+    {
+      "key": "orderNumber",
+      "label": "رقم الطلب",
+      "type": "text",
+      "default": "920000000"
+    },
+    {
+      "key": "brandColor",
+      "label": "لون الهوية",
+      "type": "color",
+      "default": "#b91c1c"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "food",
+      "name": "Food Closeup",
+      "start": 0,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#2b0909"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "food-img",
+          "type": "image",
+          "src": "{{foodImage}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "safeMargin": false,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.45
+          }
+        },
+        {
+          "id": "name-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 220,
+          "width": 940,
+          "height": 145,
+          "color": "#000000",
+          "opacity": 0.55,
+          "borderRadius": 34,
+          "safeMargin": true
+        },
+        {
+          "id": "restaurant",
+          "type": "text",
+          "content": "{{restaurantName}}",
+          "x": 95,
+          "y": 250,
+          "width": 890,
+          "height": 82,
+          "fontSize": 56,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "offer",
+      "name": "Offer Stack",
+      "start": 4,
+      "duration": 4,
+      "background": {
+        "type": "gradient",
+        "from": "#fff7ed",
+        "to": "#fee2e2"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "offer-title",
+          "type": "text",
+          "content": "{{offerTitle}}",
+          "x": 80,
+          "y": 260,
+          "width": 920,
+          "height": 150,
+          "fontSize": 70,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "items-card",
+          "type": "shape",
+          "shape": "rect",
+          "x": 95,
+          "y": 520,
+          "width": 890,
+          "height": 280,
+          "color": "#ffffff",
+          "opacity": 1,
+          "borderRadius": 36,
+          "safeMargin": true
+        },
+        {
+          "id": "items",
+          "type": "text",
+          "content": "{{items}}",
+          "x": 125,
+          "y": 575,
+          "width": 830,
+          "height": 170,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#7f1d1d",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "price",
+      "name": "Price Flash",
+      "start": 8,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#111111"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "price",
+          "type": "text",
+          "content": "{{price}}",
+          "x": 70,
+          "y": 450,
+          "width": 940,
+          "height": 190,
+          "fontSize": 126,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.45
+          }
+        },
+        {
+          "id": "value",
+          "type": "text",
+          "content": "عرض اليوم فقط",
+          "x": 100,
+          "y": 700,
+          "width": 880,
+          "height": 90,
+          "fontSize": 50,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "order",
+      "name": "Order CTA",
+      "start": 12,
+      "duration": 4,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#450a0a"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "location",
+          "type": "text",
+          "content": "{{location}}",
+          "x": 80,
+          "y": 360,
+          "width": 920,
+          "height": 110,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "order-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 120,
+          "y": 690,
+          "width": 840,
+          "height": 140,
+          "color": "#ffffff",
+          "opacity": 1,
+          "borderRadius": 70,
+          "safeMargin": true
+        },
+        {
+          "id": "order",
+          "type": "text",
+          "content": "{{orderNumber}}",
+          "x": 120,
+          "y": 728,
+          "width": 840,
+          "height": 74,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    }
+  ]
+}

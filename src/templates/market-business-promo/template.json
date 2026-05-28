@@ -1,0 +1,339 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "pop",
+    "bounce",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "width": 1920,
+  "height": 1080,
+  "safeMargins": {
+    "top": 80,
+    "bottom": 90,
+    "left": 110,
+    "right": 110
+  },
+  "audio": {
+    "music": null,
+    "volume": 0.35
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "market-business-promo",
+  "name": "Market Business Promo 16:9",
+  "category": "Business Services",
+  "aspectRatio": "16:9",
+  "duration": 18,
+  "description": "Original clean company/service promo for agencies, consultants, and B2B offers.",
+  "requiredInputs": [
+    {
+      "key": "companyName",
+      "label": "اسم الشركة",
+      "type": "text",
+      "default": "Mawj Advisory"
+    },
+    {
+      "key": "serviceTitle",
+      "label": "الخدمة",
+      "type": "text",
+      "default": "حلول تسويق ونمو"
+    },
+    {
+      "key": "valueProp",
+      "label": "القيمة",
+      "type": "textarea",
+      "default": "نحوّل فكرتك إلى حملة واضحة، محتوى مقنع، ونتائج قابلة للقياس"
+    },
+    {
+      "key": "metric",
+      "label": "رقم مهم",
+      "type": "text",
+      "default": "+38%"
+    },
+    {
+      "key": "metricLabel",
+      "label": "وصف الرقم",
+      "type": "text",
+      "default": "نمو متوسط في الطلبات"
+    },
+    {
+      "key": "teamImage",
+      "label": "صورة الفريق",
+      "type": "image"
+    },
+    {
+      "key": "cta",
+      "label": "الدعوة",
+      "type": "text",
+      "default": "احجز استشارة"
+    },
+    {
+      "key": "brandColor",
+      "label": "لون الهوية",
+      "type": "color",
+      "default": "#2563eb"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "intro",
+      "name": "Company Intro",
+      "start": 0,
+      "duration": 4,
+      "background": {
+        "type": "gradient",
+        "from": "#0f172a",
+        "to": "#111827"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "company",
+          "type": "text",
+          "content": "{{companyName}}",
+          "x": 140,
+          "y": 210,
+          "width": 1640,
+          "height": 100,
+          "fontSize": 70,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "service",
+          "type": "text",
+          "content": "{{serviceTitle}}",
+          "x": 190,
+          "y": 365,
+          "width": 1540,
+          "height": 105,
+          "fontSize": 62,
+          "fontWeight": "bold",
+          "color": "#bfdbfe",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "proof",
+      "name": "Proof Image",
+      "start": 4,
+      "duration": 5,
+      "background": {
+        "type": "color",
+        "value": "#f8fafc"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.3
+      },
+      "layers": [
+        {
+          "id": "team",
+          "type": "image",
+          "src": "{{teamImage}}",
+          "x": 110,
+          "y": 130,
+          "width": 810,
+          "height": 820,
+          "fit": "cover",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.45
+          },
+          "borderRadius": 34
+        },
+        {
+          "id": "value",
+          "type": "text",
+          "content": "{{valueProp}}",
+          "x": 1010,
+          "y": 230,
+          "width": 780,
+          "height": 300,
+          "fontSize": 48,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "right",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "accent",
+          "type": "shape",
+          "shape": "rect",
+          "x": 1010,
+          "y": 595,
+          "width": 500,
+          "height": 12,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 6,
+          "safeMargin": true
+        }
+      ]
+    },
+    {
+      "id": "metric",
+      "name": "Metric Reveal",
+      "start": 9,
+      "duration": 4,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#0f172a"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "metric",
+          "type": "text",
+          "content": "{{metric}}",
+          "x": 120,
+          "y": 240,
+          "width": 1680,
+          "height": 210,
+          "fontSize": 160,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.45
+          }
+        },
+        {
+          "id": "metric-label",
+          "type": "text",
+          "content": "{{metricLabel}}",
+          "x": 240,
+          "y": 520,
+          "width": 1440,
+          "height": 120,
+          "fontSize": 56,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "name": "Business CTA",
+      "start": 13,
+      "duration": 5,
+      "background": {
+        "type": "color",
+        "value": "#020617"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "cta-title",
+          "type": "text",
+          "content": "جاهز نبدأ؟",
+          "x": 140,
+          "y": 250,
+          "width": 1640,
+          "height": 120,
+          "fontSize": 78,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "cta-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 560,
+          "y": 520,
+          "width": 800,
+          "height": 130,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 65,
+          "safeMargin": true
+        },
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 560,
+          "y": 552,
+          "width": 800,
+          "height": 72,
+          "fontSize": 50,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    }
+  ]
+}

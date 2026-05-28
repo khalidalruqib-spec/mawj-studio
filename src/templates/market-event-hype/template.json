@@ -1,0 +1,345 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "pop",
+    "bounce",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 0.35
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "market-event-hype",
+  "name": "Market Event Hype 9:16",
+  "category": "Event Announcements",
+  "aspectRatio": "9:16",
+  "duration": 15,
+  "description": "Original event countdown promo with poster hero, date pulse, speaker/artist card, and registration CTA.",
+  "requiredInputs": [
+    {
+      "key": "eventName",
+      "label": "اسم الفعالية",
+      "type": "text",
+      "default": "ليلة الإبداع"
+    },
+    {
+      "key": "eventDate",
+      "label": "التاريخ",
+      "type": "text",
+      "default": "الجمعة 12 يوليو"
+    },
+    {
+      "key": "venue",
+      "label": "المكان",
+      "type": "text",
+      "default": "واجهة الرياض"
+    },
+    {
+      "key": "posterImage",
+      "label": "صورة الفعالية",
+      "type": "image"
+    },
+    {
+      "key": "guestName",
+      "label": "الضيف أو المتحدث",
+      "type": "text",
+      "default": "ضيف خاص"
+    },
+    {
+      "key": "cta",
+      "label": "الدعوة",
+      "type": "text",
+      "default": "احجز مقعدك الآن"
+    },
+    {
+      "key": "brandColor",
+      "label": "لون الهوية",
+      "type": "color",
+      "default": "#06b6d4"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "poster",
+      "name": "Poster Hook",
+      "start": 0,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#020617"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "poster-img",
+          "type": "image",
+          "src": "{{posterImage}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "safeMargin": false,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.45
+          }
+        },
+        {
+          "id": "poster-overlay",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 260,
+          "width": 940,
+          "height": 260,
+          "color": "#000000",
+          "opacity": 0.5,
+          "borderRadius": 34,
+          "safeMargin": true
+        },
+        {
+          "id": "event",
+          "type": "text",
+          "content": "{{eventName}}",
+          "x": 95,
+          "y": 310,
+          "width": 890,
+          "height": 110,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "venue",
+          "type": "text",
+          "content": "{{venue}}",
+          "x": 110,
+          "y": 430,
+          "width": 860,
+          "height": 60,
+          "fontSize": 36,
+          "fontWeight": "bold",
+          "color": "#cffafe",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "date",
+      "name": "Date Pulse",
+      "start": 4,
+      "duration": 4,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#164e63"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.2
+      },
+      "layers": [
+        {
+          "id": "date-label",
+          "type": "text",
+          "content": "التاريخ",
+          "x": 70,
+          "y": 395,
+          "width": 940,
+          "height": 80,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "date",
+          "type": "text",
+          "content": "{{eventDate}}",
+          "x": 70,
+          "y": 510,
+          "width": 940,
+          "height": 165,
+          "fontSize": 86,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "bounce",
+            "duration": 0.45
+          }
+        }
+      ]
+    },
+    {
+      "id": "guest",
+      "name": "Guest Card",
+      "start": 8,
+      "duration": 3.5,
+      "background": {
+        "type": "color",
+        "value": "#ffffff"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "guest-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 100,
+          "y": 420,
+          "width": 880,
+          "height": 360,
+          "color": "#111827",
+          "opacity": 1,
+          "borderRadius": 44,
+          "safeMargin": true
+        },
+        {
+          "id": "with",
+          "type": "text",
+          "content": "مع",
+          "x": 110,
+          "y": 485,
+          "width": 860,
+          "height": 60,
+          "fontSize": 36,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "guest",
+          "type": "text",
+          "content": "{{guestName}}",
+          "x": 120,
+          "y": 570,
+          "width": 840,
+          "height": 130,
+          "fontSize": 74,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "name": "Registration CTA",
+      "start": 11.5,
+      "duration": 3.5,
+      "background": {
+        "type": "gradient",
+        "from": "#020617",
+        "to": "{{brandColor}}"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.22
+      },
+      "layers": [
+        {
+          "id": "cta-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 130,
+          "y": 720,
+          "width": 820,
+          "height": 132,
+          "color": "#ffffff",
+          "opacity": 1,
+          "borderRadius": 66,
+          "safeMargin": true
+        },
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 130,
+          "y": 755,
+          "width": 820,
+          "height": 72,
+          "fontSize": 48,
+          "fontWeight": "bold",
+          "color": "#0f172a",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    }
+  ]
+}

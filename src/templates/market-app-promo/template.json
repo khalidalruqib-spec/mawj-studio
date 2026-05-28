@@ -1,0 +1,308 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "pop",
+    "bounce",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 0.35
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "market-app-promo",
+  "name": "Market App Promo 9:16",
+  "category": "Product Ads",
+  "aspectRatio": "9:16",
+  "duration": 16,
+  "description": "Original SaaS/app promo with screen mockup, feature bullets, benefit metric, and install CTA.",
+  "requiredInputs": [
+    {
+      "key": "appName",
+      "label": "اسم التطبيق",
+      "type": "text",
+      "default": "Mawj Studio"
+    },
+    {
+      "key": "headline",
+      "label": "العنوان",
+      "type": "text",
+      "default": "حوّل صورك إلى فيديو إعلان"
+    },
+    {
+      "key": "screenImage",
+      "label": "صورة الشاشة",
+      "type": "image"
+    },
+    {
+      "key": "featureOne",
+      "label": "الميزة الأولى",
+      "type": "text",
+      "default": "قوالب جاهزة"
+    },
+    {
+      "key": "featureTwo",
+      "label": "الميزة الثانية",
+      "type": "text",
+      "default": "كابشن تلقائي"
+    },
+    {
+      "key": "cta",
+      "label": "الدعوة",
+      "type": "text",
+      "default": "جرّبه الآن"
+    },
+    {
+      "key": "brandColor",
+      "label": "لون الهوية",
+      "type": "color",
+      "default": "#8ef7c2"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "intro",
+      "name": "App Hook",
+      "start": 0,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#050608"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "app",
+          "type": "text",
+          "content": "{{appName}}",
+          "x": 70,
+          "y": 230,
+          "width": 940,
+          "height": 90,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "headline",
+          "type": "text",
+          "content": "{{headline}}",
+          "x": 80,
+          "y": 390,
+          "width": 920,
+          "height": 210,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "screen",
+      "name": "Screen Mockup",
+      "start": 4,
+      "duration": 5,
+      "background": {
+        "type": "gradient",
+        "from": "#111827",
+        "to": "#020617"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "phone-frame",
+          "type": "shape",
+          "shape": "rect",
+          "x": 255,
+          "y": 230,
+          "width": 570,
+          "height": 980,
+          "color": "#000000",
+          "opacity": 1,
+          "borderRadius": 60,
+          "safeMargin": true
+        },
+        {
+          "id": "screen",
+          "type": "image",
+          "src": "{{screenImage}}",
+          "x": 285,
+          "y": 270,
+          "width": 510,
+          "height": 900,
+          "fit": "cover",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.45
+          },
+          "borderRadius": 42
+        }
+      ]
+    },
+    {
+      "id": "features",
+      "name": "Feature Bullets",
+      "start": 9,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#f8fafc"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "bullet-1",
+          "type": "shape",
+          "shape": "rect",
+          "x": 110,
+          "y": 460,
+          "width": 860,
+          "height": 120,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 60,
+          "safeMargin": true
+        },
+        {
+          "id": "feature-1",
+          "type": "text",
+          "content": "{{featureOne}}",
+          "x": 140,
+          "y": 490,
+          "width": 800,
+          "height": 62,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "bullet-2",
+          "type": "shape",
+          "shape": "rect",
+          "x": 110,
+          "y": 640,
+          "width": 860,
+          "height": 120,
+          "color": "#111827",
+          "opacity": 1,
+          "borderRadius": 60,
+          "safeMargin": true
+        },
+        {
+          "id": "feature-2",
+          "type": "text",
+          "content": "{{featureTwo}}",
+          "x": 140,
+          "y": 670,
+          "width": 800,
+          "height": 62,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "name": "Install CTA",
+      "start": 13,
+      "duration": 3,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#0f766e"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.2
+      },
+      "layers": [
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 85,
+          "y": 585,
+          "width": 910,
+          "height": 130,
+          "fontSize": 84,
+          "fontWeight": "bold",
+          "color": "#06110f",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4
+          }
+        }
+      ]
+    }
+  ]
+}
