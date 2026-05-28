@@ -1280,6 +1280,7 @@ export function ProfessionalVideoStudio() {
         style: activeStyle,
         brandName,
         plan: renderPlan,
+        timelineTracks,
         onProgress: setRenderProgress,
       });
       setRenderResult(result);
@@ -1326,6 +1327,7 @@ export function ProfessionalVideoStudio() {
         style: activeStyle,
         brandName,
         plan: clipPlan,
+        timelineTracks,
         onProgress: setRenderProgress,
       });
       setRenderResult(result);
@@ -3270,21 +3272,38 @@ function syncPrimaryVideoDuration(tracks: TimelineTrack[], sourceName: string, d
 function ensureCaptionLayer(tracks: TimelineTrack[], captions: CaptionLine[], durationSeconds: number): TimelineTrack[] {
   const captionDuration =
     captions.length > 0 ? Math.max(...captions.map((caption) => caption.end)) : durationSeconds;
+  const captionLayers = captions.length
+    ? captions.map((caption, index): TimelineLayer => ({
+        id: `caption-${caption.id}`,
+        type: "caption",
+        name: `Caption ${index + 1}`,
+        start: Math.max(0, caption.start),
+        duration: Math.max(0.4, caption.end - caption.start),
+        color: "#ffffff",
+        textColor: "#ffffff",
+        backgroundColor: "#000000",
+        content: caption.text,
+        fontSize: 58,
+        fontWeight: "900",
+        borderRadius: 22,
+        opacity: 1,
+      }))
+    : [
+        {
+          id: "caption-main",
+          type: "caption" as const,
+          name: "Arabic captions",
+          start: 0,
+          duration: Math.max(1, captionDuration),
+          color: "#fb923c",
+        },
+      ];
 
   return tracks.map((track) =>
     track.kind === "caption"
       ? {
           ...track,
-          layers: [
-            {
-              id: "caption-main",
-              type: "caption" as const,
-              name: `${captions.length} auto captions`,
-              start: 0,
-              duration: Math.max(1, captionDuration),
-              color: "#fb923c",
-            },
-          ],
+          layers: captionLayers,
         }
       : track,
   );
