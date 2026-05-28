@@ -2425,6 +2425,7 @@ export function ProfessionalVideoStudio() {
                     onUploadClick={() => inputRef.current?.click()}
                     onCreatorCommand={runAssistantCommand}
                     onClearTemplateProject={clearActiveTemplateProject}
+                    timelineTracks={timelineTracks}
                     selectedLayerId={selectedLayerId}
                     onSelectLayer={selectTimelineLayer}
                     onUpdateLayerGeometry={updateTimelineLayerGeometry}
