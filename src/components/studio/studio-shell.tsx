@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Captions,
   Cloud,
+  Copy,
   Crop,
   Download,
   FolderOpen,
@@ -139,6 +140,19 @@ export function ProfessionalVideoStudio() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const restoredMediaOnceRef = useRef(false);
+  const keyboardActionsRef = useRef<{
+    canDelete: boolean;
+    deleteSelectedLayer: () => void;
+    duplicateSelectedLayer: () => void;
+    redoTimeline: () => void;
+    undoTimeline: () => void;
+  }>({
+    canDelete: false,
+    deleteSelectedLayer: () => {},
+    duplicateSelectedLayer: () => {},
+    redoTimeline: () => {},
+    undoTimeline: () => {},
+  });
   const [activePanel, setActivePanel] = useState<PanelId>("editor");
   const [studioFile, setStudioFile] = useState<StudioFile | null>(null);
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
@@ -1318,6 +1332,29 @@ export function ProfessionalVideoStudio() {
     );
   }
 
+  function duplicateSelectedLayer() {
+    if (!selectedLayer) {
+      setProjectStatus("Select a timeline layer before duplicating.");
+      return;
+    }
+
+    const duplicateLayer = createDuplicateTimelineLayer(selectedLayer);
+    const nextTracks = timelineTracks.map((track) => ({
+      ...track,
+      layers: track.layers.flatMap((layer) =>
+        layer.id === selectedLayer.id ? [layer, duplicateLayer] : [layer],
+      ),
+    }));
+
+    setTemplateProject((project) =>
+      project ? duplicateTemplateProjectLayer(project, selectedLayer.id, duplicateLayer) : project,
+    );
+    commitTimeline(nextTracks);
+    setSelectedLayerId(duplicateLayer.id);
+    selectEngineLayer(duplicateLayer.id);
+    setProjectStatus(`${selectedLayer.name} duplicated`);
+  }
+
   function deleteSelectedLayer() {
     if (!selectedLayer) {
       if (templateProject) {
@@ -1409,6 +1446,55 @@ export function ProfessionalVideoStudio() {
       ),
     );
   }
+
+  keyboardActionsRef.current = {
+    canDelete: Boolean(selectedLayer || templateProject),
+    deleteSelectedLayer,
+    duplicateSelectedLayer,
+    redoTimeline,
+    undoTimeline,
+  };
+
+  useEffect(() => {
+    function handleKeyboardShortcuts(event: KeyboardEvent) {
+      if (isEditorTypingTarget(event.target)) return;
+
+      const key = event.key.toLowerCase();
+      const usesModifier = event.metaKey || event.ctrlKey;
+      const actions = keyboardActionsRef.current;
+
+      if (usesModifier && key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) {
+          actions.redoTimeline();
+        } else {
+          actions.undoTimeline();
+        }
+        return;
+      }
+
+      if (usesModifier && key === "y") {
+        event.preventDefault();
+        actions.redoTimeline();
+        return;
+      }
+
+      if (usesModifier && key === "d") {
+        event.preventDefault();
+        actions.duplicateSelectedLayer();
+        return;
+      }
+
+      if (event.key === "Delete" || event.key === "Backspace") {
+        if (!actions.canDelete) return;
+        event.preventDefault();
+        actions.deleteSelectedLayer();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyboardShortcuts);
+    return () => window.removeEventListener("keydown", handleKeyboardShortcuts);
+  }, []);
 
   function markTranscriptDeleted(segmentId: string) {
     const segment = transcript.find((item) => item.id === segmentId);
@@ -2241,6 +2327,7 @@ export function ProfessionalVideoStudio() {
                     <ToolbarButton label="Split" icon={Crop} onClick={splitSelectedLayer} />
                     <ToolbarButton label="Merge" icon={Layers3} onClick={mergeVideoLayers} />
                     <ToolbarButton label="Text" icon={Type} onClick={addTextLayer} />
+                    <ToolbarButton label="Duplicate" icon={Copy} onClick={duplicateSelectedLayer} disabled={!selectedLayer} />
                     <ToolbarButton label="Update" icon={Save} onClick={saveProjectSnapshot} />
                     <ToolbarButton
                       label={selectedLayer ? "Delete" : "Clear"}
@@ -3957,6 +4044,72 @@ function toTemplateTimelinePatch(patch: Partial<TimelineLayer>): Partial<Templat
   return Object.fromEntries(
     Object.entries(nextPatch).filter(([, value]) => value !== undefined),
   ) as Partial<TemplateTimelineTrack["layers"][number]>;
+}
+
+function createDuplicateTimelineLayer(layer: TimelineLayer): TimelineLayer {
+  return {
+    ...layer,
+    id: createLayerDuplicateId(layer.id),
+    name: `${layer.name} copy`,
+    start: roundTimelineSeconds(layer.start + 0.5),
+    x: layer.x === undefined ? layer.x : layer.x + 24,
+    y: layer.y === undefined ? layer.y : layer.y + 24,
+  };
+}
+
+function duplicateTemplateProjectLayer(
+  project: TemplateProject,
+  sourceLayerId: string,
+  duplicateLayer: TimelineLayer,
+): TemplateProject {
+  let didDuplicate = false;
+  const nextTimeline = project.timeline.map((track) => ({
+    ...track,
+    layers: track.layers.flatMap((layer) => {
+      if (layer.id !== sourceLayerId) return [layer];
+
+      didDuplicate = true;
+      const sceneStart = layer.absoluteStart - (layer.start ?? 0);
+      const duplicateTemplateLayer: TemplateTimelineTrack["layers"][number] = {
+        ...layer,
+        ...toTemplateTimelinePatch(duplicateLayer),
+        id: duplicateLayer.id,
+        name: duplicateLayer.name,
+        absoluteStart: duplicateLayer.start,
+        start: roundTimelineSeconds(Math.max(0, duplicateLayer.start - sceneStart)),
+        duration: duplicateLayer.duration,
+      };
+
+      return [layer, duplicateTemplateLayer];
+    }),
+  }));
+
+  if (!didDuplicate) return project;
+
+  return {
+    ...project,
+    timeline: nextTimeline,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function createLayerDuplicateId(sourceId: string) {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `${sourceId}-copy-${crypto.randomUUID()}`;
+  }
+
+  return `${sourceId}-copy-${Date.now()}`;
+}
+
+function roundTimelineSeconds(value: number) {
+  return Math.round(value * 10) / 10;
+}
+
+function isEditorTypingTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+
+  const tagName = target.tagName.toLowerCase();
+  return target.isContentEditable || tagName === "input" || tagName === "textarea" || tagName === "select";
 }
 
 function templateProjectToCaptions(project: TemplateProject): CaptionLine[] {
