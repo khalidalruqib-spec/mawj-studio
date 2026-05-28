@@ -150,6 +150,19 @@ export function LayerInspector({
           </label>
         </Field>
       ) : null}
+      {layer.type === "image" ? (
+        <Field label="Fit">
+          <select
+            value={layer.fit ?? "contain"}
+            onChange={(event) => onChange({ fit: event.target.value as TimelineLayer["fit"] })}
+            className="control-select"
+          >
+            <option value="contain">Contain - keep full image</option>
+            <option value="cover">Cover - fill and crop</option>
+            <option value="fill">Fill - stretch to box</option>
+          </select>
+        </Field>
+      ) : null}
       <div className="grid grid-cols-2 gap-2">
         <NumberField label="Start" value={layer.start} onChange={(start) => onChange({ start })} />
         <NumberField label="Duration" value={layer.duration} onChange={(duration) => onChange({ duration })} />
