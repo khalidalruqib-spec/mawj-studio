@@ -311,6 +311,7 @@ export function VideoOverlayPreview({
       onPointerCancel={handlePointerUp}
       className="absolute inset-0 z-10"
     >
+      {selectedLayerId ? <SafeMarginGuides geometry={geometry} /> : null}
       {layers.map((layer) => {
         const layerGeometry =
           dragDraft?.layerId === layer.id
@@ -420,6 +421,35 @@ export function TimelinePreviewLayer({
   );
 }
 
+function SafeMarginGuides({ geometry }: { geometry: PreviewCanvasGeometry }) {
+  const margins = getPreviewSafeMargins(geometry);
+
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute border border-dashed border-[var(--brand)]/45 shadow-[0_0_0_9999px_rgba(0,0,0,0.08)]"
+      style={{
+        left: `${(margins.left / geometry.width) * 100}%`,
+        top: `${(margins.top / geometry.height) * 100}%`,
+        right: `${(margins.right / geometry.width) * 100}%`,
+        bottom: `${(margins.bottom / geometry.height) * 100}%`,
+      }}
+    />
+  );
+}
+
+function getPreviewSafeMargins({ width, height }: PreviewCanvasGeometry) {
+  if (height > width * 1.4) {
+    return { top: 160, bottom: 260, left: 70, right: 70 };
+  }
+
+  if (Math.abs(width - height) < 10) {
+    return { top: 92, bottom: 120, left: 76, right: 76 };
+  }
+
+  return { top: 72, bottom: 72, left: 96, right: 96 };
+}
+
 export function TemplateProjectPreview({
   project,
   selectedLayerId,
@@ -521,6 +551,7 @@ export function TemplateProjectPreview({
       }`}
     >
       <div className="absolute inset-0 bg-[linear-gradient(145deg,#111827,#050608)]" />
+      {selectedLayerId ? <SafeMarginGuides geometry={project} /> : null}
       {activeLayers.map((layer) => {
         const draftLayer =
           dragDraft?.layerId === layer.id
