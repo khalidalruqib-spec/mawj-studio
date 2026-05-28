@@ -572,7 +572,7 @@ function drawTimelineTextLayer(
   const blockY = y + (height - blockHeight) / 2;
   const background =
     layer.type === "caption"
-      ? "rgba(3, 5, 8, 0.68)"
+      ? normalizeCanvasColor(layer.backgroundColor, "rgba(3, 5, 8, 0.68)")
       : layer.backgroundColor
         ? normalizeCanvasColor(layer.backgroundColor, "transparent")
         : "transparent";
