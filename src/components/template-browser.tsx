@@ -103,9 +103,10 @@ const FEATURED_IDS = new Set([
   "market-podcast-launch",
 ]);
 
-type TemplatePackFilter = "all" | "market" | "featured" | "classic";
+type TemplatePackFilter = "all" | "market" | "featured" | "favorites" | "classic";
 type TemplateSortOption = "recommended" | "newest" | "duration-asc" | "duration-desc" | "editable-desc";
 type AspectRatioFilter = "All" | VideoTemplate["aspectRatio"];
+const FAVORITE_TEMPLATES_STORAGE_KEY = "mawj-favorite-template-ids";
 
 /* Scene palette — rotates through per-scene */
 const SCENE_PALETTE = [
@@ -155,6 +156,7 @@ function templatePackLabel(value: TemplatePackFilter) {
     all: "كل الحزم",
     market: "Market Pack",
     featured: "مميز",
+    favorites: "المفضلة",
     classic: "كلاسيك",
   };
   return labels[value];
@@ -180,6 +182,23 @@ function sortTemplates(templates: VideoTemplate[], sortBy: TemplateSortOption) {
   });
 }
 
+function getStoredFavoriteTemplateIds() {
+  if (typeof window === "undefined") return new Set<string>();
+
+  try {
+    const raw = window.localStorage.getItem(FAVORITE_TEMPLATES_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string") : []);
+  } catch {
+    return new Set<string>();
+  }
+}
+
+function storeFavoriteTemplateIds(ids: Set<string>) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(FAVORITE_TEMPLATES_STORAGE_KEY, JSON.stringify(Array.from(ids)));
+}
+
 /* ─────────────────────────────────────────────────────────────────────
    Main component
 ───────────────────────────────────────────────────────────────────── */
@@ -191,6 +210,7 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
   const [aspectRatio, setAspectRatio] = useState<AspectRatioFilter>("All");
   const [templatePack, setTemplatePack] = useState<TemplatePackFilter>("all");
   const [sortBy, setSortBy] = useState<TemplateSortOption>("recommended");
+  const [favoriteTemplateIds, setFavoriteTemplateIds] = useState<Set<string>>(getStoredFavoriteTemplateIds);
   const [previewTemplate, setPreviewTemplate] = useState<VideoTemplate | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<VideoTemplate | null>(null);
   const [inputValues, setInputValues] = useState<TemplateUserInputs>({});
@@ -205,12 +225,13 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
         templatePack === "all" ||
         (templatePack === "market" && isMarketTemplate(t)) ||
         (templatePack === "featured" && FEATURED_IDS.has(t.id)) ||
+        (templatePack === "favorites" && favoriteTemplateIds.has(t.id)) ||
         (templatePack === "classic" && !isMarketTemplate(t));
       return matchCat && matchQ && matchAspect && matchPack;
     });
 
     return sortTemplates(matches, sortBy);
-  }, [aspectRatio, category, query, sortBy, templatePack, templates]);
+  }, [aspectRatio, category, favoriteTemplateIds, query, sortBy, templatePack, templates]);
 
   const categoryOptions = useMemo(() => {
     const counts = new Map<string, number>();
@@ -241,9 +262,10 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
       { value: "all" as const, count: templates.length },
       { value: "market" as const, count: templates.filter(isMarketTemplate).length },
       { value: "featured" as const, count: templates.filter((template) => FEATURED_IDS.has(template.id)).length },
+      { value: "favorites" as const, count: favoriteTemplateIds.size },
       { value: "classic" as const, count: templates.filter((template) => !isMarketTemplate(template)).length },
     ],
-    [templates],
+    [favoriteTemplateIds.size, templates],
   );
 
   const hasActiveFilters = query || category !== "All" || aspectRatio !== "All" || templatePack !== "all" || sortBy !== "recommended";
@@ -279,6 +301,19 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
   function updateFileInput(input: VideoTemplateInput, file?: File) {
     if (!file) return;
     updateInput(input.key, URL.createObjectURL(file));
+  }
+
+  function toggleFavoriteTemplate(templateId: string) {
+    setFavoriteTemplateIds((current) => {
+      const next = new Set(current);
+      if (next.has(templateId)) {
+        next.delete(templateId);
+      } else {
+        next.add(templateId);
+      }
+      storeFavoriteTemplateIds(next);
+      return next;
+    });
   }
 
   function useTemplate() {
@@ -500,6 +535,8 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
             <TemplateCard
               key={template.id}
               template={template}
+              isFavorite={favoriteTemplateIds.has(template.id)}
+              onToggleFavorite={() => toggleFavoriteTemplate(template.id)}
               onPreview={() => setPreviewTemplate(template)}
               onUse={() => openTemplateForm(template)}
             />
@@ -543,10 +580,14 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
 
 function TemplateCard({
   template,
+  isFavorite,
+  onToggleFavorite,
   onPreview,
   onUse,
 }: {
   template: VideoTemplate;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
   onPreview: () => void;
   onUse: () => void;
 }) {
@@ -579,6 +620,19 @@ function TemplateCard({
             {meta.label}
           </span>
           <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={onToggleFavorite}
+              aria-pressed={isFavorite}
+              aria-label={isFavorite ? "إزالة القالب من المفضلة" : "إضافة القالب إلى المفضلة"}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg border backdrop-blur-sm transition ${
+                isFavorite
+                  ? "border-[#d4af37]/70 bg-[#d4af37] text-black"
+                  : "border-white/15 bg-black/55 text-white hover:bg-black/80"
+              }`}
+            >
+              <Star className={`h-3.5 w-3.5 ${isFavorite ? "fill-current" : ""}`} aria-hidden="true" />
+            </button>
             {isMarket && (
               <span className="flex items-center gap-1 rounded-lg bg-[var(--brand)]/90 px-2 py-1 text-[10px] font-black text-black backdrop-blur-sm">
                 <Tags className="h-3 w-3" aria-hidden="true" />
