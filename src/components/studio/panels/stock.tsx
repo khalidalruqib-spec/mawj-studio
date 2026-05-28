@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FolderOpen, ImageIcon, Loader2, Plus, Search } from "lucide-react";
 import type { MediaAsset } from "../foundation";
 import { PanelHeading } from "../ui";
@@ -16,7 +16,7 @@ type StockItem = {
   height: number;
   duration?: number;
   creator: string;
-  source: "pexels" | "pixabay" | "demo";
+  source: StockResultSource;
 };
 
 type StockApiResponse = {
@@ -29,14 +29,18 @@ type StockApiResponse = {
     width: number;
     height: number;
     duration?: number;
-    source: "pexels" | "pixabay" | "demo";
+    source: StockResultSource;
     alt?: string;
     photographer?: string;
     videographer?: string;
   }>;
   nextPage: boolean;
-  source: "pexels" | "pixabay" | "demo";
+  source: StockResultSource;
+  message?: string;
 };
+
+type StockProvider = "all" | "pexels" | "unsplash" | "pixabay" | "mixkit";
+type StockResultSource = Exclude<StockProvider, "all"> | "demo";
 
 const STOCK_CATS = [
   { ar: "أشخاص", en: "people" },
@@ -49,6 +53,14 @@ const STOCK_CATS = [
   { ar: "سفر", en: "travel" },
 ] as const;
 
+const STOCK_SOURCES: Array<{ id: StockProvider; label: string; note?: string }> = [
+  { id: "all", label: "الكل" },
+  { id: "pexels", label: "Pexels" },
+  { id: "unsplash", label: "Unsplash", note: "صور" },
+  { id: "pixabay", label: "Pixabay" },
+  { id: "mixkit", label: "Mixkit", note: "يدوي" },
+];
+
 export function StockMediaPanel({
   onAddToTimeline,
   onAddToMediaBin,
@@ -58,22 +70,20 @@ export function StockMediaPanel({
 }) {
   const [query, setQuery] = useState("");
   const [mediaType, setMediaType] = useState<"photo" | "video">("photo");
+  const [stockSource, setStockSource] = useState<StockProvider>("all");
   const [items, setItems] = useState<StockItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [sourceLabel, setSourceLabel] = useState<"pexels" | "pixabay" | "demo" | "">("");
+  const [sourceLabel, setSourceLabel] = useState<StockResultSource | "">("");
+  const [sourceMessage, setSourceMessage] = useState("");
   const [addedSet, setAddedSet] = useState<Set<string>>(new Set());
   const [activeCategory, setActiveCategory] = useState("");
 
-  useEffect(() => {
-    void fetchStock("", mediaType, 1, false);
-  }, [mediaType]);
-
-  async function fetchStock(q: string, type: "photo" | "video", p: number, append: boolean) {
+  const fetchStock = useCallback(async (q: string, type: "photo" | "video", p: number, append: boolean, source = stockSource) => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams({ q, type, page: String(p), per_page: "18" });
+      const params = new URLSearchParams({ q, type, source, page: String(p), per_page: "18" });
       const res = await fetch(`/api/stock?${params}`);
       if (!res.ok) throw new Error("stock api failed");
       const data = (await res.json()) as StockApiResponse;
@@ -93,13 +103,21 @@ export function StockMediaPanel({
       setItems((prev) => (append ? [...prev, ...mapped] : mapped));
       setHasMore(data.nextPage);
       setSourceLabel(data.source);
+      setSourceMessage(data.message ?? "");
       setPage(p);
     } catch {
       // silently keep existing results on error
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [stockSource]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchStock("", mediaType, 1, false, stockSource);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchStock, mediaType, stockSource]);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -154,11 +172,7 @@ export function StockMediaPanel({
               sourceLabel === "demo" ? "badge-muted" : "badge-brand"
             }`}
           >
-            {sourceLabel === "demo"
-              ? "Demo"
-              : sourceLabel === "pexels"
-                ? "Pexels"
-                : "Pixabay"}
+            {sourceLabelName(sourceLabel)}
           </span>
         )}
       </div>
@@ -179,6 +193,29 @@ export function StockMediaPanel({
             {t === "photo" ? "📷 صور" : "🎬 فيديو"}
           </button>
         ))}
+      </div>
+
+      {/* Source selector */}
+      <div className="grid grid-cols-5 gap-1 rounded-lg bg-[var(--panel-soft)] p-1">
+        {STOCK_SOURCES.map((source) => {
+          const active = stockSource === source.id;
+          return (
+            <button
+              key={source.id}
+              type="button"
+              onClick={() => setStockSource(source.id)}
+              className={`rounded-md px-1 py-1 text-[10px] font-black transition ${
+                active
+                  ? "bg-[var(--brand)] text-black"
+                  : "text-[var(--muted)] hover:text-[var(--foreground)]"
+              }`}
+              title={source.note}
+            >
+              {source.label}
+              {source.note ? <span className={active ? "text-black/60" : "text-white/35"}> · {source.note}</span> : null}
+            </button>
+          );
+        })}
       </div>
 
       {/* Search bar */}
@@ -228,14 +265,18 @@ export function StockMediaPanel({
           <div className="empty-state py-8">
             <ImageIcon className="h-10 w-10 opacity-30" aria-hidden="true" />
             <p className="empty-state-text mt-2">
-              {sourceLabel === "demo" && mediaType === "video"
-                ? "فيديوهات الستوك تحتاج مفتاح Pexels أو Pixabay"
-                : "ابحث عن صور أو فيديوهات"}
+              {sourceMessage
+                ? sourceMessage
+                : sourceLabel === "unsplash" && mediaType === "video"
+                  ? "Unsplash يدعم الصور فقط"
+                  : "ابحث عن صور أو فيديوهات"}
             </p>
             <p className="empty-state-sub">
-              {sourceLabel === "demo" && mediaType === "video"
-                ? "أضف PEXELS_API_KEY لتفعيل البحث الحي عن الفيديو"
-                : "ملايين الأصول المجانية"}
+              {sourceLabel === "mixkit"
+                ? "حمّل الملف من Mixkit ثم ارفعه داخل الوسائط"
+                : sourceLabel === "demo"
+                  ? "يظهر demo مجاني عند عدم وجود مفاتيح API"
+                  : "ملايين الأصول المجانية"}
             </p>
           </div>
         ) : (
@@ -340,23 +381,34 @@ export function StockMediaPanel({
       </div>
 
       {/* Attribution footer */}
-      {sourceLabel && (sourceLabel !== "demo" || mediaType === "photo") && (
+      {sourceLabel && sourceLabel !== "mixkit" && (
         <p className="text-center text-[9px] text-[var(--muted)]">
-          {sourceLabel === "demo" ? "Demo photos from " : "Photos & videos by "}
+          {sourceLabel === "demo" ? "Demo media from " : "Photos & videos by "}
           <a
-            href={
-              sourceLabel === "pexels" || sourceLabel === "demo"
-                ? "https://www.pexels.com"
-                : "https://pixabay.com"
-            }
+            href={sourceAttributionUrl(sourceLabel)}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[var(--brand)] hover:underline"
           >
-            {sourceLabel === "pixabay" ? "Pixabay" : "Pexels"}
+            {sourceLabelName(sourceLabel)}
           </a>
         </p>
       )}
     </section>
   );
+}
+
+function sourceLabelName(source: StockResultSource) {
+  if (source === "demo") return "Demo";
+  if (source === "pexels") return "Pexels";
+  if (source === "unsplash") return "Unsplash";
+  if (source === "pixabay") return "Pixabay";
+  return "Mixkit";
+}
+
+function sourceAttributionUrl(source: StockResultSource) {
+  if (source === "unsplash") return "https://unsplash.com";
+  if (source === "pixabay") return "https://pixabay.com";
+  if (source === "mixkit") return "https://mixkit.co";
+  return "https://www.pexels.com";
 }

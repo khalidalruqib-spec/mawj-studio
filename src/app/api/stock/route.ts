@@ -1,21 +1,25 @@
 import { NextResponse } from "next/server";
 
 /* ─────────────────────────────────────────────────────────────────────
-   Stock Media API — Pexels (primary) + Pixabay (fallback)
+   Stock Media API — Pexels + Unsplash + Pixabay
 
    Add to .env.local:
      PEXELS_API_KEY=your_key_here
+     UNSPLASH_ACCESS_KEY=your_key_here
      PIXABAY_API_KEY=your_key_here  (optional)
 
    Get a free Pexels key at: https://www.pexels.com/api/
+   Get a free Unsplash key at: https://unsplash.com/developers
    Get a free Pixabay key at: https://pixabay.com/api/docs/
 ─────────────────────────────────────────────────────────────────────── */
 
 export type StockMediaType = "photo" | "video";
+export type StockProvider = "all" | "pexels" | "unsplash" | "pixabay" | "mixkit";
+export type StockResultSource = Exclude<StockProvider, "all"> | "demo";
 
 export type StockPhoto = {
   id: string;
-  source: "pexels" | "pixabay";
+  source: StockResultSource;
   type: "photo";
   width: number;
   height: number;
@@ -31,7 +35,7 @@ export type StockPhoto = {
 
 export type StockVideo = {
   id: string;
-  source: "pexels" | "pixabay";
+  source: StockResultSource;
   type: "video";
   width: number;
   height: number;
@@ -50,7 +54,8 @@ export type StockSearchResponse = {
   page: number;
   perPage: number;
   nextPage: boolean;
-  source: "pexels" | "pixabay" | "demo";
+  source: StockResultSource;
+  message?: string;
 };
 
 /* ── Route handler ──────────────────────────────────────────────────── */
@@ -59,12 +64,48 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query   = (searchParams.get("q") ?? "").trim();
   const type    = searchParams.get("type") === "video" ? "video" : "photo";
+  const source  = parseStockProvider(searchParams.get("source"));
   const page    = getPositiveInteger(searchParams.get("page"), 1);
   const perPage = Math.min(40, Math.max(1, getPositiveInteger(searchParams.get("per_page"), 20)));
 
-  // Try Pexels first
+  if (source === "mixkit") {
+    return stockJson({
+      results: [],
+      totalResults: 0,
+      page,
+      perPage,
+      nextPage: false,
+      source: "mixkit",
+      message: "Mixkit does not provide an official public search API for direct in-app search. Download from Mixkit and upload the file to Mawj.",
+    });
+  }
+
+  if (source === "unsplash") {
+    if (type === "video") {
+      return stockJson({
+        results: [],
+        totalResults: 0,
+        page,
+        perPage,
+        nextPage: false,
+        source: "unsplash",
+        message: "Unsplash supports photos only. Switch to Photos or choose Pexels/Pixabay for video.",
+      });
+    }
+
+    const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
+    if (unsplashKey) {
+      try {
+        return stockJson(await searchUnsplash({ query, page, perPage, apiKey: unsplashKey }));
+      } catch (err) {
+        console.warn("[stock] Unsplash error:", err);
+      }
+    }
+    return stockJson(buildDemoResults(query, type, page, perPage));
+  }
+
   const pexelsKey = process.env.PEXELS_API_KEY;
-  if (pexelsKey) {
+  if ((source === "all" || source === "pexels") && pexelsKey) {
     try {
       const data = await searchPexels({ query, type, page, perPage, apiKey: pexelsKey });
       return stockJson(data);
@@ -73,9 +114,17 @@ export async function GET(request: Request) {
     }
   }
 
-  // Fallback to Pixabay
+  const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
+  if (source === "all" && type === "photo" && unsplashKey) {
+    try {
+      return stockJson(await searchUnsplash({ query, page, perPage, apiKey: unsplashKey }));
+    } catch (err) {
+      console.warn("[stock] Unsplash error:", err);
+    }
+  }
+
   const pixabayKey = process.env.PIXABAY_API_KEY;
-  if (pixabayKey) {
+  if ((source === "all" || source === "pixabay") && pixabayKey) {
     try {
       const data = await searchPixabay({ query, type, page, perPage, apiKey: pixabayKey });
       return stockJson(data);
@@ -99,6 +148,11 @@ function stockJson(data: StockSearchResponse) {
 function getPositiveInteger(value: string | null, fallback: number) {
   const parsed = Number(value ?? fallback);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
+
+function parseStockProvider(value: string | null): StockProvider {
+  if (value === "pexels" || value === "unsplash" || value === "pixabay" || value === "mixkit") return value;
+  return "all";
 }
 
 function proxyStockUrl(url: string) {
@@ -186,6 +240,62 @@ function mapPexelsVideo(v: PexelsVideo): StockVideo {
     videographer: v.user?.name ?? "Pexels",
     videographerUrl: `https://www.pexels.com/@${v.user?.url ?? ""}`,
     alt: `Stock video ${v.id}`,
+  };
+}
+
+/* ── Unsplash ───────────────────────────────────────────────────────── */
+
+async function searchUnsplash({
+  query,
+  page,
+  perPage,
+  apiKey,
+}: {
+  query: string;
+  page: number;
+  perPage: number;
+  apiKey: string;
+}): Promise<StockSearchResponse> {
+  const q = encodeURIComponent(query || "business");
+  const endpoint = `https://api.unsplash.com/search/photos?query=${q}&page=${page}&per_page=${perPage}&orientation=portrait&content_filter=high`;
+
+  const res = await fetch(endpoint, {
+    headers: {
+      Authorization: `Client-ID ${apiKey}`,
+      "Accept-Version": "v1",
+    },
+    next: { revalidate: 300 },
+  });
+
+  if (!res.ok) throw new Error(`Unsplash ${res.status}`);
+  const json = await res.json() as UnsplashSearchResponse;
+  const results = (json.results ?? []).map(mapUnsplashPhoto);
+
+  return {
+    results,
+    totalResults: json.total ?? results.length,
+    page,
+    perPage,
+    nextPage: page * perPage < (json.total ?? 0),
+    source: "unsplash",
+  };
+}
+
+function mapUnsplashPhoto(photo: UnsplashPhoto): StockPhoto {
+  return {
+    id: `unsplash-${photo.id}`,
+    source: "unsplash",
+    type: "photo",
+    width: photo.width,
+    height: photo.height,
+    url: proxyStockUrl(photo.urls.raw),
+    previewUrl: proxyStockUrl(photo.urls.regular),
+    mediumUrl: proxyStockUrl(photo.urls.regular),
+    thumbUrl: proxyStockUrl(photo.urls.thumb),
+    photographer: photo.user?.name ?? "Unsplash",
+    photographerUrl: photo.user?.links?.html ?? "https://unsplash.com",
+    alt: photo.alt_description ?? photo.description ?? "",
+    avgColor: photo.color ?? "#111827",
   };
 }
 
@@ -281,6 +391,51 @@ const DEMO_PHOTOS: StockPhoto[] = [
   { id: "d-12", source: "pexels", type: "photo", width: 5184, height: 3456, url: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg", previewUrl: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=800", mediumUrl: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=400", thumbUrl: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=200", photographer: "Italo Melo", photographerUrl: "https://www.pexels.com/@italomelo", alt: "Portrait professional", avgColor: "#2c2c2c" },
 ];
 
+const DEMO_VIDEOS: StockVideo[] = [
+  {
+    id: "dv-1",
+    source: "demo",
+    type: "video",
+    width: 2560,
+    height: 1440,
+    duration: 28,
+    url: "https://videos.pexels.com/video-files/3209828/3209828-uhd_2560_1440_25fps.mp4",
+    previewUrl: "https://images.pexels.com/videos/3209828/free-video-3209828.jpg?auto=compress&cs=tinysrgb&w=800",
+    thumbUrl: "https://images.pexels.com/videos/3209828/free-video-3209828.jpg?auto=compress&cs=tinysrgb&w=400",
+    videographer: "Pexels",
+    videographerUrl: "https://www.pexels.com",
+    alt: "Podcast studio stock video",
+  },
+  {
+    id: "dv-2",
+    source: "demo",
+    type: "video",
+    width: 2560,
+    height: 1440,
+    duration: 20,
+    url: "https://videos.pexels.com/video-files/4763824/4763824-uhd_2560_1440_24fps.mp4",
+    previewUrl: "https://images.pexels.com/videos/4763824/pexels-photo-4763824.jpeg?auto=compress&cs=tinysrgb&w=800",
+    thumbUrl: "https://images.pexels.com/videos/4763824/pexels-photo-4763824.jpeg?auto=compress&cs=tinysrgb&w=400",
+    videographer: "Pexels",
+    videographerUrl: "https://www.pexels.com",
+    alt: "Creator studio b-roll",
+  },
+  {
+    id: "dv-3",
+    source: "demo",
+    type: "video",
+    width: 2560,
+    height: 1440,
+    duration: 31,
+    url: "https://videos.pexels.com/video-files/3129957/3129957-uhd_2560_1440_25fps.mp4",
+    previewUrl: "https://images.pexels.com/videos/3129957/free-video-3129957.jpg?auto=compress&cs=tinysrgb&w=800",
+    thumbUrl: "https://images.pexels.com/videos/3129957/free-video-3129957.jpg?auto=compress&cs=tinysrgb&w=400",
+    videographer: "Pexels",
+    videographerUrl: "https://www.pexels.com",
+    alt: "Social media b-roll",
+  },
+];
+
 function buildDemoResults(
   query: string,
   type: StockMediaType,
@@ -288,8 +443,19 @@ function buildDemoResults(
   perPage: number,
 ): StockSearchResponse {
   if (type === "video") {
-    // No real demo videos — return empty with clear message
-    return { results: [], totalResults: 0, page, perPage, nextPage: false, source: "demo" };
+    const filtered = query
+      ? DEMO_VIDEOS.filter((video) => video.alt.toLowerCase().includes(query.toLowerCase())).slice(0, perPage)
+      : DEMO_VIDEOS.slice((page - 1) * perPage, page * perPage);
+    const results = filtered.length ? filtered : DEMO_VIDEOS.slice(0, perPage);
+
+    return {
+      results: results.map(proxyDemoVideo),
+      totalResults: DEMO_VIDEOS.length,
+      page,
+      perPage,
+      nextPage: false,
+      source: "demo",
+    };
   }
 
   const filtered = query
@@ -314,6 +480,15 @@ function proxyDemoPhoto(photo: StockPhoto): StockPhoto {
     previewUrl: proxyStockUrl(photo.previewUrl),
     mediumUrl: proxyStockUrl(photo.mediumUrl),
     thumbUrl: proxyStockUrl(photo.thumbUrl),
+  };
+}
+
+function proxyDemoVideo(video: StockVideo): StockVideo {
+  return {
+    ...video,
+    url: proxyStockUrl(video.url),
+    previewUrl: proxyStockUrl(video.previewUrl),
+    thumbUrl: proxyStockUrl(video.thumbUrl),
   };
 }
 
@@ -358,6 +533,31 @@ type PexelsVideo = {
     height?: number;
     link: string;
   }>;
+};
+
+type UnsplashSearchResponse = {
+  total?: number;
+  results?: UnsplashPhoto[];
+};
+
+type UnsplashPhoto = {
+  id: string;
+  width: number;
+  height: number;
+  color?: string;
+  description?: string | null;
+  alt_description?: string | null;
+  urls: {
+    raw: string;
+    regular: string;
+    thumb: string;
+  };
+  user?: {
+    name?: string;
+    links?: {
+      html?: string;
+    };
+  };
 };
 
 /* ── Pixabay API types ───────────────────────────────────────────────── */
