@@ -939,8 +939,69 @@ export function ProfessionalVideoStudio() {
       return;
     }
 
+    if (asset.kind === "video" && !studioFile && !templateProject) {
+      selectVideoAssetAsSource(asset, uniqueMediaAssetsById([asset, ...mediaAssets]));
+      setError("");
+      return;
+    }
+
     commitTimeline((tracks) => addAssetsToTimeline(tracks, [asset]));
     setProjectStatus(`${asset.name} added to timeline`);
+  }
+
+  async function addExternalMediaAssetToTimeline(asset: MediaAsset) {
+    const preparedAsset = await materializeExternalMediaAsset(asset);
+    upsertMediaAsset(preparedAsset);
+    if (preparedAsset.file.size > 0) {
+      void persistUploadedMedia(
+        [preparedAsset],
+        preparedAsset.kind === "video" && !studioFile && !templateProject ? preparedAsset.id : null,
+      );
+    }
+    addMediaAssetToTimeline(preparedAsset);
+  }
+
+  async function saveExternalMediaAsset(asset: MediaAsset) {
+    const preparedAsset = await materializeExternalMediaAsset(asset);
+    upsertMediaAsset(preparedAsset);
+    if (preparedAsset.file.size > 0) void persistUploadedMedia([preparedAsset], null);
+    setProjectStatus(`${preparedAsset.name} saved to media bin`);
+  }
+
+  function upsertMediaAsset(asset: MediaAsset) {
+    setMediaAssets((assets) => [asset, ...assets.filter((item) => item.id !== asset.id)]);
+  }
+
+  async function materializeExternalMediaAsset(asset: MediaAsset) {
+    const existingAsset = mediaAssets.find((item) => item.id === asset.id);
+    if (existingAsset && (existingAsset.file.size > 0 || existingAsset.url.startsWith("blob:"))) {
+      return existingAsset;
+    }
+
+    if (asset.file.size > 0 || asset.url.startsWith("blob:")) return asset;
+
+    setProjectStatus(`Downloading stock ${asset.kind} for local editing...`);
+
+    try {
+      const response = await fetch(asset.url);
+      if (!response.ok) throw new Error("Stock media download failed.");
+
+      const blob = await response.blob();
+      if (!blob.size) throw new Error("Stock media download was empty.");
+
+      const mimeType = blob.type || asset.file.type || getDefaultMimeType(asset.kind);
+      const file = new File([blob], asset.name, { type: mimeType });
+
+      return {
+        ...asset,
+        file,
+        url: URL.createObjectURL(blob),
+        size: blob.size,
+      };
+    } catch {
+      setProjectStatus(`Using streamed ${asset.kind}. Local download was unavailable.`);
+      return asset;
+    }
   }
 
   async function addImageLayerFromFiles(files?: FileList | File[]) {
@@ -1107,7 +1168,7 @@ export function ProfessionalVideoStudio() {
     setProjectStatus(`${asset.name} deleted from media and timeline`);
   }
 
-  function selectVideoAssetAsSource(asset: MediaAsset) {
+  function selectVideoAssetAsSource(asset: MediaAsset, availableAssets: MediaAsset[] = mediaAssets) {
     if (asset.kind !== "video") return;
     const durationSeconds = Math.round(asset.durationSeconds ?? 60);
     setStudioFile({ file: asset.file, url: asset.url, durationSeconds });
@@ -1117,7 +1178,7 @@ export function ProfessionalVideoStudio() {
       createVideoProjectFromMediaAssets({
         name: asset.name,
         aspectRatio,
-        assets: mediaAssets.map(mediaAssetToBridgeAsset),
+        assets: uniqueMediaAssetsById([asset, ...availableAssets]).map(mediaAssetToBridgeAsset),
         primaryVideoAssetId: asset.id,
         durationSeconds,
       }),
@@ -3274,20 +3335,8 @@ export function ProfessionalVideoStudio() {
     if (activePanel === "stock") {
       return (
         <StockMediaPanel
-          onAddToTimeline={(asset) => {
-            setMediaAssets((prev) => {
-              const exists = prev.some((a) => a.id === asset.id);
-              return exists ? prev : [asset, ...prev];
-            });
-            addMediaAssetToTimeline(asset);
-          }}
-          onAddToMediaBin={(asset) => {
-            setMediaAssets((prev) => {
-              const exists = prev.some((a) => a.id === asset.id);
-              return exists ? prev : [asset, ...prev];
-            });
-            setProjectStatus(`${asset.name} added to media bin`);
-          }}
+          onAddToTimeline={(asset) => void addExternalMediaAssetToTimeline(asset)}
+          onAddToMediaBin={(asset) => void saveExternalMediaAsset(asset)}
         />
       );
     }
@@ -5646,6 +5695,12 @@ function getAssetKind(file: File): MediaAsset["kind"] {
   if (file.type.startsWith("audio/")) return "audio";
   if (file.type.startsWith("image/")) return "image";
   return "video";
+}
+
+function getDefaultMimeType(kind: MediaAsset["kind"]) {
+  if (kind === "audio") return "audio/mpeg";
+  if (kind === "image") return "image/jpeg";
+  return "video/mp4";
 }
 
 async function prepareStudioFileForUpload(file: File): Promise<File> {
