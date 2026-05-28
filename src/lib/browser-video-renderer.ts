@@ -30,7 +30,33 @@ type RenderEditedVideoOptions = {
   style: VideoStyle;
   brandName: string;
   plan: EditPlan | null;
+  timelineTracks?: RenderTimelineTrack[];
   onProgress?: (progress: BrowserRenderProgress) => void;
+};
+
+type RenderTimelineLayer = {
+  id: string;
+  type: "video" | "audio" | "text" | "image" | "caption" | "effect" | "shape" | "background" | "waveform";
+  name: string;
+  start: number;
+  duration: number;
+  color: string;
+  content?: string;
+  src?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  fontSize?: number;
+  fontWeight?: string;
+  textColor?: string;
+  backgroundColor?: string;
+  borderRadius?: number;
+  opacity?: number;
+};
+
+type RenderTimelineTrack = {
+  layers: RenderTimelineLayer[];
 };
 
 export async function renderEditedVideo({
@@ -42,6 +68,7 @@ export async function renderEditedVideo({
   style,
   brandName,
   plan,
+  timelineTracks = [],
   onProgress,
 }: RenderEditedVideoOptions): Promise<BrowserRenderResult> {
   if (typeof window === "undefined" || typeof document === "undefined") {
@@ -59,8 +86,9 @@ export async function renderEditedVideo({
 
   const realDuration = await resolveMediaDuration(video, Math.max(1, sourceDurationSeconds));
   const ffmpegCuts = getPlanCuts(plan, realDuration);
+  const hasTimelineOverlays = hasRenderableTimelineOverlays(timelineTracks);
 
-  if (sourceFile && ffmpegCuts.length > 0) {
+  if (sourceFile && ffmpegCuts.length > 0 && !hasTimelineOverlays) {
     try {
       const outputSeconds = ffmpegCuts.reduce((total, cut) => total + Math.max(0, cut.end - cut.start), 0);
       const blob = await trimVideoWithFFmpeg(sourceFile, ffmpegCuts, (percent) => {
@@ -115,6 +143,7 @@ export async function renderEditedVideo({
   const desiredSourceSeconds = Math.max(4, Math.min(plan?.targetDurationSeconds ?? realDuration, 60));
   const sourceSeconds = Math.min(realDuration, desiredSourceSeconds);
   const outputSeconds = sourceSeconds / playbackRate;
+  const overlayImages = await loadTimelineOverlayImages(timelineTracks);
 
   const canvasStream = canvas.captureStream(FPS);
   const stream = new MediaStream(canvasStream.getVideoTracks());
@@ -148,6 +177,8 @@ export async function renderEditedVideo({
       style,
       brandName,
       plan,
+      timelineTracks,
+      overlayImages,
       outputTime: 0,
       outputSeconds,
       aspectRatio,
@@ -171,6 +202,8 @@ export async function renderEditedVideo({
           style,
           brandName,
           plan,
+          timelineTracks,
+          overlayImages,
           outputTime: elapsedOutputSeconds,
           outputSeconds,
           aspectRatio,
@@ -275,6 +308,8 @@ function drawEditedFrame(
     style,
     brandName,
     plan,
+    timelineTracks,
+    overlayImages,
     outputTime,
     outputSeconds,
     aspectRatio,
@@ -282,6 +317,8 @@ function drawEditedFrame(
     style: VideoStyle;
     brandName: string;
     plan: EditPlan | null;
+    timelineTracks: RenderTimelineTrack[];
+    overlayImages: Map<string, HTMLImageElement>;
     outputTime: number;
     outputSeconds: number;
     aspectRatio: AspectRatio;
@@ -311,7 +348,15 @@ function drawEditedFrame(
   drawTopChrome(context, brandName, style.arabicName);
   drawCutPulse(context, plan, outputTime);
   drawHook(context, plan, outputTime, aspectRatio);
-  drawCaption(context, getCaptionForTime(plan, outputTime, style.arabicName), aspectRatio);
+  const renderedOverlayTypes = drawTimelineOverlays(context, {
+    tracks: timelineTracks,
+    images: overlayImages,
+    time: outputTime,
+    aspectRatio,
+  });
+  if (!renderedOverlayTypes.has("caption")) {
+    drawCaption(context, getCaptionForTime(plan, outputTime, style.arabicName), aspectRatio);
+  }
   drawProgress(context, Math.min(1, outputTime / outputSeconds));
 }
 
@@ -428,6 +473,132 @@ function drawCaption(context: CanvasRenderingContext2D, caption: string, aspectR
   context.restore();
 }
 
+function drawTimelineOverlays(
+  context: CanvasRenderingContext2D,
+  {
+    tracks,
+    images,
+    time,
+    aspectRatio,
+  }: {
+    tracks: RenderTimelineTrack[];
+    images: Map<string, HTMLImageElement>;
+    time: number;
+    aspectRatio: AspectRatio;
+  },
+) {
+  const renderedTypes = new Set<RenderTimelineLayer["type"]>();
+  const projectDimensions = getProjectDimensions(aspectRatio);
+  const scaleX = context.canvas.width / projectDimensions.width;
+  const scaleY = context.canvas.height / projectDimensions.height;
+  const layers = getRenderableTimelineLayers(tracks).filter(
+    (layer) => layer.start <= time && layer.start + layer.duration >= time,
+  );
+
+  for (const layer of layers) {
+    const geometry = resolveRenderLayerGeometry(layer, projectDimensions);
+    const x = geometry.x * scaleX;
+    const y = geometry.y * scaleY;
+    const width = geometry.width * scaleX;
+    const height = geometry.height * scaleY;
+    const opacity = clamp(layer.opacity ?? 1, 0, 1);
+
+    if (width <= 1 || height <= 1 || opacity <= 0) continue;
+
+    context.save();
+    context.globalAlpha = opacity;
+
+    if (layer.type === "image") {
+      const image = layer.src ? images.get(layer.src) : undefined;
+      if (image) {
+        drawCoverImage(context, image, x, y, width, height);
+        renderedTypes.add(layer.type);
+      }
+      context.restore();
+      continue;
+    }
+
+    if (layer.type === "shape") {
+      roundedRect(context, x, y, width, height, Math.min(48, (layer.borderRadius ?? 18) * scaleX));
+      context.fillStyle = normalizeCanvasColor(layer.backgroundColor ?? layer.color, "#8ef7c2");
+      context.fill();
+      renderedTypes.add(layer.type);
+      context.restore();
+      continue;
+    }
+
+    if (layer.type === "text" || layer.type === "caption") {
+      drawTimelineTextLayer(context, layer, { x, y, width, height, scaleX, aspectRatio });
+      renderedTypes.add(layer.type);
+      context.restore();
+      continue;
+    }
+
+    context.restore();
+  }
+
+  return renderedTypes;
+}
+
+function drawTimelineTextLayer(
+  context: CanvasRenderingContext2D,
+  layer: RenderTimelineLayer,
+  {
+    x,
+    y,
+    width,
+    height,
+    scaleX,
+    aspectRatio,
+  }: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    scaleX: number;
+    aspectRatio: AspectRatio;
+  },
+) {
+  const text = layer.content ?? layer.name;
+  if (!text.trim()) return;
+
+  const fontSize = clamp((layer.fontSize ?? (layer.type === "caption" ? 58 : 64)) * scaleX, 18, aspectRatio === "16:9" ? 54 : 62);
+  const lineHeight = fontSize * 1.18;
+  const maxLines = Math.max(1, Math.floor((height - fontSize * 0.65) / lineHeight));
+
+  context.font = `${layer.fontWeight ?? "900"} ${fontSize}px "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif`;
+  const lines = wrapText(context, text, width * 0.88, Math.min(4, maxLines), fontSize);
+  const blockHeight = Math.min(height, lines.length * lineHeight + fontSize * 0.85);
+  const blockY = y + (height - blockHeight) / 2;
+  const background =
+    layer.type === "caption"
+      ? "rgba(3, 5, 8, 0.68)"
+      : layer.backgroundColor
+        ? normalizeCanvasColor(layer.backgroundColor, "transparent")
+        : "transparent";
+
+  if (background !== "transparent") {
+    roundedRect(context, x, blockY, width, blockHeight, Math.min(32, (layer.borderRadius ?? 18) * scaleX));
+    context.fillStyle = background;
+    context.fill();
+  }
+
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.direction = "rtl";
+
+  lines.forEach((line, index) => {
+    const baseline = blockY + fontSize * 0.62 + index * lineHeight;
+    if (layer.type === "caption") {
+      context.lineWidth = Math.max(4, fontSize * 0.09);
+      context.strokeStyle = "rgba(0, 0, 0, 0.72)";
+      context.strokeText(line, x + width / 2, baseline, width * 0.9);
+    }
+    context.fillStyle = normalizeCanvasColor(layer.textColor ?? layer.color, "#ffffff");
+    context.fillText(line, x + width / 2, baseline, width * 0.9);
+  });
+}
+
 function drawCutPulse(context: CanvasRenderingContext2D, plan: EditPlan | null, outputTime: number) {
   if (!plan?.timeline.length) return;
 
@@ -529,6 +700,144 @@ function getRenderDimensions(aspectRatio: AspectRatio) {
   if (aspectRatio === "16:9") return { width: 1280, height: 720 };
   if (aspectRatio === "1:1") return { width: 1080, height: 1080 };
   return { width: 720, height: 1280 };
+}
+
+function getProjectDimensions(aspectRatio: AspectRatio) {
+  if (aspectRatio === "16:9") return { width: 1920, height: 1080 };
+  if (aspectRatio === "1:1") return { width: 1080, height: 1080 };
+  return { width: 1080, height: 1920 };
+}
+
+function hasRenderableTimelineOverlays(tracks: RenderTimelineTrack[]) {
+  return getRenderableTimelineLayers(tracks).length > 0;
+}
+
+function getRenderableTimelineLayers(tracks: RenderTimelineTrack[]) {
+  return tracks
+    .flatMap((track) => track.layers)
+    .filter((layer) => {
+      if (!["text", "caption", "image", "shape"].includes(layer.type)) return false;
+      if ((layer.type === "text" || layer.type === "caption") && !(layer.content ?? layer.name).trim()) return false;
+      if (layer.type === "image" && !layer.src) return false;
+      return layer.duration > 0;
+    });
+}
+
+async function loadTimelineOverlayImages(tracks: RenderTimelineTrack[]) {
+  const sources = Array.from(
+    new Set(
+      getRenderableTimelineLayers(tracks)
+        .filter((layer) => layer.type === "image" && layer.src)
+        .map((layer) => layer.src as string),
+    ),
+  );
+  const entries = await Promise.all(
+    sources.map(async (src) => {
+      try {
+        return [src, await loadImage(src)] as const;
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  return new Map(entries.filter((entry): entry is readonly [string, HTMLImageElement] => Boolean(entry)));
+}
+
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Could not load overlay image."));
+    image.src = src;
+  });
+}
+
+function resolveRenderLayerGeometry(
+  layer: RenderTimelineLayer,
+  dimensions: { width: number; height: number },
+) {
+  const defaults = getDefaultRenderLayerGeometry(layer, dimensions);
+
+  return {
+    x: layer.x ?? defaults.x,
+    y: layer.y ?? defaults.y,
+    width: layer.width ?? defaults.width,
+    height: layer.height ?? defaults.height,
+  };
+}
+
+function getDefaultRenderLayerGeometry(
+  layer: RenderTimelineLayer,
+  { width, height }: { width: number; height: number },
+) {
+  if (layer.type === "image") {
+    return {
+      x: Math.round(width * 0.16),
+      y: Math.round(height * 0.35),
+      width: Math.round(width * 0.68),
+      height: Math.round(height * 0.28),
+    };
+  }
+
+  if (layer.type === "shape") {
+    return {
+      x: Math.round(width * 0.12),
+      y: Math.round(height * 0.64),
+      width: Math.round(width * 0.76),
+      height: Math.round(height * 0.1),
+    };
+  }
+
+  if (layer.type === "caption") {
+    return {
+      x: Math.round(width * 0.08),
+      y: Math.round(height * 0.69),
+      width: Math.round(width * 0.84),
+      height: Math.round(height * 0.13),
+    };
+  }
+
+  return {
+    x: Math.round(width * 0.1),
+    y: Math.round(height * 0.16),
+    width: Math.round(width * 0.8),
+    height: Math.round(height * 0.12),
+  };
+}
+
+function drawCoverImage(
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  const sourceRatio = image.naturalWidth / image.naturalHeight;
+  const targetRatio = width / height;
+  let sourceX = 0;
+  let sourceY = 0;
+  let sourceWidth = image.naturalWidth;
+  let sourceHeight = image.naturalHeight;
+
+  if (sourceRatio > targetRatio) {
+    sourceWidth = image.naturalHeight * targetRatio;
+    sourceX = (image.naturalWidth - sourceWidth) / 2;
+  } else {
+    sourceHeight = image.naturalWidth / targetRatio;
+    sourceY = (image.naturalHeight - sourceHeight) / 2;
+  }
+
+  context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+}
+
+function normalizeCanvasColor(value: string | undefined, fallback: string) {
+  if (!value || value.includes("{{")) return fallback;
+  if (value === "transparent" || value.startsWith("rgba(") || value.startsWith("rgb(")) return value;
+  if (/^#[0-9a-f]{6}$/i.test(value)) return value;
+  return fallback;
 }
 
 function getCanvasFilter(styleId: VideoStyle["id"]) {
