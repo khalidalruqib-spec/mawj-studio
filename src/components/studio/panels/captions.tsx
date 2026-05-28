@@ -9,6 +9,7 @@ export function CaptionsPanel({
   template,
   onTemplateChange,
   onCaptionChange,
+  onCaptionTimingChange,
   onAutoTranscribe,
   onImportSrt,
   onDownloadSrt,
@@ -21,6 +22,7 @@ export function CaptionsPanel({
   template: string;
   onTemplateChange: (template: string) => void;
   onCaptionChange: (id: string, text: string) => void;
+  onCaptionTimingChange: (id: string, patch: Pick<CaptionLine, "start" | "end">) => void;
   onAutoTranscribe: () => void;
   onImportSrt: (file: File) => void;
   onDownloadSrt: () => void;
@@ -92,6 +94,18 @@ export function CaptionsPanel({
             <span className="mb-2 block text-[11px] font-black text-[var(--brand)]">
               {formatDuration(caption.start)}-{formatDuration(caption.end)}
             </span>
+            <div className="mb-2 grid grid-cols-2 gap-2">
+              <CaptionTimeInput
+                label="Start"
+                value={caption.start}
+                onChange={(start) => onCaptionTimingChange(caption.id, { start, end: caption.end })}
+              />
+              <CaptionTimeInput
+                label="End"
+                value={caption.end}
+                onChange={(end) => onCaptionTimingChange(caption.id, { start: caption.start, end })}
+              />
+            </div>
             <textarea
               value={caption.text}
               onChange={(event) => onCaptionChange(caption.id, event.target.value)}
@@ -102,5 +116,29 @@ export function CaptionsPanel({
         ))}
       </div>
     </section>
+  );
+}
+
+function CaptionTimeInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <span className="block">
+      <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[var(--muted)]">{label}</span>
+      <input
+        type="number"
+        min="0"
+        step="0.1"
+        value={Number.isFinite(value) ? Math.round(value * 10) / 10 : 0}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="h-9 w-full rounded-md border border-[var(--line)] bg-black/25 px-2 text-xs font-black outline-none focus:border-[var(--brand)]"
+      />
+    </span>
   );
 }
