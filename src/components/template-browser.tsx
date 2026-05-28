@@ -97,7 +97,15 @@ const FEATURED_IDS = new Set([
   "capcut-news-alert",
   "ugc-testimonial",
   "tiktok-hook-sprint",
+  "market-real-estate-tour",
+  "market-restaurant-story-menu",
+  "market-business-promo",
+  "market-podcast-launch",
 ]);
+
+type TemplatePackFilter = "all" | "market" | "featured" | "classic";
+type TemplateSortOption = "recommended" | "newest" | "duration-asc" | "duration-desc" | "editable-desc";
+type AspectRatioFilter = "All" | VideoTemplate["aspectRatio"];
 
 /* Scene palette — rotates through per-scene */
 const SCENE_PALETTE = [
@@ -138,6 +146,40 @@ function countMotionTypes(template: VideoTemplate) {
   return motionTypes.size;
 }
 
+function isMarketTemplate(template: VideoTemplate) {
+  return template.id.startsWith("market-");
+}
+
+function templatePackLabel(value: TemplatePackFilter) {
+  const labels: Record<TemplatePackFilter, string> = {
+    all: "كل الحزم",
+    market: "Market Pack",
+    featured: "مميز",
+    classic: "كلاسيك",
+  };
+  return labels[value];
+}
+
+function sortTemplates(templates: VideoTemplate[], sortBy: TemplateSortOption) {
+  return templates.slice().sort((left, right) => {
+    if (sortBy === "duration-asc") return left.duration - right.duration || left.name.localeCompare(right.name);
+    if (sortBy === "duration-desc") return right.duration - left.duration || left.name.localeCompare(right.name);
+    if (sortBy === "editable-desc") {
+      return countEditableLayers(right) - countEditableLayers(left) || right.scenes.length - left.scenes.length || left.name.localeCompare(right.name);
+    }
+    if (sortBy === "newest") {
+      return Number(isMarketTemplate(right)) - Number(isMarketTemplate(left)) || left.name.localeCompare(right.name);
+    }
+
+    return (
+      Number(FEATURED_IDS.has(right.id)) - Number(FEATURED_IDS.has(left.id)) ||
+      Number(isMarketTemplate(right)) - Number(isMarketTemplate(left)) ||
+      countMotionTypes(right) - countMotionTypes(left) ||
+      left.name.localeCompare(right.name)
+    );
+  });
+}
+
 /* ─────────────────────────────────────────────────────────────────────
    Main component
 ───────────────────────────────────────────────────────────────────── */
@@ -146,18 +188,29 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
+  const [aspectRatio, setAspectRatio] = useState<AspectRatioFilter>("All");
+  const [templatePack, setTemplatePack] = useState<TemplatePackFilter>("all");
+  const [sortBy, setSortBy] = useState<TemplateSortOption>("recommended");
   const [previewTemplate, setPreviewTemplate] = useState<VideoTemplate | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<VideoTemplate | null>(null);
   const [inputValues, setInputValues] = useState<TemplateUserInputs>({});
 
   const filteredTemplates = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return templates.filter((t) => {
+    const matches = templates.filter((t) => {
       const matchCat = category === "All" || t.category === category;
       const matchQ = !q || [t.name, t.description, t.category].some((v) => v.toLowerCase().includes(q));
-      return matchCat && matchQ;
+      const matchAspect = aspectRatio === "All" || t.aspectRatio === aspectRatio;
+      const matchPack =
+        templatePack === "all" ||
+        (templatePack === "market" && isMarketTemplate(t)) ||
+        (templatePack === "featured" && FEATURED_IDS.has(t.id)) ||
+        (templatePack === "classic" && !isMarketTemplate(t));
+      return matchCat && matchQ && matchAspect && matchPack;
     });
-  }, [category, query, templates]);
+
+    return sortTemplates(matches, sortBy);
+  }, [aspectRatio, category, query, sortBy, templatePack, templates]);
 
   const categoryOptions = useMemo(() => {
     const counts = new Map<string, number>();
@@ -170,6 +223,30 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
       ...extra.map((v) => ({ value: v, label: v, count: counts.get(v) ?? 0 })),
     ];
   }, [templates]);
+
+  const aspectRatioOptions = useMemo(() => {
+    const counts = new Map<VideoTemplate["aspectRatio"], number>();
+    templates.forEach((template) => counts.set(template.aspectRatio, (counts.get(template.aspectRatio) ?? 0) + 1));
+    const order: VideoTemplate["aspectRatio"][] = ["9:16", "16:9", "1:1", "4:5"];
+    return [
+      { value: "All" as const, label: "كل المقاسات", count: templates.length },
+      ...order
+        .filter((value) => counts.has(value))
+        .map((value) => ({ value, label: value, count: counts.get(value) ?? 0 })),
+    ];
+  }, [templates]);
+
+  const packOptions = useMemo(
+    () => [
+      { value: "all" as const, count: templates.length },
+      { value: "market" as const, count: templates.filter(isMarketTemplate).length },
+      { value: "featured" as const, count: templates.filter((template) => FEATURED_IDS.has(template.id)).length },
+      { value: "classic" as const, count: templates.filter((template) => !isMarketTemplate(template)).length },
+    ],
+    [templates],
+  );
+
+  const hasActiveFilters = query || category !== "All" || aspectRatio !== "All" || templatePack !== "all" || sortBy !== "recommended";
 
   const marketplaceStats = useMemo(() => {
     const sceneCount = templates.reduce((n, t) => n + t.scenes.length, 0);
@@ -315,9 +392,9 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
           })}
         </div>
 
-        {/* ── Search ─────────────────────────────────────────────────── */}
-        <div className="mb-6 flex gap-2">
-          <div className="panel relative flex-1 p-0 overflow-hidden">
+        {/* ── Search + Marketplace Controls ─────────────────────────── */}
+        <div className="mb-3 grid gap-2 lg:grid-cols-[1fr_auto_auto_auto]">
+          <div className="panel relative min-w-0 overflow-hidden p-0">
             <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)] z-10" aria-hidden="true" />
             <input
               value={query}
@@ -326,12 +403,12 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
               className="control-input pr-9"
             />
           </div>
-          <div className="panel relative p-0 overflow-hidden">
+          <div className="panel relative overflow-hidden p-0">
             <SlidersHorizontal className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)] z-10" aria-hidden="true" />
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="control-select pr-9"
+              className="control-select min-w-44 pr-9"
               aria-label="تصفية حسب الفئة"
             >
               {categoryOptions.map((item) => (
@@ -339,14 +416,81 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
               ))}
             </select>
           </div>
+          <div className="panel relative overflow-hidden p-0">
+            <Film className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)] z-10" aria-hidden="true" />
+            <select
+              value={aspectRatio}
+              onChange={(e) => setAspectRatio(e.target.value as AspectRatioFilter)}
+              className="control-select min-w-40 pr-9"
+              aria-label="تصفية حسب المقاس"
+            >
+              {aspectRatioOptions.map((item) => (
+                <option key={item.value} value={item.value}>{item.label} ({item.count})</option>
+              ))}
+            </select>
+          </div>
+          <div className="panel relative overflow-hidden p-0">
+            <SlidersHorizontal className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)] z-10" aria-hidden="true" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as TemplateSortOption)}
+              className="control-select min-w-44 pr-9"
+              aria-label="ترتيب القوالب"
+            >
+              <option value="recommended">الأقوى أولًا</option>
+              <option value="newest">الأحدث</option>
+              <option value="editable-desc">الأكثر قابلية للتعديل</option>
+              <option value="duration-asc">الأقصر مدة</option>
+              <option value="duration-desc">الأطول مدة</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          {packOptions.map((item) => {
+            const active = templatePack === item.value;
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setTemplatePack(item.value)}
+                className={`min-h-9 rounded-xl border px-3 py-1.5 text-xs font-black transition ${
+                  active
+                    ? "border-[var(--brand)] bg-[var(--brand)] text-black"
+                    : "border-[var(--line)] bg-[var(--panel-soft)] text-[var(--muted)] hover:text-[var(--foreground)]"
+                }`}
+              >
+                {templatePackLabel(item.value)}
+                <span className={`mr-1 ${active ? "text-black/60" : "text-white/40"}`}>{item.count}</span>
+              </button>
+            );
+          })}
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setCategory("All");
+                setAspectRatio("All");
+                setTemplatePack("all");
+                setSortBy("recommended");
+              }}
+              className="flex min-h-9 items-center gap-1.5 rounded-xl border border-[var(--line)] bg-transparent px-3 py-1.5 text-xs font-black text-[var(--muted)] transition hover:text-[var(--foreground)]"
+            >
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+              تصفير الفلاتر
+            </button>
+          ) : null}
         </div>
 
         {/* ── Results header ─────────────────────────────────────────── */}
-        {query || category !== "All" ? (
+        {hasActiveFilters ? (
           <div className="mb-4 flex items-center gap-2 text-sm font-black text-[var(--muted)]">
             <span>{filteredTemplates.length} قالب</span>
             {query && <span>· &quot;{query}&quot;</span>}
             {category !== "All" && <span>· {getCategoryMeta(category).label}</span>}
+            {aspectRatio !== "All" && <span>· {aspectRatio}</span>}
+            {templatePack !== "all" && <span>· {templatePackLabel(templatePack)}</span>}
           </div>
         ) : null}
 
@@ -409,6 +553,7 @@ function TemplateCard({
   const meta = getCategoryMeta(template.category);
   const Icon = meta.icon;
   const isFeatured = FEATURED_IDS.has(template.id);
+  const isMarket = isMarketTemplate(template);
   const layerCount = countTemplateLayers(template);
   const editableCount = countEditableLayers(template);
   const captionCount = countLayersByType(template, "captions");
@@ -434,6 +579,12 @@ function TemplateCard({
             {meta.label}
           </span>
           <div className="flex items-center gap-1.5">
+            {isMarket && (
+              <span className="flex items-center gap-1 rounded-lg bg-[var(--brand)]/90 px-2 py-1 text-[10px] font-black text-black backdrop-blur-sm">
+                <Tags className="h-3 w-3" aria-hidden="true" />
+                Market
+              </span>
+            )}
             {isFeatured && (
               <span className="flex items-center gap-1 rounded-lg bg-[#d4af37]/90 px-2 py-1 text-[10px] font-black text-black backdrop-blur-sm">
                 <Star className="h-3 w-3" aria-hidden="true" />
