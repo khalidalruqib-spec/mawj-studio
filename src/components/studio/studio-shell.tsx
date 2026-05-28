@@ -1966,6 +1966,48 @@ export function ProfessionalVideoStudio() {
     clearRenderedOutput();
   }
 
+  function addManualCaption() {
+    const start = roundTimelineSeconds(Math.max(0, previewTime || captions.at(-1)?.end || 0));
+    const caption: CaptionLine = {
+      id: createLayerId("manual-cap"),
+      start,
+      end: roundTimelineSeconds(start + 3),
+      text: "اكتب الكابشن هنا",
+    };
+    const nextCaptions = [...captions, caption].sort((left, right) => left.start - right.start);
+
+    setCaptions(nextCaptions);
+    setTranscriptionMode(null);
+    setTranscriptionNotice("Manual caption added. Edit text and timing, then export SRT or burn it in.");
+    syncCaptionListToTimeline(nextCaptions, "Manual caption added", captionLayerId(caption.id));
+    setActivePanel("captions");
+    clearRenderedOutput();
+  }
+
+  function deleteCaption(id: string) {
+    const nextCaptions = captions.filter((caption) => caption.id !== id);
+
+    setCaptions(nextCaptions);
+    syncCaptionListToTimeline(nextCaptions, "Caption deleted");
+    clearRenderedOutput();
+  }
+
+  function syncCaptionListToTimeline(nextCaptions: CaptionLine[], status: string, selectedCaptionLayerId?: string) {
+    const targetDuration = Math.max(
+      studioFile?.durationSeconds ?? 0,
+      templateProject?.duration ?? 0,
+      totalTimelineSeconds,
+      ...nextCaptions.map((caption) => caption.end),
+    );
+
+    commitTimeline((tracks) => ensureCaptionLayer(tracks, nextCaptions, targetDuration));
+    if (selectedCaptionLayerId) {
+      setSelectedLayerId(selectedCaptionLayerId);
+      selectEngineLayer(selectedCaptionLayerId);
+    }
+    setProjectStatus(status);
+  }
+
   function syncCaptionTextToTimeline(id: string, text: string, nextCaptions: CaptionLine[]) {
     let didUpdate = false;
 
@@ -2870,6 +2912,8 @@ export function ProfessionalVideoStudio() {
           onTemplateChange={setCaptionTemplate}
           onCaptionChange={updateCaption}
           onCaptionTimingChange={updateCaptionTiming}
+          onAddCaption={addManualCaption}
+          onDeleteCaption={deleteCaption}
           onAutoTranscribe={() => transcribeVideo()}
           onImportSrt={(file) => void importSrtFile(file)}
           onDownloadSrt={downloadSrt}
