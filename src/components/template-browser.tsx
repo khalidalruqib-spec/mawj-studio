@@ -972,7 +972,10 @@ function TemplateFormModal({
 
         {/* Preview sidebar */}
         <div className="space-y-3">
-          <TemplateMotionPreview template={{ ...template, ...renderTemplatePreview(template) }} />
+          <TemplateMotionPreview
+            template={{ ...template, ...renderTemplatePreview(template) }}
+            inputOverrides={values}
+          />
 
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-soft)] p-3">
             <p className="mb-2 text-xs font-black" style={{ color: meta.accent }}>ماذا يحصل بعد الإنشاء؟</p>
@@ -1043,26 +1046,52 @@ function DynamicInput({
   }
 
   if (input.type === "image" || input.type === "video" || input.type === "audio") {
+    const mediaLabel = value
+      ? value.startsWith("blob:")
+        ? "مرفق من جهازك"
+        : "مرفق تجريبي قابل للاستبدال"
+      : input.type === "image"
+        ? "ارفع صورة"
+        : input.type === "video"
+          ? "ارفع فيديو"
+          : "ارفع صوت";
+
     return (
       <label className="block cursor-pointer">
         <InputLabel input={input} />
-        <span className="drop-zone flex min-h-20 flex-col items-center justify-center gap-2 text-center">
-          {value ? (
-            <>
-              <BadgeCheck className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
-              <span className="text-xs font-black text-[var(--brand)]">مرفق</span>
-            </>
-          ) : (
-            <>
-              {input.type === "image"
-                ? <Upload className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
-                : <UploadCloud className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
-              }
-              <span className="text-xs font-black">
-                {input.type === "image" ? "ارفع صورة" : input.type === "video" ? "ارفع فيديو" : "ارفع صوت"}
-              </span>
-            </>
-          )}
+        <span className="drop-zone relative flex min-h-24 flex-col items-center justify-center gap-2 overflow-hidden text-center">
+          {input.type === "image" && value ? (
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 bg-cover bg-center opacity-80"
+              style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.30), rgba(0,0,0,0.55)), url("${value}")` }}
+            />
+          ) : null}
+          {input.type === "video" && value ? (
+            <video
+              src={value}
+              className="absolute inset-0 h-full w-full object-cover opacity-80"
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-hidden="true"
+            />
+          ) : null}
+          <span className="relative z-10 flex flex-col items-center gap-2">
+            {value ? (
+              <BadgeCheck className="h-5 w-5 text-[var(--brand)] drop-shadow" aria-hidden="true" />
+            ) : (
+              input.type === "image" ? (
+                <Upload className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
+              ) : (
+                <UploadCloud className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
+              )
+            )}
+            <span className="rounded-md bg-black/55 px-2 py-1 text-xs font-black text-white shadow backdrop-blur">
+              {mediaLabel}
+            </span>
+          </span>
           <input
             type="file"
             accept={input.type === "image" ? "image/*" : input.type === "video" ? "video/*" : "audio/*"}
@@ -1125,14 +1154,16 @@ function InputLabel({ input }: { input: VideoTemplateInput }) {
 
 function TemplateMotionPreview({
   template,
+  inputOverrides,
   compact = false,
 }: {
   template: VideoTemplate;
+  inputOverrides?: TemplateUserInputs;
   compact?: boolean;
 }) {
   const [sceneIndex, setSceneIndex] = useState(0);
   const scene = template.scenes[sceneIndex] ?? template.scenes[0];
-  const previewInputs = useMemo(() => buildTemplateInputs(template, {}), [template]);
+  const previewInputs = useMemo(() => buildTemplateInputs(template, inputOverrides ?? {}), [inputOverrides, template]);
 
   useEffect(() => {
     if (template.scenes.length <= 1) return;
