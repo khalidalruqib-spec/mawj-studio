@@ -369,7 +369,7 @@ export function TimelinePreviewLayer({
     return (
       <div onPointerDown={onPointerDown} className="absolute cursor-move overflow-hidden" style={shellStyle}>
         {layer.src ? (
-          <img src={layer.src} alt={layer.name} className="h-full w-full object-cover" />
+          <img src={layer.src} alt={layer.name} className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "contain")}`} />
         ) : (
           <div className="grid h-full w-full place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70">
             IMAGE
@@ -651,7 +651,7 @@ export function TemplatePreviewLayer({
         style={shellStyle}
       >
         {src && layer.type === "image" ? (
-          <img src={src} alt={layer.name ?? layer.id} className="h-full w-full object-cover" />
+          <img src={src} alt={layer.name ?? layer.id} className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "contain")}`} />
         ) : (
           <div className="grid h-full w-full place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70">
             {layer.type.toUpperCase()}
@@ -823,6 +823,12 @@ function getDefaultTimelineLayerGeometry(
     width: Math.round(geometry.width * 0.8),
     height: Math.round(geometry.height * 0.12),
   };
+}
+
+function getMediaObjectFitClass(fit: TimelineLayer["fit"]) {
+  if (fit === "fill") return "object-fill";
+  if (fit === "cover") return "object-cover";
+  return "object-contain";
 }
 
 export function TimelineEditor({

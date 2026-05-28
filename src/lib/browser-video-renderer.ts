@@ -53,6 +53,7 @@ type RenderTimelineLayer = {
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
+  fit?: "cover" | "contain" | "fill";
 };
 
 type RenderTimelineTrack = {
@@ -511,7 +512,7 @@ function drawTimelineOverlays(
     if (layer.type === "image") {
       const image = layer.src ? images.get(layer.src) : undefined;
       if (image) {
-        drawCoverImage(context, image, x, y, width, height);
+        drawFittedImage(context, image, x, y, width, height, layer.fit ?? "contain");
         renderedTypes.add(layer.type);
       }
       context.restore();
@@ -831,6 +832,43 @@ function drawCoverImage(
   }
 
   context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+}
+
+function drawFittedImage(
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  fit: RenderTimelineLayer["fit"],
+) {
+  if (fit === "fill") {
+    context.drawImage(image, x, y, width, height);
+    return;
+  }
+
+  if (fit !== "contain") {
+    drawCoverImage(context, image, x, y, width, height);
+    return;
+  }
+
+  const sourceRatio = image.naturalWidth / image.naturalHeight;
+  const targetRatio = width / height;
+  let drawWidth = width;
+  let drawHeight = height;
+  let drawX = x;
+  let drawY = y;
+
+  if (sourceRatio > targetRatio) {
+    drawHeight = width / sourceRatio;
+    drawY = y + (height - drawHeight) / 2;
+  } else {
+    drawWidth = height * sourceRatio;
+    drawX = x + (width - drawWidth) / 2;
+  }
+
+  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
 }
 
 function normalizeCanvasColor(value: string | undefined, fallback: string) {

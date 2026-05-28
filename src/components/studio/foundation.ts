@@ -109,6 +109,7 @@ export type TimelineLayer = {
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
+  fit?: "cover" | "contain" | "fill";
 };
 
 export type TimelineTrack = {

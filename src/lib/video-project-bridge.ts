@@ -49,6 +49,7 @@ export type EditorTimelineLayerInput = {
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
+  fit?: "cover" | "contain" | "fill";
 };
 
 export type EditorTimelineTrackInput = {
@@ -327,6 +328,7 @@ export function editorLayerPatchToVideoLayerPatch(
     color: patch.textColor ?? patch.color,
     backgroundColor: patch.backgroundColor,
     borderRadius: patch.borderRadius,
+    fit: patch.fit,
   };
   const cleanStyle = removeUndefined(style);
 
@@ -382,6 +384,7 @@ function videoLayerToEditorTimelineLayer({
     backgroundColor: layer.style?.backgroundColor,
     borderRadius: layer.style?.borderRadius,
     opacity: layer.opacity,
+    fit: layer.style?.fit,
   };
 }
 
@@ -567,7 +570,7 @@ function editorTimelineLayerToVideoLayer(
       borderRadius: layer.borderRadius ?? previous?.style?.borderRadius,
       align: previous?.style?.align ?? "center",
       direction: previous?.style?.direction ?? "auto",
-      fit: previous?.style?.fit ?? (type === "video" || type === "image" ? "cover" : undefined),
+      fit: layer.fit ?? previous?.style?.fit ?? (type === "image" ? "contain" : type === "video" ? "cover" : undefined),
     },
     effects:
       layer.type === "effect"

@@ -3660,6 +3660,7 @@ function addAssetsToTimeline(tracks: TimelineTrack[], assets: MediaAsset[]): Tim
           y: asset.kind === "image" ? 220 : 0,
           width: asset.kind === "image" ? 840 : undefined,
           height: asset.kind === "image" ? 840 : undefined,
+          fit: asset.kind === "image" ? "contain" : undefined,
         })),
       ],
     };
@@ -3834,6 +3835,7 @@ function createEditableImageLayer({
     color: "#c084fc",
     src: asset.url,
     opacity: 1,
+    fit: "contain",
     ...geometry,
   };
 }
@@ -4920,6 +4922,7 @@ function templateTimelineToEditorTracks(templateTracks: TemplateTimelineTrack[])
       backgroundColor: layer.backgroundColor,
       borderRadius: layer.borderRadius,
       opacity: layer.opacity,
+      fit: layer.fit,
     })),
   }));
 }
@@ -4941,6 +4944,7 @@ function toTemplateTimelinePatch(patch: Partial<TimelineLayer>): Partial<Templat
     fontWeight: patch.fontWeight,
     borderRadius: patch.borderRadius,
     opacity: patch.opacity,
+    fit: patch.fit,
   };
 
   return Object.fromEntries(
@@ -5073,7 +5077,7 @@ function timelineLayerToTemplateTimelineLayer(
     opacity: layer.opacity,
     direction: layer.type === "text" || layer.type === "caption" ? "auto" : undefined,
     align: layer.type === "text" || layer.type === "caption" ? "center" : undefined,
-    fit: layer.type === "image" ? "cover" : undefined,
+    fit: layer.type === "image" ? (layer.fit ?? "contain") : undefined,
     shape: layer.type === "shape" ? "rect" : undefined,
   };
 }
