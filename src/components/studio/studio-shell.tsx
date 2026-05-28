@@ -10,6 +10,7 @@ import {
   Download,
   FolderOpen,
   BringToFront,
+  ImageIcon,
   Layers3,
   LayoutTemplate,
   Loader2,
@@ -140,6 +141,7 @@ import { useTemplateDraftLoader } from "@/components/studio/hooks/use-template-d
 
 export function ProfessionalVideoStudio() {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const imageLayerInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const restoredMediaOnceRef = useRef(false);
   const keyboardActionsRef = useRef<{
@@ -748,8 +750,82 @@ export function ProfessionalVideoStudio() {
   }
 
   function addMediaAssetToTimeline(asset: MediaAsset) {
+    if (asset.kind === "image") {
+      const imageLayer = createEditableImageLayer({
+        asset,
+        aspectRatio,
+        previewTime,
+      });
+
+      appendEditableLayersToProject([imageLayer], imageLayer.id);
+      setProjectStatus(`${asset.name} added as an editable image layer`);
+      return;
+    }
+
     commitTimeline((tracks) => addAssetsToTimeline(tracks, [asset]));
     setProjectStatus(`${asset.name} added to timeline`);
+  }
+
+  async function addImageLayerFromFiles(files?: FileList | File[]) {
+    const imageFiles = Array.from(files ?? []).filter((file) => file.type.startsWith("image/"));
+    if (!imageFiles.length) {
+      setError("Choose an image file to add it as an editable layer.");
+      return;
+    }
+
+    const incomingAssets: MediaAsset[] = imageFiles.map((file) => ({
+      id: crypto.randomUUID(),
+      name: file.name,
+      file,
+      url: URL.createObjectURL(file),
+      kind: "image",
+      size: file.size,
+    }));
+    const imageLayers = incomingAssets.map((asset, index) =>
+      createEditableImageLayer({
+        asset,
+        aspectRatio,
+        previewTime: previewTime + index * 0.25,
+      }),
+    );
+
+    setMediaAssets((assets) => [...incomingAssets, ...assets]);
+    void persistUploadedMedia(incomingAssets, null);
+    appendEditableLayersToProject(imageLayers, imageLayers.at(-1)?.id ?? imageLayers[0]?.id);
+    setActivePanel("editor");
+    setError("");
+    setProjectStatus(`${imageLayers.length} editable image layer${imageLayers.length > 1 ? "s" : ""} added`);
+  }
+
+  function addCtaLayer() {
+    const ctaLayers = createEditableCtaLayers({
+      aspectRatio,
+      previewTime,
+      brandColor: brandKit.primaryColor,
+      goal,
+    });
+    const textLayer = ctaLayers.find((layer) => layer.type === "text") ?? ctaLayers.at(-1);
+
+    appendEditableLayersToProject(ctaLayers, textLayer?.id);
+    setActivePanel("editor");
+    setProjectStatus("Editable CTA layers added to preview and timeline");
+  }
+
+  function appendEditableLayersToProject(layers: TimelineLayer[], nextSelectedLayerId?: string) {
+    if (!layers.length) return;
+
+    const nextTracks = appendLayersToOverlayTrack(timelineTracks, layers);
+
+    setTemplateProject((project) =>
+      project ? appendTimelineLayersToTemplateProject(project, layers) : project,
+    );
+    commitTimeline(nextTracks);
+
+    const layerId = nextSelectedLayerId ?? layers.at(-1)?.id;
+    if (layerId) {
+      setSelectedLayerId(layerId);
+      selectEngineLayer(layerId);
+    }
   }
 
   function clearSourceVideoState() {
@@ -2443,6 +2519,17 @@ export function ProfessionalVideoStudio() {
               className="sr-only"
               onChange={(event) => handleFiles(event.target.files ?? undefined)}
             />
+            <input
+              ref={imageLayerInputRef}
+              type="file"
+              multiple
+              accept="image/*"
+              className="sr-only"
+              onChange={(event) => {
+                void addImageLayerFromFiles(event.target.files ?? undefined);
+                event.currentTarget.value = "";
+              }}
+            />
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
@@ -2555,6 +2642,8 @@ export function ProfessionalVideoStudio() {
                     <ToolbarButton label="Split" icon={Crop} onClick={splitSelectedLayer} />
                     <ToolbarButton label="Merge" icon={Layers3} onClick={mergeVideoLayers} />
                     <ToolbarButton label="Text" icon={Type} onClick={addTextLayer} />
+                    <ToolbarButton label="Image" icon={ImageIcon} onClick={() => imageLayerInputRef.current?.click()} />
+                    <ToolbarButton label="CTA" icon={Plus} onClick={addCtaLayer} />
                     <ToolbarButton label="Duplicate" icon={Copy} onClick={duplicateSelectedLayer} disabled={!selectedLayer} />
                     <ToolbarButton label="Forward" icon={BringToFront} onClick={moveSelectedLayerForward} disabled={!selectedLayer} />
                     <ToolbarButton label="Backward" icon={SendToBack} onClick={moveSelectedLayerBackward} disabled={!selectedLayer} />
@@ -3401,6 +3490,31 @@ function addAssetsToTimeline(tracks: TimelineTrack[], assets: MediaAsset[]): Tim
   });
 }
 
+function appendLayersToOverlayTrack(tracks: TimelineTrack[], layers: TimelineLayer[]): TimelineTrack[] {
+  let didAppend = false;
+  const nextTracks = tracks.map((track) => {
+    if (track.kind !== "overlay") return track;
+
+    didAppend = true;
+    return {
+      ...track,
+      layers: [...track.layers, ...layers],
+    };
+  });
+
+  if (didAppend) return nextTracks;
+
+  return [
+    ...tracks,
+    {
+      id: "track-overlays",
+      name: "Text / Images",
+      kind: "overlay",
+      layers,
+    },
+  ];
+}
+
 function applyStoredMediaMetadataToTimeline(
   tracks: TimelineTrack[],
   records: StoredMediaRecord[],
@@ -3515,6 +3629,97 @@ function createEditableTextLayer({
   };
 }
 
+function createEditableImageLayer({
+  asset,
+  aspectRatio,
+  previewTime,
+}: {
+  asset: MediaAsset;
+  aspectRatio: AspectRatio;
+  previewTime: number;
+}): TimelineLayer {
+  const geometry = getDefaultImageLayerGeometry(asset, aspectRatio);
+
+  return {
+    id: createLayerId("image"),
+    type: "image",
+    name: asset.name,
+    start: Math.max(0, Math.round(previewTime * 10) / 10),
+    duration: Math.max(5, Math.min(12, Math.round(asset.durationSeconds ?? 6))),
+    color: "#c084fc",
+    src: asset.url,
+    opacity: 1,
+    ...geometry,
+  };
+}
+
+function createEditableCtaLayers({
+  aspectRatio,
+  previewTime,
+  brandColor,
+  goal,
+}: {
+  aspectRatio: AspectRatio;
+  previewTime: number;
+  brandColor: string;
+  goal: Goal;
+}): TimelineLayer[] {
+  const canvas = getAspectCanvasDimensions(aspectRatio);
+  const safeMargins = getSafeMarginsForAspect(aspectRatio);
+  const start = Math.max(0, Math.round(previewTime * 10) / 10);
+  const width = canvas.width - safeMargins.left - safeMargins.right;
+  const height = aspectRatio === "16:9" ? 106 : 132;
+  const x = safeMargins.left;
+  const y = Math.max(safeMargins.top, canvas.height - safeMargins.bottom - height - (aspectRatio === "16:9" ? 24 : 36));
+  const ctaText =
+    goal === "sales"
+      ? "اطلب الآن"
+      : goal === "education"
+        ? "احفظ المقطع"
+        : goal === "awareness"
+          ? "اعرف المزيد"
+          : "تابعنا الآن";
+  const shapeId = createLayerId("cta-shape");
+  const textId = createLayerId("cta-text");
+
+  return [
+    {
+      id: shapeId,
+      type: "shape",
+      name: "CTA background",
+      start,
+      duration: 5,
+      color: normalizeHexColor(brandColor),
+      backgroundColor: normalizeHexColor(brandColor),
+      borderRadius: aspectRatio === "16:9" ? 28 : 36,
+      opacity: 0.94,
+      x,
+      y,
+      width,
+      height,
+    },
+    {
+      id: textId,
+      type: "text",
+      name: ctaText,
+      content: ctaText,
+      start,
+      duration: 5,
+      color: "#ffffff",
+      textColor: "#ffffff",
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      opacity: 1,
+      fontSize: aspectRatio === "16:9" ? 46 : 62,
+      fontWeight: "900",
+      x,
+      y: y + Math.round(height * 0.17),
+      width,
+      height: Math.round(height * 0.66),
+    },
+  ];
+}
+
 function getDefaultEditableTextGeometry(aspectRatio: AspectRatio) {
   if (aspectRatio === "16:9") {
     return {
@@ -3539,6 +3744,34 @@ function getDefaultEditableTextGeometry(aspectRatio: AspectRatio) {
     y: 260,
     width: 908,
     height: 190,
+  };
+}
+
+function getDefaultImageLayerGeometry(asset: MediaAsset, aspectRatio: AspectRatio) {
+  const canvas = getAspectCanvasDimensions(aspectRatio);
+  const safeMargins = getSafeMarginsForAspect(aspectRatio);
+  const maxWidth = canvas.width - safeMargins.left - safeMargins.right;
+  const maxHeight = Math.round((canvas.height - safeMargins.top - safeMargins.bottom) * 0.54);
+  const sourceWidth = asset.width && asset.width > 0 ? asset.width : 1;
+  const sourceHeight = asset.height && asset.height > 0 ? asset.height : 1;
+  const sourceRatio = sourceWidth / sourceHeight;
+
+  let width = Math.min(maxWidth, Math.round(canvas.width * (aspectRatio === "16:9" ? 0.46 : 0.74)));
+  let height = Math.round(width / sourceRatio);
+
+  if (height > maxHeight) {
+    height = maxHeight;
+    width = Math.round(height * sourceRatio);
+  }
+
+  width = Math.max(160, Math.min(maxWidth, width));
+  height = Math.max(160, Math.min(maxHeight, height));
+
+  return {
+    x: Math.round((canvas.width - width) / 2),
+    y: Math.round(safeMargins.top + (canvas.height - safeMargins.top - safeMargins.bottom - height) * 0.38),
+    width,
+    height,
   };
 }
 
@@ -4485,6 +4718,139 @@ function duplicateTemplateProjectLayer(
     timeline: nextTimeline,
     updatedAt: new Date().toISOString(),
   };
+}
+
+function appendTimelineLayersToTemplateProject(
+  project: TemplateProject,
+  layers: TimelineLayer[],
+): TemplateProject {
+  const templateLayers = layers
+    .map((layer) => timelineLayerToTemplateTimelineLayer(project, layer))
+    .filter((layer): layer is TemplateTimelineTrack["layers"][number] => Boolean(layer));
+  if (!templateLayers.length) return project;
+
+  const additionsByKind = new Map<TemplateTimelineTrack["kind"], TemplateTimelineTrack["layers"]>();
+  templateLayers.forEach((layer) => {
+    const kind = templateLayerTypeToTrackKind(layer.type);
+    additionsByKind.set(kind, [...(additionsByKind.get(kind) ?? []), layer]);
+  });
+
+  const usedKinds = new Set<TemplateTimelineTrack["kind"]>();
+  const nextTimeline = project.timeline.map((track) => {
+    const additions = additionsByKind.get(track.kind);
+    if (!additions?.length) return track;
+
+    usedKinds.add(track.kind);
+    return {
+      ...track,
+      layers: [...track.layers, ...additions],
+    };
+  });
+
+  additionsByKind.forEach((additions, kind) => {
+    if (usedKinds.has(kind)) return;
+    nextTimeline.push({
+      id: `track-${kind}`,
+      name: getTemplateTrackName(kind),
+      kind,
+      layers: additions,
+    });
+  });
+
+  return {
+    ...project,
+    timeline: nextTimeline,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function timelineLayerToTemplateTimelineLayer(
+  project: TemplateProject,
+  layer: TimelineLayer,
+): TemplateTimelineTrack["layers"][number] | null {
+  const type = timelineLayerTypeToTemplateLayerType(layer.type);
+  if (!type) return null;
+
+  const scene = findTemplateSceneForTimelineLayer(project, layer);
+  const absoluteStart = Math.max(0, layer.start);
+
+  return {
+    id: layer.id,
+    type,
+    name: layer.name,
+    content: layer.content,
+    src: layer.src,
+    sceneId: scene.id,
+    sceneName: scene.name,
+    absoluteStart,
+    start: roundTimelineSeconds(Math.max(0, absoluteStart - scene.start)),
+    duration: layer.duration,
+    editable: true,
+    color: layer.textColor ?? layer.color,
+    backgroundColor: layer.backgroundColor,
+    x: layer.x,
+    y: layer.y,
+    width: layer.width,
+    height: layer.height,
+    fontSize: layer.fontSize,
+    fontWeight: layer.fontWeight,
+    borderRadius: layer.borderRadius,
+    opacity: layer.opacity,
+    direction: layer.type === "text" || layer.type === "caption" ? "auto" : undefined,
+    align: layer.type === "text" || layer.type === "caption" ? "center" : undefined,
+    fit: layer.type === "image" ? "cover" : undefined,
+    shape: layer.type === "shape" ? "rect" : undefined,
+  };
+}
+
+function findTemplateSceneForTimelineLayer(project: TemplateProject, layer: TimelineLayer): TemplateScene {
+  return (
+    project.scenes.find((scene) => layer.start >= scene.start && layer.start < scene.start + scene.duration) ??
+    project.scenes[0] ?? {
+      id: "manual-scene",
+      name: "Manual scene",
+      start: 0,
+      duration: project.duration,
+      background: { type: "transparent" },
+      layers: [],
+    }
+  );
+}
+
+function timelineLayerTypeToTemplateLayerType(
+  type: TimelineLayer["type"],
+): TemplateTimelineTrack["layers"][number]["type"] | null {
+  if (type === "caption") return "captions";
+  if (type === "text" || type === "image" || type === "video" || type === "audio" || type === "shape" || type === "background" || type === "waveform") {
+    return type;
+  }
+
+  return null;
+}
+
+function templateLayerTypeToTrackKind(type: TemplateTimelineTrack["layers"][number]["type"]): TemplateTimelineTrack["kind"] {
+  if (type === "captions") return "captions";
+  if (type === "text" || type === "image" || type === "video" || type === "audio" || type === "shape" || type === "background" || type === "waveform") {
+    return type;
+  }
+
+  return "shape";
+}
+
+function getTemplateTrackName(kind: TemplateTimelineTrack["kind"]) {
+  const names: Record<TemplateTimelineTrack["kind"], string> = {
+    scenes: "Scenes",
+    video: "Video",
+    audio: "Audio",
+    text: "Text",
+    image: "Images / Logos",
+    shape: "Shapes",
+    captions: "Captions",
+    background: "Backgrounds",
+    waveform: "Waveform",
+  };
+
+  return names[kind];
 }
 
 function createLayerDuplicateId(sourceId: string) {
