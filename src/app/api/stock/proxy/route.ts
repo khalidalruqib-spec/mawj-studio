@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 const ALLOWED_STOCK_HOSTS = new Set([
   "images.pexels.com",
   "videos.pexels.com",
+  "images.unsplash.com",
   "cdn.pixabay.com",
   "pixabay.com",
 ]);
