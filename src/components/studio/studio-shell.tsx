@@ -1019,10 +1019,12 @@ export function ProfessionalVideoStudio() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not generate edit plan.");
+      const planCaptions = planToCaptions(data.plan);
 
       setPlan(data.plan);
-      setCaptions(planToCaptions(data.plan));
+      setCaptions(planCaptions);
       clearRenderedOutput();
+      commitTimeline((tracks) => ensureCaptionLayer(tracks, planCaptions, data.plan.targetDurationSeconds));
       setProjectStatus("AI edit plan ready");
       setAssistantMessages((messages) => [
         createAssistantMessage(
@@ -1718,14 +1720,48 @@ export function ProfessionalVideoStudio() {
   }
 
   function generateCaptionsFromTranscript() {
-    setCaptions(transcriptToCaptions(transcript.filter((segment) => !segment.deleted)));
+    const nextCaptions = transcriptToCaptions(transcript.filter((segment) => !segment.deleted));
+    setCaptions(nextCaptions);
+    commitTimeline((tracks) =>
+      ensureCaptionLayer(tracks, nextCaptions, studioFile?.durationSeconds ?? totalTimelineSeconds),
+    );
     setActivePanel("captions");
     setProjectStatus("Captions generated from transcript");
   }
 
   function updateCaption(id: string, text: string) {
-    setCaptions((items) => items.map((caption) => (caption.id === id ? { ...caption, text } : caption)));
+    const nextCaptions = captions.map((caption) => (caption.id === id ? { ...caption, text } : caption));
+    setCaptions(nextCaptions);
+    syncCaptionTextToTimeline(id, text, nextCaptions);
     clearRenderedOutput();
+  }
+
+  function syncCaptionTextToTimeline(id: string, text: string, nextCaptions: CaptionLine[]) {
+    let didUpdate = false;
+
+    const nextTracks = timelineTracks.map((track) => {
+      if (track.kind !== "caption") return track;
+
+      return {
+        ...track,
+        layers: track.layers.map((layer) => {
+          if (layer.id !== captionLayerId(id)) return layer;
+          didUpdate = true;
+          return {
+            ...layer,
+            content: text,
+            name: text.trim() ? text : layer.name,
+          };
+        }),
+      };
+    });
+
+    commitTimeline(
+      didUpdate
+        ? nextTracks
+        : ensureCaptionLayer(nextTracks, nextCaptions, studioFile?.durationSeconds ?? totalTimelineSeconds),
+    );
+    setProjectStatus("Caption text synced to timeline");
   }
 
   function downloadSrt() {
@@ -1875,7 +1911,13 @@ export function ProfessionalVideoStudio() {
         durationSeconds,
       }),
     );
-    commitTimeline((tracks) => applyTemplateToTimeline(tracks, template, durationSeconds));
+    commitTimeline((tracks) =>
+      ensureCaptionLayer(
+        applyTemplateToTimeline(tracks, template, durationSeconds),
+        templateCaptions,
+        durationSeconds,
+      ),
+    );
     setActivePanel("editor");
     setProjectStatus(`${template.name} applied to timeline, captions, format, audio, and render plan`);
     setAssistantMessages((messages) => [
@@ -1957,7 +1999,8 @@ export function ProfessionalVideoStudio() {
       "Voice enhancement": true,
       "Auto volume leveling": true,
     }));
-    setCaptions(adVariantToCaptions(variant));
+    const variantCaptions = adVariantToCaptions(variant);
+    setCaptions(variantCaptions);
     setPlan(
       createAdCampaignEditPlan({
         campaign,
@@ -1966,7 +2009,13 @@ export function ProfessionalVideoStudio() {
         aspectRatio,
       }),
     );
-    commitTimeline((tracks) => applyAdVariantToTimeline(tracks, variant));
+    commitTimeline((tracks) =>
+      ensureCaptionLayer(
+        applyAdVariantToTimeline(tracks, variant),
+        variantCaptions,
+        variant.durationSeconds,
+      ),
+    );
     setActivePanel("editor");
   }
 
@@ -3273,21 +3322,7 @@ function ensureCaptionLayer(tracks: TimelineTrack[], captions: CaptionLine[], du
   const captionDuration =
     captions.length > 0 ? Math.max(...captions.map((caption) => caption.end)) : durationSeconds;
   const captionLayers = captions.length
-    ? captions.map((caption, index): TimelineLayer => ({
-        id: `caption-${caption.id}`,
-        type: "caption",
-        name: `Caption ${index + 1}`,
-        start: Math.max(0, caption.start),
-        duration: Math.max(0.4, caption.end - caption.start),
-        color: "#ffffff",
-        textColor: "#ffffff",
-        backgroundColor: "#000000",
-        content: caption.text,
-        fontSize: 58,
-        fontWeight: "900",
-        borderRadius: 22,
-        opacity: 1,
-      }))
+    ? captions.map(captionToTimelineLayer)
     : [
         {
           id: "caption-main",
@@ -3307,6 +3342,28 @@ function ensureCaptionLayer(tracks: TimelineTrack[], captions: CaptionLine[], du
         }
       : track,
   );
+}
+
+function captionToTimelineLayer(caption: CaptionLine, index: number): TimelineLayer {
+  return {
+    id: captionLayerId(caption.id),
+    type: "caption",
+    name: caption.text.trim() || `Caption ${index + 1}`,
+    start: Math.max(0, caption.start),
+    duration: Math.max(0.4, caption.end - caption.start),
+    color: "#ffffff",
+    textColor: "#ffffff",
+    backgroundColor: "#000000",
+    content: caption.text,
+    fontSize: 58,
+    fontWeight: "900",
+    borderRadius: 22,
+    opacity: 1,
+  };
+}
+
+function captionLayerId(captionId: string) {
+  return `caption-${captionId}`;
 }
 
 function getTrackEnd(track: TimelineTrack) {
