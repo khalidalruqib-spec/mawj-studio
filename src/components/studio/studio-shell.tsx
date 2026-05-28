@@ -138,6 +138,7 @@ import { StockMediaPanel } from "@/components/studio/panels/stock";
 import { useProjectPersistence } from "@/components/studio/hooks/use-project-persistence";
 import { useTemplateDraftLoader } from "@/components/studio/hooks/use-template-draft-loader";
 
+const DEFAULT_IMAGE_CLIP_DURATION_SECONDS = 6;
 
 export function ProfessionalVideoStudio() {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -367,8 +368,56 @@ export function ProfessionalVideoStudio() {
       setTimelineTracks(createTimelineForAssets(restoredAssets, firstVideoAsset.id));
     }
 
+    const restoredImageAssets = restoredAssets.filter((asset) => asset.kind === "image");
+    if (!studioFile && !firstVideoAsset && !templateProject && restoredImageAssets.length) {
+      const durationSeconds = getImageStoryboardDuration(restoredImageAssets.length);
+      const restoredPlan = createImageStoryboardPlan({
+        assets: restoredImageAssets,
+        durationSeconds,
+        platform,
+        aspectRatio,
+        styleId,
+        brandName,
+        goal,
+      });
+      const restoredProject = createImageStoryboardTemplateProject({
+        assets: restoredImageAssets,
+        plan: restoredPlan,
+        brandName,
+        aspectRatio,
+        styleName: activeStyle.arabicName,
+        goal,
+      });
+      const restoredTracks = templateTimelineToEditorTracks(restoredProject.timeline);
+      const firstEditableLayer =
+        restoredTracks.flatMap((track) => track.layers).find((layer) => layer.type === "image") ??
+        restoredTracks.flatMap((track) => track.layers)[0] ??
+        null;
+
+      setTemplateProject(restoredProject);
+      setEngineProject(createVideoProjectFromTemplateProject(restoredProject), { resetHistory: true });
+      setTimelineTracks(restoredTracks);
+      setSelectedLayerId(firstEditableLayer?.id ?? "");
+      selectEngineLayer(firstEditableLayer?.id ?? null);
+      setCaptions(planToCaptions(restoredPlan));
+      setPlan(restoredPlan);
+      setPreviewTime(0);
+      setActivePanel("editor");
+    }
+
     setProjectStatus(`${records.length} media assets restored from browser storage`);
-  }, [aspectRatio, setEngineProject, studioFile]);
+  }, [
+    activeStyle.arabicName,
+    aspectRatio,
+    brandName,
+    goal,
+    platform,
+    selectEngineLayer,
+    setEngineProject,
+    studioFile,
+    styleId,
+    templateProject,
+  ]);
 
   const autosaveSnapshot = useMemo<Record<string, unknown>>(
     () => ({
@@ -635,6 +684,40 @@ export function ProfessionalVideoStudio() {
     ].slice(0, 12));
   }, [selectEngineLayer, setEngineProject]);
 
+  function openImageStoryboardProject(imageAssets: MediaAsset[], status?: string) {
+    const storyboardAssets = imageAssets.filter((asset) => asset.kind === "image");
+    if (!storyboardAssets.length) return;
+
+    const durationSeconds = getImageStoryboardDuration(storyboardAssets.length);
+    const storyboardPlan = createImageStoryboardPlan({
+      assets: storyboardAssets,
+      durationSeconds,
+      platform,
+      aspectRatio,
+      styleId,
+      brandName,
+      goal,
+    });
+    const storyboardProject = createImageStoryboardTemplateProject({
+      assets: storyboardAssets,
+      plan: storyboardPlan,
+      brandName,
+      aspectRatio,
+      styleName: activeStyle.arabicName,
+      goal,
+    });
+
+    applyTemplateProject(storyboardProject, {
+      plan: storyboardPlan,
+      captions: planToCaptions(storyboardPlan),
+      status: status ?? `${storyboardAssets.length} image${storyboardAssets.length > 1 ? "s" : ""} opened as an editable video`,
+      message: `جهزت الصور كمشروع فيديو قابل للتعديل مدته ${durationSeconds} ثانية. كل صورة أصبحت مشهد مستقل وتقدر تحركها وتغير توقيتها وتصدرها.`,
+    });
+    setActiveProject(null);
+    setPreviewTime(0);
+    setIsPlaying(false);
+  }
+
   useTemplateDraftLoader({
     onLoad: applyTemplateProject,
     onError: () => setProjectStatus("Could not load template project"),
@@ -644,16 +727,11 @@ export function ProfessionalVideoStudio() {
     if (!files?.length) return;
 
     const filesArray = Array.from(files);
-    const incomingAssets: MediaAsset[] = filesArray.map((file) => ({
-      id: crypto.randomUUID(),
-      name: file.name,
-      file,
-      url: URL.createObjectURL(file),
-      kind: getAssetKind(file),
-      size: file.size,
-    }));
+    const incomingAssets: MediaAsset[] = filesArray.map(createMediaAssetFromFile);
 
     const firstVideoAsset = incomingAssets.find((asset) => asset.kind === "video") ?? null;
+    const incomingImageAssets = incomingAssets.filter((asset) => asset.kind === "image");
+    const allAssets = [...incomingAssets, ...mediaAssets];
     setMediaAssets((assets) => [...incomingAssets, ...assets]);
     void persistUploadedMedia(incomingAssets, firstVideoAsset?.id ?? null);
 
@@ -666,7 +744,7 @@ export function ProfessionalVideoStudio() {
         createVideoProjectFromMediaAssets({
           name: firstVideoAsset.name,
           aspectRatio,
-          assets: [...incomingAssets, ...mediaAssets].map(mediaAssetToBridgeAsset),
+          assets: allAssets.map(mediaAssetToBridgeAsset),
           primaryVideoAssetId: firstVideoAsset.id,
           durationSeconds: initialDuration,
         }),
@@ -680,6 +758,20 @@ export function ProfessionalVideoStudio() {
           ? `${incomingAssets.length} media files loaded into the timeline`
           : "Source video loaded",
       );
+    }
+
+    if (
+      !firstVideoAsset &&
+      incomingImageAssets.length &&
+      !studioFile &&
+      (!templateProject || templateProject.templateId === "image-storyboard-generated")
+    ) {
+      openImageStoryboardProject(
+        allAssets.filter((asset) => asset.kind === "image"),
+        `${incomingImageAssets.length} image${incomingImageAssets.length > 1 ? "s" : ""} loaded into an editable video storyboard`,
+      );
+      setError("");
+      return;
     }
 
     commitTimeline((tracks) =>
@@ -749,6 +841,25 @@ export function ProfessionalVideoStudio() {
     commitTimeline((tracks) => syncPrimaryVideoDuration(tracks, studioFile.file.name, roundedDuration));
   }
 
+  useEffect(() => {
+    if (!isPlaying || studioFile || !templateProject) return;
+
+    const intervalId = window.setInterval(() => {
+      setPreviewTime((currentTime) => {
+        const nextTime = Math.min(templateProject.duration, roundTimelineSeconds(currentTime + 0.1));
+        setEnginePlayhead(nextTime);
+
+        if (nextTime >= templateProject.duration) {
+          setIsPlaying(false);
+        }
+
+        return nextTime;
+      });
+    }, 100);
+
+    return () => window.clearInterval(intervalId);
+  }, [isPlaying, setEnginePlayhead, studioFile, templateProject]);
+
   function addMediaAssetToTimeline(asset: MediaAsset) {
     if (asset.kind === "image") {
       const imageLayer = createEditableImageLayer({
@@ -773,14 +884,7 @@ export function ProfessionalVideoStudio() {
       return;
     }
 
-    const incomingAssets: MediaAsset[] = imageFiles.map((file) => ({
-      id: crypto.randomUUID(),
-      name: file.name,
-      file,
-      url: URL.createObjectURL(file),
-      kind: "image",
-      size: file.size,
-    }));
+    const incomingAssets: MediaAsset[] = imageFiles.map(createMediaAssetFromFile);
     const imageLayers = incomingAssets.map((asset, index) =>
       createEditableImageLayer({
         asset,
@@ -1203,14 +1307,18 @@ export function ProfessionalVideoStudio() {
         captions: nextCaptions,
         status: `Generated ${imageAssets.length} images into an editable video storyboard`,
         message: `Image video generated: ${imageAssets.length} uploaded images became ${storyboardProject.scenes.length} scenes with editable text, image layers, captions, and export-ready timing.`,
-      });
-      setActiveProject(null);
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Unexpected image video generation error.");
-    } finally {
-      setIsGenerating(false);
-    }
-  }
+	      });
+	      setActiveProject(null);
+	    } catch {
+	      openImageStoryboardProject(
+	        imageAssets,
+	        "Generated a local image storyboard because the AI planner was unavailable",
+	      );
+	      setError("");
+	    } finally {
+	      setIsGenerating(false);
+	    }
+	  }
 
   async function ensureProjectUploaded() {
     if (!studioFile) throw new Error("Upload a source video first, or use Generate to turn images into a storyboard.");
@@ -1287,6 +1395,18 @@ export function ProfessionalVideoStudio() {
   }
 
   async function togglePlayback() {
+    if (!studioFile && templateProject) {
+      setIsPlaying((playing) => {
+        const shouldPlay = !playing;
+        if (shouldPlay && previewTime >= templateProject.duration) {
+          setPreviewTime(0);
+          setEnginePlayhead(0);
+        }
+        return shouldPlay;
+      });
+      return;
+    }
+
     const video = videoRef.current;
     if (!video) return;
 
@@ -2689,7 +2809,10 @@ export function ProfessionalVideoStudio() {
               multiple
               accept="video/*,audio/*,image/*"
               className="sr-only"
-              onChange={(event) => handleFiles(event.target.files ?? undefined)}
+              onChange={(event) => {
+                void handleFiles(event.target.files ?? undefined);
+                event.currentTarget.value = "";
+              }}
             />
             <input
               ref={imageLayerInputRef}
@@ -3384,6 +3507,94 @@ export function ProfessionalVideoStudio() {
 
 function createDefaultTimeline(): TimelineTrack[] {
   return createTimelineForVideo("Source video", 36);
+}
+
+function createImageStoryboardPlan({
+  assets,
+  durationSeconds,
+  platform,
+  aspectRatio,
+  styleId,
+  brandName,
+  goal,
+}: {
+  assets: MediaAsset[];
+  durationSeconds: number;
+  platform: Platform;
+  aspectRatio: AspectRatio;
+  styleId: VideoStyleId;
+  brandName: string;
+  goal: Goal;
+}): EditPlan {
+  const brand = brandName.trim() || "Mawj Studio";
+  const title = assets.length === 1 ? `فيديو صورة · ${brand}` : `فيديو صور · ${brand}`;
+  const hook =
+    goal === "sales"
+      ? "حوّلنا الصور إلى إعلان قصير جاهز للنشر."
+      : goal === "education"
+        ? "حوّلنا الصور إلى شرح بصري سريع."
+        : "حوّلنا الصور إلى فيديو متحرك قابل للتعديل.";
+  const introEnd = Math.max(2, Math.min(4, Math.round(durationSeconds * 0.24)));
+  const showcaseEnd = Math.max(introEnd + 2, Math.round(durationSeconds * 0.72));
+  const ctaStart = Math.max(showcaseEnd, Math.round(durationSeconds * 0.78));
+
+  return {
+    id: `image-plan-${Date.now()}`,
+    title,
+    hook,
+    summary: `تم بناء مشروع فيديو من ${assets.length} صورة بمدة ${durationSeconds} ثانية، مع مشاهد مستقلة وحركات دخول وخروج وكابشن قابل للتعديل.`,
+    targetDurationSeconds: durationSeconds,
+    styleId,
+    confidence: 90,
+    renderSettings: {
+      aspectRatio,
+      resolution: aspectRatio === "16:9" ? "1920x1080" : aspectRatio === "1:1" ? "1080x1080" : "1080x1920",
+      fps: 30,
+      loudness: "No source audio",
+      safeMargins: aspectRatio === "9:16" ? "Top 160px / Bottom 260px" : "Standard safe zones",
+    },
+    timeline: [
+      {
+        id: "image-hook",
+        label: "Opening image hook",
+        start: 0,
+        end: introEnd,
+        action: "أول صورة تظهر بزوم ناعم وعنوان واضح داخل الهوامش الآمنة.",
+        intensity: "high",
+      },
+      {
+        id: "image-showcase",
+        label: "Image sequence",
+        start: introEnd,
+        end: showcaseEnd,
+        action: "كل صورة تتحول إلى مشهد مستقل مع حركة slide/zoom حتى لا يظهر الفيديو ثابتاً.",
+        intensity: "medium",
+      },
+      {
+        id: "image-cta",
+        label: "CTA closing",
+        start: ctaStart,
+        end: durationSeconds,
+        action: goal === "sales" ? "خاتمة بطلب واضح وسريع." : "خاتمة للحفظ أو المشاركة.",
+        intensity: goal === "sales" ? "high" : "medium",
+      },
+    ],
+    captions: [
+      { at: 0, text: hook, emphasis: ["فيديو", "جاهز"] },
+      { at: introEnd, text: assets.length > 1 ? "كل صورة صارت مشهد مستقل." : "الصورة صارت مشهد متحرك.", emphasis: ["مشهد"] },
+      { at: ctaStart, text: goal === "sales" ? "أضف السعر والدعوة للطلب الآن." : "عدّل النص وانشر النسخة المناسبة.", emphasis: ["عدّل", "انشر"] },
+    ],
+    aiTools: [
+      { name: "Image storyboard", status: "ready", detail: "تحويل الصور إلى مشاهد بزمن فعلي." },
+      { name: "Animated captions", status: "ready", detail: "كابشن قابل للتعديل فوق الصور." },
+      { name: "Export", status: "ready", detail: "تصدير MP4 من مشروع الصور." },
+    ],
+    exportVariants: [
+      { platform: PLATFORM_LABELS[platform], duration: `${durationSeconds}s`, caption: "نسخة فيديو من الصور." },
+      { platform: "MP4", duration: `${durationSeconds}s`, caption: "تصدير كامل مع النصوص والحركات." },
+      { platform: "Thumbnail", duration: "1 frame", caption: "غلاف من أول مشهد." },
+    ],
+  };
 }
 
 function createImageStoryboardTemplateProject({
@@ -5262,6 +5473,20 @@ function getAssetKind(file: File): MediaAsset["kind"] {
   return "video";
 }
 
+function createMediaAssetFromFile(file: File): MediaAsset {
+  const kind = getAssetKind(file);
+
+  return {
+    id: crypto.randomUUID(),
+    name: file.name,
+    file,
+    url: URL.createObjectURL(file),
+    kind,
+    size: file.size,
+    durationSeconds: kind === "image" ? DEFAULT_IMAGE_CLIP_DURATION_SECONDS : undefined,
+  };
+}
+
 function mediaAssetToBridgeAsset(asset: MediaAsset): MediaAssetInput {
   return {
     id: asset.id,
@@ -5282,7 +5507,7 @@ function storedMediaRecordToAsset(record: StoredMediaRecord): MediaAsset {
     url: URL.createObjectURL(record.blob),
     kind: record.type,
     size: record.size,
-    durationSeconds: record.durationSeconds,
+    durationSeconds: record.durationSeconds ?? (record.type === "image" ? DEFAULT_IMAGE_CLIP_DURATION_SECONDS : undefined),
     width: record.width,
     height: record.height,
     persisted: true,

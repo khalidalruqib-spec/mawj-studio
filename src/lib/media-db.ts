@@ -3,6 +3,7 @@ import { isUsableMediaDuration, resolveMediaDuration } from "@/lib/media-duratio
 
 const DB_NAME = "mawj-studio";
 const DB_VERSION = 1;
+const DEFAULT_IMAGE_DURATION_SECONDS = 6;
 
 export type StoredMediaType = "video" | "audio" | "image";
 
@@ -198,7 +199,7 @@ function extractVideoMetadata(file: File) {
 }
 
 function extractImageMetadata(file: File) {
-  return new Promise<Pick<StoredMediaRecord, "thumbnail" | "width" | "height">>((resolve, reject) => {
+  return new Promise<Pick<StoredMediaRecord, "thumbnail" | "durationSeconds" | "width" | "height">>((resolve, reject) => {
     const image = new Image();
     const url = URL.createObjectURL(file);
 
@@ -209,6 +210,7 @@ function extractImageMetadata(file: File) {
       cleanup();
       resolve({
         thumbnail,
+        durationSeconds: DEFAULT_IMAGE_DURATION_SECONDS,
         width: image.naturalWidth || undefined,
         height: image.naturalHeight || undefined,
       });

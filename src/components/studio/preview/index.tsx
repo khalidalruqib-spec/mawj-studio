@@ -84,7 +84,7 @@ export function VideoPreview({
 }) {
   const previewDurationSeconds = isUsableMediaDuration(studioFile?.durationSeconds)
     ? studioFile.durationSeconds
-    : 0;
+    : templateProject?.duration ?? 0;
   const previewProgress = previewDurationSeconds
     ? Math.min(100, Math.max(0, (previewTime / previewDurationSeconds) * 100))
     : 0;
@@ -110,6 +110,7 @@ export function VideoPreview({
           <video
             ref={videoRef}
             src={studioFile.url}
+            preload="metadata"
             onLoadedMetadata={onLoadedMetadata}
             onTimeUpdate={onTimeUpdate}
             onEnded={onEnded}
@@ -147,6 +148,7 @@ export function VideoPreview({
         >
           <TemplateProjectPreview
             project={templateProject}
+            previewTime={previewTime}
             selectedLayerId={selectedLayerId}
             onSelectLayer={onSelectLayer}
             onUpdateLayerGeometry={onUpdateLayerGeometry}
@@ -201,7 +203,7 @@ export function VideoPreview({
         <button
           type="button"
           onClick={onTogglePlayback}
-          disabled={!studioFile}
+          disabled={!studioFile && !templateProject}
           aria-label={isPlaying ? "Pause preview" : "Play preview"}
           className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-black transition hover:bg-[var(--brand)] disabled:opacity-40"
         >
@@ -214,7 +216,7 @@ export function VideoPreview({
           />
         </div>
         <span className="text-xs font-black text-white/70" dir="ltr">
-          {studioFile ? `${formatDuration(previewTime)} / ${formatDuration(previewDurationSeconds)}` : "00:00"}
+          {studioFile || templateProject ? `${formatDuration(previewTime)} / ${formatDuration(previewDurationSeconds)}` : "00:00"}
         </span>
       </div>
     </div>
@@ -369,7 +371,13 @@ export function TimelinePreviewLayer({
     return (
       <div onPointerDown={onPointerDown} className="absolute cursor-move overflow-hidden" style={shellStyle}>
         {layer.src ? (
-          <img src={layer.src} alt={layer.name} className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "contain")}`} />
+          <img
+            src={layer.src}
+            alt={layer.name}
+            loading="lazy"
+            decoding="async"
+            className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "contain")}`}
+          />
         ) : (
           <div className="grid h-full w-full place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70">
             IMAGE
@@ -452,11 +460,13 @@ function getPreviewSafeMargins({ width, height }: PreviewCanvasGeometry) {
 
 export function TemplateProjectPreview({
   project,
+  previewTime = 0,
   selectedLayerId,
   onSelectLayer,
   onUpdateLayerGeometry,
 }: {
   project: TemplateProject;
+  previewTime?: number;
   selectedLayerId?: string;
   onSelectLayer?: (id: string) => void;
   onUpdateLayerGeometry?: (layerId: string, patch: Pick<TimelineLayer, "x" | "y" | "width" | "height">) => void;
@@ -464,10 +474,12 @@ export function TemplateProjectPreview({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<PreviewLayerDragState | null>(null);
   const [dragDraft, setDragDraft] = useState<PreviewLayerDragDraft | null>(null);
-  const firstScene = project.scenes[0];
+  const activeTime = Math.max(0, Math.min(project.duration, previewTime));
   const activeLayers = project.timeline
     .flatMap((track) => track.layers)
-    .filter((layer) => layer.absoluteStart <= (firstScene?.duration ?? project.duration))
+    .filter((layer) => layer.id !== layer.sceneId)
+    .filter((layer) => layer.absoluteStart <= activeTime && layer.absoluteStart + layer.duration >= activeTime)
+    .sort((left, right) => getTemplatePreviewLayerOrder(left.type) - getTemplatePreviewLayerOrder(right.type))
     .slice(0, 12);
 
   const handleLayerPointerDown = useCallback(
@@ -651,7 +663,13 @@ export function TemplatePreviewLayer({
         style={shellStyle}
       >
         {src && layer.type === "image" ? (
-          <img src={src} alt={layer.name ?? layer.id} className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "contain")}`} />
+          <img
+            src={src}
+            alt={layer.name ?? layer.id}
+            loading="lazy"
+            decoding="async"
+            className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "contain")}`}
+          />
         ) : (
           <div className="grid h-full w-full place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70">
             {layer.type.toUpperCase()}
@@ -829,6 +847,14 @@ function getMediaObjectFitClass(fit: TimelineLayer["fit"]) {
   if (fit === "fill") return "object-fill";
   if (fit === "cover") return "object-cover";
   return "object-contain";
+}
+
+function getTemplatePreviewLayerOrder(type: TemplateTimelineTrack["layers"][number]["type"]) {
+  if (type === "background") return 0;
+  if (type === "video" || type === "image") return 1;
+  if (type === "shape" || type === "waveform") return 2;
+  if (type === "text" || type === "captions") return 3;
+  return 4;
 }
 
 export function TimelineEditor({
