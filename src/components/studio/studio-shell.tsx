@@ -180,6 +180,7 @@ export function ProfessionalVideoStudio() {
   const [activeProject, setActiveProject] = useState<StudioProject | null>(null);
   const [recentProjects, setRecentProjects] = useState<StudioProject[]>([]);
   const [timelineTracks, setTimelineTracks] = useState<TimelineTrack[]>(() => createDefaultTimeline());
+  const timelineTracksRef = useRef<TimelineTrack[]>(timelineTracks);
   const [selectedLayerId, setSelectedLayerId] = useState("clip-main");
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
@@ -332,6 +333,10 @@ export function ProfessionalVideoStudio() {
     if (!engineProject) return;
     syncEditorTimelineFromEngineProject(engineProject);
   }, [engineProject]);
+
+  useEffect(() => {
+    timelineTracksRef.current = timelineTracks;
+  }, [timelineTracks]);
 
   const restorePersistedMedia = useCallback(async (isCancelled: () => boolean) => {
     const records = await listMediaRecords();
@@ -492,11 +497,12 @@ export function ProfessionalVideoStudio() {
       "";
 
     setTimelineTracks(nextTracks);
+    timelineTracksRef.current = nextTracks;
     setSelectedLayerId(nextSelectedLayerId);
   }
 
   function commitTimeline(nextTracks: TimelineTrack[] | ((current: TimelineTrack[]) => TimelineTrack[])) {
-    const resolvedTracks = typeof nextTracks === "function" ? nextTracks(timelineTracks) : nextTracks;
+    const resolvedTracks = typeof nextTracks === "function" ? nextTracks(timelineTracksRef.current) : nextTracks;
     const currentEngineProject = useVideoProjectStore.getState().currentProject;
     const syncedProject = createVideoProjectFromEditorTimeline({
       baseProject: currentEngineProject,
@@ -510,6 +516,7 @@ export function ProfessionalVideoStudio() {
     });
 
     setTimelineTracks(resolvedTracks);
+    timelineTracksRef.current = resolvedTracks;
     useVideoProjectStore.getState().setCurrentProject(syncedProject);
     clearRenderedOutput();
     setProjectStatus("Autosaved timeline changes");
@@ -658,6 +665,7 @@ export function ProfessionalVideoStudio() {
     setEngineProject(createVideoProjectFromTemplateProject(project), { resetHistory: true });
     selectEngineLayer(firstEditableLayer?.id ?? null);
     setTimelineTracks(tracks);
+    timelineTracksRef.current = tracks;
     setSelectedLayerId(firstEditableLayer?.id ?? "clip-main");
     setCaptions(options?.captions ?? templateProjectToCaptions(project));
     setPlan(options?.plan ?? templateProjectToEditPlan(project));
@@ -749,6 +757,7 @@ export function ProfessionalVideoStudio() {
     setIsPlaying(false);
     setPreviewTime(0);
     setTimelineTracks(nextTracks);
+    timelineTracksRef.current = nextTracks;
     setSelectedLayerId("clip-main");
     setEngineProject(blankProject, { resetHistory: true });
     selectEngineLayer("clip-main");
@@ -951,6 +960,17 @@ export function ProfessionalVideoStudio() {
 
     setMediaAssets((assets) => [...incomingAssets, ...assets]);
     void persistUploadedMedia(incomingAssets, null);
+
+    if (!studioFile && (!templateProject || templateProject.templateId === "image-storyboard-generated")) {
+      openImageStoryboardProject(
+        uniqueMediaAssetsById([...incomingAssets, ...mediaAssets]).filter((asset) => asset.kind === "image"),
+        `${incomingAssets.length} image${incomingAssets.length > 1 ? "s" : ""} opened in an editable video storyboard`,
+      );
+      setActivePanel("editor");
+      setError("");
+      return;
+    }
+
     appendEditableLayersToProject(imageLayers, imageLayers.at(-1)?.id ?? imageLayers[0]?.id);
     setActivePanel("editor");
     setError("");
@@ -1077,6 +1097,7 @@ export function ProfessionalVideoStudio() {
     revokeObjectUrl(asset.url);
     setMediaAssets((assets) => assets.filter((item) => item.id !== asset.id));
     void deleteMediaRecord(asset.id).catch(() => undefined);
+    syncTemplateProjectTimeline(nextTracks);
     commitTimeline(nextTracks);
     setSelectedLayerId(nextLayer?.id ?? "");
     selectEngineLayer(nextLayer?.id ?? null);
@@ -1495,7 +1516,7 @@ export function ProfessionalVideoStudio() {
     if (templateProject) {
       setIsRendering(true);
       setError("");
-      setRenderResult(null);
+      clearRenderedOutput();
       setRenderProgress({
         percent: 0,
         label: "Preparing template render",
@@ -1542,7 +1563,7 @@ export function ProfessionalVideoStudio() {
 
     setIsRendering(true);
     setError("");
-    setRenderResult(null);
+    clearRenderedOutput();
     setRenderProgress({
       percent: 0,
       label: "Preparing render",
@@ -1589,7 +1610,7 @@ export function ProfessionalVideoStudio() {
 
     setIsRendering(true);
     setError("");
-    setRenderResult(null);
+    clearRenderedOutput();
     setRenderProgress({
       percent: 0,
       label: `Preparing ${clip.label}`,
