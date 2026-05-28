@@ -727,7 +727,9 @@ export function ProfessionalVideoStudio() {
     if (!files?.length) return;
 
     const filesArray = Array.from(files);
-    const incomingAssets: MediaAsset[] = filesArray.map(createMediaAssetFromFile);
+    setProjectStatus("Optimizing uploaded media for the editor...");
+    const preparedFiles = await Promise.all(filesArray.map(prepareStudioFileForUpload));
+    const incomingAssets: MediaAsset[] = preparedFiles.map(createMediaAssetFromFile);
 
     const firstVideoAsset = incomingAssets.find((asset) => asset.kind === "video") ?? null;
     const incomingImageAssets = incomingAssets.filter((asset) => asset.kind === "image");
@@ -884,7 +886,9 @@ export function ProfessionalVideoStudio() {
       return;
     }
 
-    const incomingAssets: MediaAsset[] = imageFiles.map(createMediaAssetFromFile);
+    setProjectStatus("Optimizing image layers for fast preview...");
+    const preparedFiles = await Promise.all(imageFiles.map(prepareStudioFileForUpload));
+    const incomingAssets: MediaAsset[] = preparedFiles.map(createMediaAssetFromFile);
     const imageLayers = incomingAssets.map((asset, index) =>
       createEditableImageLayer({
         asset,
@@ -5471,6 +5475,73 @@ function getAssetKind(file: File): MediaAsset["kind"] {
   if (file.type.startsWith("audio/")) return "audio";
   if (file.type.startsWith("image/")) return "image";
   return "video";
+}
+
+async function prepareStudioFileForUpload(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  if (file.type === "image/svg+xml" || file.type === "image/gif") return file;
+  if (typeof window === "undefined" || typeof document === "undefined") return file;
+
+  const optimized = await downscaleImageFile(file).catch(() => null);
+  return optimized ?? file;
+}
+
+function downscaleImageFile(file: File): Promise<File | null> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+    const cleanup = () => URL.revokeObjectURL(url);
+
+    image.onload = () => {
+      const maxDimension = 2160;
+      const width = image.naturalWidth || 0;
+      const height = image.naturalHeight || 0;
+      const largestSide = Math.max(width, height);
+
+      if (!width || !height || (largestSide <= maxDimension && file.size <= 3_000_000)) {
+        cleanup();
+        resolve(null);
+        return;
+      }
+
+      const scale = Math.min(1, maxDimension / largestSide);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(
+        (blob) => {
+          cleanup();
+
+          if (!blob || blob.size >= file.size) {
+            resolve(null);
+            return;
+          }
+
+          resolve(
+            new File([blob], `${withoutFileExtension(file.name)}.webp`, {
+              type: "image/webp",
+              lastModified: file.lastModified,
+            }),
+          );
+        },
+        "image/webp",
+        0.88,
+      );
+    };
+
+    image.onerror = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    image.src = url;
+  });
+}
+
+function withoutFileExtension(fileName: string) {
+  return fileName.replace(/\.[^.]+$/, "") || "image";
 }
 
 function createMediaAssetFromFile(file: File): MediaAsset {

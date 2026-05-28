@@ -123,6 +123,7 @@ function drawTemplateFrame(
 
   const activeLayers = project.timeline
     .flatMap((track) => track.layers)
+    .filter((layer) => layer.id !== layer.sceneId)
     .filter((layer) => isLayerActive(layer, time))
     .sort((left, right) => getLayerZIndex(left.type) - getLayerZIndex(right.type));
 
@@ -331,18 +332,20 @@ function drawWaveform(context: CanvasRenderingContext2D, layer: TemplateTimeline
 }
 
 async function loadTemplateAssets(timeline: TemplateTimelineTrack[]) {
-  const sources = new Set(
-    timeline
-      .flatMap((track) => track.layers)
-      .filter((layer) => (layer.type === "image" || layer.type === "video") && layer.src && !layer.src.includes("{{"))
-      .map((layer) => layer.src as string),
-  );
+  const sources = new Map<string, "image" | "video">();
+
+  for (const layer of timeline.flatMap((track) => track.layers)) {
+    if ((layer.type === "image" || layer.type === "video") && layer.src && !layer.src.includes("{{")) {
+      sources.set(layer.src, layer.type);
+    }
+  }
+
   const assets = new Map<string, LoadedAsset>();
 
   await Promise.all(
-    [...sources].map(async (src) => {
+    [...sources.entries()].map(async ([src, type]) => {
       try {
-        assets.set(src, await loadAsset(src));
+        assets.set(src, await loadAsset(src, type));
       } catch {
         // The renderer draws a placeholder for missing local assets.
       }
@@ -352,11 +355,12 @@ async function loadTemplateAssets(timeline: TemplateTimelineTrack[]) {
   return assets;
 }
 
-function loadAsset(src: string): Promise<LoadedAsset> {
+function loadAsset(src: string, type: "image" | "video"): Promise<LoadedAsset> {
   return new Promise((resolve, reject) => {
-    if (src.startsWith("blob:") || src.startsWith("data:") || /\.(png|jpe?g|webp|gif|svg)$/i.test(src)) {
+    if (type === "image") {
       const image = new Image();
       image.crossOrigin = "anonymous";
+      image.decoding = "async";
       image.onload = () => resolve(image);
       image.onerror = reject;
       image.src = src;

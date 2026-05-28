@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+/* eslint-disable @next/next/no-img-element */
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { BRAND } from "@/lib/brand";
@@ -599,13 +601,14 @@ function TemplateCard({
   const editableCount = countEditableLayers(template);
   const captionCount = countLayersByType(template, "captions");
   const motionCount = countMotionTypes(template);
+  const { ref: previewRef, shouldRender } = useLazyTemplatePreview();
 
   return (
     <article className="group panel overflow-hidden transition-all duration-200 hover:border-[var(--line-strong)] hover:shadow-[var(--shadow-lg)]">
 
       {/* Preview frame */}
-      <div className="relative overflow-hidden bg-black">
-        <TemplateMotionPreview template={template} compact />
+      <div ref={previewRef} className="relative overflow-hidden bg-black">
+        {shouldRender ? <TemplateMotionPreview template={template} compact /> : <TemplatePreviewSkeleton template={template} />}
 
         {/* Gradient overlay on hover */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
@@ -744,6 +747,58 @@ function TemplateCard({
       </div>
     </article>
   );
+}
+
+function TemplatePreviewSkeleton({ template }: { template: VideoTemplate }) {
+  const meta = getCategoryMeta(template.category);
+
+  return (
+    <div
+      className={`relative overflow-hidden bg-black ${
+        template.aspectRatio === "16:9" ? "aspect-video w-full" : "aspect-[4/5] w-full"
+      }`}
+    >
+      <div
+        className="absolute inset-0"
+        style={{ background: `linear-gradient(145deg, ${meta.gradFrom}, rgba(255,255,255,0.04), rgba(0,0,0,0.72))` }}
+      />
+      <div className="absolute inset-[12%] rounded-xl border border-white/10 bg-white/[0.04]" />
+      <div className="absolute bottom-4 left-4 right-4">
+        <div className="h-2 w-2/3 rounded-full bg-white/20" />
+        <div className="mt-2 h-2 w-1/2 rounded-full bg-white/10" />
+      </div>
+    </div>
+  );
+}
+
+function useLazyTemplatePreview() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  useEffect(() => {
+    if (shouldRender) return;
+    const node = ref.current;
+    if (!node) return;
+
+    if (!("IntersectionObserver" in window)) {
+      requestAnimationFrame(() => setShouldRender(true));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setShouldRender(true);
+        observer.disconnect();
+      },
+      { rootMargin: "640px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shouldRender]);
+
+  return { ref, shouldRender };
 }
 
 function SceneStat({ label, value }: { label: string; value: number }) {
