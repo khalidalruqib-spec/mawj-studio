@@ -405,10 +405,10 @@ export function TimelinePreviewLayer({
         ...shellStyle,
         color: normalizeHexColor(layer.textColor ?? layer.color ?? "#ffffff"),
         background:
-          layer.type === "caption"
-            ? "rgba(0,0,0,0.58)"
-            : layer.backgroundColor
-              ? normalizeHexColor(layer.backgroundColor)
+          layer.backgroundColor && !layer.backgroundColor.includes("{{")
+            ? layer.backgroundColor
+            : layer.type === "caption"
+              ? "rgba(0,0,0,0.58)"
               : "transparent",
         borderRadius: `${Math.min(24, layer.borderRadius ?? 14)}px`,
         fontSize: `${Math.max(13, (layer.fontSize ?? (layer.type === "caption" ? 58 : 64)) * 0.22)}px`,

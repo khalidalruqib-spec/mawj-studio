@@ -1032,7 +1032,9 @@ export function ProfessionalVideoStudio() {
     setTranscriptionMode(data.mode);
     setActivePanel("captions");
     clearRenderedOutput();
-    commitTimeline((tracks) => ensureCaptionLayer(tracks, data.captions, targetDuration));
+    commitTimeline((tracks) =>
+      ensureCaptionLayer(tracks, data.captions, targetDuration, getActiveCaptionStylePatch()),
+    );
   }
 
   async function generatePlan() {
@@ -1118,7 +1120,14 @@ export function ProfessionalVideoStudio() {
       setPlan(data.plan);
       setCaptions(planCaptions);
       clearRenderedOutput();
-      commitTimeline((tracks) => ensureCaptionLayer(tracks, planCaptions, data.plan.targetDurationSeconds));
+      commitTimeline((tracks) =>
+        ensureCaptionLayer(
+          tracks,
+          planCaptions,
+          data.plan.targetDurationSeconds,
+          getActiveCaptionStylePatch(),
+        ),
+      );
       setProjectStatus("AI edit plan ready");
       setAssistantMessages((messages) => [
         createAssistantMessage(
@@ -1934,10 +1943,38 @@ export function ProfessionalVideoStudio() {
     const nextCaptions = transcriptToCaptions(transcript.filter((segment) => !segment.deleted));
     setCaptions(nextCaptions);
     commitTimeline((tracks) =>
-      ensureCaptionLayer(tracks, nextCaptions, studioFile?.durationSeconds ?? totalTimelineSeconds),
+      ensureCaptionLayer(
+        tracks,
+        nextCaptions,
+        studioFile?.durationSeconds ?? totalTimelineSeconds,
+        getActiveCaptionStylePatch(),
+      ),
     );
     setActivePanel("captions");
     setProjectStatus("Captions generated from transcript");
+  }
+
+  function applyCaptionTemplate(nextTemplate: string, nextAspectRatio = aspectRatio) {
+    setCaptionTemplate(nextTemplate);
+    const stylePatch = getCaptionStylePatch(nextTemplate, nextAspectRatio, brandKit.primaryColor);
+
+    commitTimeline((tracks) =>
+      tracks.map((track) =>
+        track.kind === "caption"
+          ? {
+              ...track,
+              layers: track.layers.map((layer) =>
+                layer.type === "caption" ? { ...layer, ...stylePatch } : layer,
+              ),
+            }
+          : track,
+      ),
+    );
+    setProjectStatus(`${nextTemplate} caption style applied`);
+  }
+
+  function getActiveCaptionStylePatch() {
+    return getCaptionStylePatch(captionTemplate, aspectRatio, brandKit.primaryColor);
   }
 
   function updateCaption(id: string, text: string) {
@@ -2000,7 +2037,7 @@ export function ProfessionalVideoStudio() {
       ...nextCaptions.map((caption) => caption.end),
     );
 
-    commitTimeline((tracks) => ensureCaptionLayer(tracks, nextCaptions, targetDuration));
+    commitTimeline((tracks) => ensureCaptionLayer(tracks, nextCaptions, targetDuration, getActiveCaptionStylePatch()));
     if (selectedCaptionLayerId) {
       setSelectedLayerId(selectedCaptionLayerId);
       selectEngineLayer(selectedCaptionLayerId);
@@ -2031,7 +2068,12 @@ export function ProfessionalVideoStudio() {
     commitTimeline(
       didUpdate
         ? nextTracks
-        : ensureCaptionLayer(nextTracks, nextCaptions, studioFile?.durationSeconds ?? totalTimelineSeconds),
+        : ensureCaptionLayer(
+            nextTracks,
+            nextCaptions,
+            studioFile?.durationSeconds ?? totalTimelineSeconds,
+            getActiveCaptionStylePatch(),
+          ),
     );
     setProjectStatus("Caption text synced to timeline");
   }
@@ -2061,7 +2103,12 @@ export function ProfessionalVideoStudio() {
     commitTimeline(
       didUpdate
         ? nextTracks
-        : ensureCaptionLayer(nextTracks, nextCaptions, studioFile?.durationSeconds ?? totalTimelineSeconds),
+        : ensureCaptionLayer(
+            nextTracks,
+            nextCaptions,
+            studioFile?.durationSeconds ?? totalTimelineSeconds,
+            getActiveCaptionStylePatch(),
+          ),
     );
     setProjectStatus("Caption timing synced to timeline");
   }
@@ -2099,7 +2146,9 @@ export function ProfessionalVideoStudio() {
       setTranscriptionNotice(`${file.name} imported as editable captions.`);
       setActivePanel("captions");
       clearRenderedOutput();
-      commitTimeline((tracks) => ensureCaptionLayer(tracks, importedCaptions, targetDuration));
+      commitTimeline((tracks) =>
+        ensureCaptionLayer(tracks, importedCaptions, targetDuration, getActiveCaptionStylePatch()),
+      );
       setProjectStatus(`${importedCaptions.length} SRT captions imported and synced to timeline`);
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Could not import this SRT file.");
@@ -2248,6 +2297,7 @@ export function ProfessionalVideoStudio() {
         applyTemplateToTimeline(tracks, template, durationSeconds),
         templateCaptions,
         durationSeconds,
+        getCaptionStylePatch(template.captionTemplate, template.aspectRatio, brandKit.primaryColor),
       ),
     );
     setActivePanel("editor");
@@ -2346,6 +2396,7 @@ export function ProfessionalVideoStudio() {
         applyAdVariantToTimeline(tracks, variant),
         variantCaptions,
         variant.durationSeconds,
+        getCaptionStylePatch("Offer Pop", aspectRatio, brandKit.primaryColor),
       ),
     );
     setActivePanel("editor");
@@ -2511,7 +2562,7 @@ export function ProfessionalVideoStudio() {
 
       if (action.type === "APPLY_PRO_STYLE") {
         setStyleId("premium-brand");
-        setCaptionTemplate("Luxury Minimal");
+        applyCaptionTemplate("Luxury Minimal");
         setActivePanel("brand");
       }
 
@@ -2909,7 +2960,7 @@ export function ProfessionalVideoStudio() {
         <CaptionsPanel
           captions={captions}
           template={captionTemplate}
-          onTemplateChange={setCaptionTemplate}
+          onTemplateChange={applyCaptionTemplate}
           onCaptionChange={updateCaption}
           onCaptionTimingChange={updateCaptionTiming}
           onAddCaption={addManualCaption}
@@ -3259,7 +3310,7 @@ export function ProfessionalVideoStudio() {
 
     if (tool.id === "dynamic-captions") {
       generateCaptionsFromTranscript();
-      setCaptionTemplate("Karaoke Yellow");
+      applyCaptionTemplate("Karaoke Yellow");
       setActivePanel("captions");
       setProjectStatus("Dynamic caption style applied");
       return;
@@ -3290,7 +3341,7 @@ export function ProfessionalVideoStudio() {
       setPlatform("tiktok");
       setAspectRatio("9:16");
       setStyleId("viral-saudi");
-      setCaptionTemplate("Saudi Viral Bold");
+      applyCaptionTemplate("Saudi Viral Bold", "9:16");
       setProjectStatus("Project resized for TikTok/Reels/Shorts safe margins");
       return;
     }
@@ -3699,11 +3750,19 @@ function syncPrimaryVideoDuration(tracks: TimelineTrack[], sourceName: string, d
   }));
 }
 
-function ensureCaptionLayer(tracks: TimelineTrack[], captions: CaptionLine[], durationSeconds: number): TimelineTrack[] {
+function ensureCaptionLayer(
+  tracks: TimelineTrack[],
+  captions: CaptionLine[],
+  durationSeconds: number,
+  stylePatch: Partial<TimelineLayer> = {},
+): TimelineTrack[] {
   const captionDuration =
     captions.length > 0 ? Math.max(...captions.map((caption) => caption.end)) : durationSeconds;
   const captionLayers = captions.length
-    ? captions.map(captionToTimelineLayer)
+    ? captions.map((caption, index) => ({
+        ...captionToTimelineLayer(caption, index),
+        ...stylePatch,
+      }))
     : [
         {
           id: "caption-main",
@@ -3712,6 +3771,7 @@ function ensureCaptionLayer(tracks: TimelineTrack[], captions: CaptionLine[], du
           start: 0,
           duration: Math.max(1, captionDuration),
           color: "#fb923c",
+          ...stylePatch,
         },
       ];
 
@@ -3989,6 +4049,86 @@ function captionToTimelineLayer(caption: CaptionLine, index: number): TimelineLa
     fontWeight: "900",
     borderRadius: 22,
     opacity: 1,
+  };
+}
+
+function getCaptionStylePatch(
+  template: string,
+  aspectRatio: AspectRatio,
+  brandColor: string,
+): Partial<TimelineLayer> {
+  const normalizedTemplate = template.toLowerCase();
+  const isWide = aspectRatio === "16:9";
+  const brand = normalizeHexColor(brandColor);
+
+  if (normalizedTemplate.includes("luxury") || normalizedTemplate.includes("formal")) {
+    return {
+      color: "#f8fafc",
+      textColor: "#f8fafc",
+      backgroundColor: "rgba(15, 23, 42, 0.62)",
+      fontSize: isWide ? 38 : 48,
+      fontWeight: "700",
+      borderRadius: 14,
+      opacity: 0.9,
+    };
+  }
+
+  if (normalizedTemplate.includes("podcast")) {
+    return {
+      color: "#ffffff",
+      textColor: "#ffffff",
+      backgroundColor: "rgba(15, 23, 42, 0.82)",
+      fontSize: isWide ? 42 : 54,
+      fontWeight: "800",
+      borderRadius: 20,
+      opacity: 0.96,
+    };
+  }
+
+  if (normalizedTemplate.includes("karaoke")) {
+    return {
+      color: "#facc15",
+      textColor: "#facc15",
+      backgroundColor: "rgba(3, 7, 18, 0.84)",
+      fontSize: isWide ? 46 : 60,
+      fontWeight: "950",
+      borderRadius: 22,
+      opacity: 1,
+    };
+  }
+
+  if (normalizedTemplate.includes("education") || normalizedTemplate.includes("card")) {
+    return {
+      color: "#111827",
+      textColor: "#111827",
+      backgroundColor: "#f8fafc",
+      fontSize: isWide ? 40 : 52,
+      fontWeight: "900",
+      borderRadius: 18,
+      opacity: 0.97,
+    };
+  }
+
+  if (normalizedTemplate.includes("offer") || normalizedTemplate.includes("food")) {
+    return {
+      color: "#ffffff",
+      textColor: "#ffffff",
+      backgroundColor: brand,
+      fontSize: isWide ? 44 : 58,
+      fontWeight: "950",
+      borderRadius: 26,
+      opacity: 0.96,
+    };
+  }
+
+  return {
+    color: "#ffffff",
+    textColor: "#ffffff",
+    backgroundColor: "rgba(0, 0, 0, 0.78)",
+    fontSize: isWide ? 44 : 58,
+    fontWeight: "950",
+    borderRadius: 24,
+    opacity: 0.96,
   };
 }
 
