@@ -1,4 +1,4 @@
-import { Captions, Download, Loader2, Mic2, MonitorUp } from "lucide-react";
+import { Captions, Download, FileUp, Loader2, Mic2, MonitorUp } from "lucide-react";
 import { CAPTION_TEMPLATES } from "../foundation";
 import type { CaptionLine, TranscriptionMode } from "../foundation";
 import { CompactButton, DemoModeBanner, PanelHeading } from "../ui";
@@ -10,6 +10,7 @@ export function CaptionsPanel({
   onTemplateChange,
   onCaptionChange,
   onAutoTranscribe,
+  onImportSrt,
   onDownloadSrt,
   onBurnCaptions,
   isTranscribing,
@@ -21,6 +22,7 @@ export function CaptionsPanel({
   onTemplateChange: (template: string) => void;
   onCaptionChange: (id: string, text: string) => void;
   onAutoTranscribe: () => void;
+  onImportSrt: (file: File) => void;
   onDownloadSrt: () => void;
   onBurnCaptions: () => void;
   isTranscribing: boolean;
@@ -67,6 +69,20 @@ export function CaptionsPanel({
         ))}
       </div>
       <div className="mb-3 flex gap-2">
+        <label className="toolbar-btn justify-center px-2 text-[11px]">
+          <FileUp className="h-3.5 w-3.5" aria-hidden="true" />
+          Import SRT
+          <input
+            type="file"
+            accept=".srt,text/plain,application/x-subrip"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) onImportSrt(file);
+              event.currentTarget.value = "";
+            }}
+          />
+        </label>
         <CompactButton label="Export SRT" icon={Download} onClick={onDownloadSrt} />
         <CompactButton label="Burn-in" icon={MonitorUp} onClick={onBurnCaptions} />
       </div>
