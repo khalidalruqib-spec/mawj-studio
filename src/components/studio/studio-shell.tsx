@@ -9,6 +9,7 @@ import {
   Crop,
   Download,
   FolderOpen,
+  BringToFront,
   Layers3,
   LayoutTemplate,
   Loader2,
@@ -16,6 +17,7 @@ import {
   Redo2,
   Save,
   Scissors,
+  SendToBack,
   SlidersHorizontal,
   Trash2,
   Type,
@@ -142,14 +144,22 @@ export function ProfessionalVideoStudio() {
   const restoredMediaOnceRef = useRef(false);
   const keyboardActionsRef = useRef<{
     canDelete: boolean;
+    canNudge: boolean;
     deleteSelectedLayer: () => void;
     duplicateSelectedLayer: () => void;
+    moveSelectedLayerBackward: () => void;
+    moveSelectedLayerForward: () => void;
+    nudgeSelectedLayer: (deltaX: number, deltaY: number) => void;
     redoTimeline: () => void;
     undoTimeline: () => void;
   }>({
     canDelete: false,
+    canNudge: false,
     deleteSelectedLayer: () => {},
     duplicateSelectedLayer: () => {},
+    moveSelectedLayerBackward: () => {},
+    moveSelectedLayerForward: () => {},
+    nudgeSelectedLayer: () => {},
     redoTimeline: () => {},
     undoTimeline: () => {},
   });
@@ -782,6 +792,9 @@ export function ProfessionalVideoStudio() {
       const editorLayers = new Map(
         nextTracks.flatMap((track) => track.layers.map((layer) => [layer.id, layer] as const)),
       );
+      const editorLayerOrder = new Map(
+        nextTracks.flatMap((track) => track.layers).map((layer, index) => [layer.id, index] as const),
+      );
       const syncedTimeline = project.timeline.map((track) => ({
         ...track,
         layers: track.layers
@@ -796,7 +809,12 @@ export function ProfessionalVideoStudio() {
               ...patch,
               absoluteStart: editorLayer.start,
             };
-          }),
+          })
+          .sort(
+            (left, right) =>
+              (editorLayerOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
+              (editorLayerOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER),
+          ),
       }));
 
       if (!syncedTimeline.some((track) => track.layers.length > 0)) {
@@ -1401,6 +1419,62 @@ export function ProfessionalVideoStudio() {
     setProjectStatus(`${selectedLayer.name} duplicated`);
   }
 
+  function moveSelectedLayerOrder(direction: "forward" | "backward") {
+    if (!selectedLayer) {
+      setProjectStatus("Select a timeline layer before reordering.");
+      return;
+    }
+
+    let didMove = false;
+    const nextTracks = timelineTracks.map((track) => {
+      const index = track.layers.findIndex((layer) => layer.id === selectedLayer.id);
+      if (index === -1) return track;
+
+      const targetIndex = direction === "forward" ? index + 1 : index - 1;
+      if (targetIndex < 0 || targetIndex >= track.layers.length) return track;
+
+      const layers = [...track.layers];
+      const [layer] = layers.splice(index, 1);
+      layers.splice(targetIndex, 0, layer);
+      didMove = true;
+
+      return { ...track, layers };
+    });
+
+    if (!didMove) {
+      setProjectStatus(direction === "forward" ? "Layer already on top" : "Layer already behind");
+      return;
+    }
+
+    syncTemplateProjectTimeline(nextTracks);
+    commitTimeline(nextTracks);
+    setSelectedLayerId(selectedLayer.id);
+    selectEngineLayer(selectedLayer.id);
+    setProjectStatus(direction === "forward" ? "Layer moved forward" : "Layer moved backward");
+  }
+
+  function moveSelectedLayerForward() {
+    moveSelectedLayerOrder("forward");
+  }
+
+  function moveSelectedLayerBackward() {
+    moveSelectedLayerOrder("backward");
+  }
+
+  function nudgeSelectedLayer(deltaX: number, deltaY: number) {
+    if (!selectedLayer) return;
+
+    const canvas = getAspectCanvasDimensions(aspectRatio);
+    const geometry = getTimelineLayerGeometry(selectedLayer, aspectRatio);
+    updateTimelineLayerGeometry(selectedLayer.id, {
+      x: clampTimelineNumber(geometry.x + deltaX, 0, Math.max(0, canvas.width - geometry.width)),
+      y: clampTimelineNumber(geometry.y + deltaY, 0, Math.max(0, canvas.height - geometry.height)),
+      width: geometry.width,
+      height: geometry.height,
+    });
+    setProjectStatus(`Layer nudged ${deltaX || ""}${deltaY ? `/${deltaY}` : ""}px`);
+  }
+
   function deleteSelectedLayer() {
     if (!selectedLayer) {
       if (templateProject) {
@@ -1500,8 +1574,12 @@ export function ProfessionalVideoStudio() {
 
   keyboardActionsRef.current = {
     canDelete: Boolean(selectedLayer || templateProject),
+    canNudge: Boolean(selectedLayer),
     deleteSelectedLayer,
     duplicateSelectedLayer,
+    moveSelectedLayerBackward,
+    moveSelectedLayerForward,
+    nudgeSelectedLayer,
     redoTimeline,
     undoTimeline,
   };
@@ -1533,6 +1611,29 @@ export function ProfessionalVideoStudio() {
       if (usesModifier && key === "d") {
         event.preventDefault();
         actions.duplicateSelectedLayer();
+        return;
+      }
+
+      if (usesModifier && event.key === "]") {
+        event.preventDefault();
+        actions.moveSelectedLayerForward();
+        return;
+      }
+
+      if (usesModifier && event.key === "[") {
+        event.preventDefault();
+        actions.moveSelectedLayerBackward();
+        return;
+      }
+
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+        if (!actions.canNudge) return;
+        const distance = event.shiftKey ? 50 : 10;
+        const deltaX = event.key === "ArrowLeft" ? -distance : event.key === "ArrowRight" ? distance : 0;
+        const deltaY = event.key === "ArrowUp" ? -distance : event.key === "ArrowDown" ? distance : 0;
+
+        event.preventDefault();
+        actions.nudgeSelectedLayer(deltaX, deltaY);
         return;
       }
 
@@ -2426,6 +2527,8 @@ export function ProfessionalVideoStudio() {
                     <ToolbarButton label="Merge" icon={Layers3} onClick={mergeVideoLayers} />
                     <ToolbarButton label="Text" icon={Type} onClick={addTextLayer} />
                     <ToolbarButton label="Duplicate" icon={Copy} onClick={duplicateSelectedLayer} disabled={!selectedLayer} />
+                    <ToolbarButton label="Forward" icon={BringToFront} onClick={moveSelectedLayerForward} disabled={!selectedLayer} />
+                    <ToolbarButton label="Backward" icon={SendToBack} onClick={moveSelectedLayerBackward} disabled={!selectedLayer} />
                     <ToolbarButton label="Update" icon={Save} onClick={saveProjectSnapshot} />
                     <ToolbarButton
                       label={selectedLayer ? "Delete" : "Clear"}
@@ -3403,6 +3506,60 @@ function getDefaultEditableTextGeometry(aspectRatio: AspectRatio) {
     width: 908,
     height: 190,
   };
+}
+
+function getTimelineLayerGeometry(layer: TimelineLayer, aspectRatio: AspectRatio) {
+  const defaults = getDefaultLayerGeometry(layer, aspectRatio);
+
+  return {
+    x: layer.x ?? defaults.x,
+    y: layer.y ?? defaults.y,
+    width: layer.width ?? defaults.width,
+    height: layer.height ?? defaults.height,
+  };
+}
+
+function getDefaultLayerGeometry(layer: TimelineLayer, aspectRatio: AspectRatio) {
+  const canvas = getAspectCanvasDimensions(aspectRatio);
+
+  if (layer.type === "image") {
+    return {
+      x: Math.round(canvas.width * 0.16),
+      y: Math.round(canvas.height * 0.35),
+      width: Math.round(canvas.width * 0.68),
+      height: Math.round(canvas.height * 0.28),
+    };
+  }
+
+  if (layer.type === "shape") {
+    return {
+      x: Math.round(canvas.width * 0.12),
+      y: Math.round(canvas.height * 0.64),
+      width: Math.round(canvas.width * 0.76),
+      height: Math.round(canvas.height * 0.1),
+    };
+  }
+
+  if (layer.type === "caption") {
+    return {
+      x: Math.round(canvas.width * 0.08),
+      y: Math.round(canvas.height * 0.69),
+      width: Math.round(canvas.width * 0.84),
+      height: Math.round(canvas.height * 0.13),
+    };
+  }
+
+  return getDefaultEditableTextGeometry(aspectRatio);
+}
+
+function getAspectCanvasDimensions(aspectRatio: AspectRatio) {
+  if (aspectRatio === "16:9") return { width: 1920, height: 1080 };
+  if (aspectRatio === "1:1") return { width: 1080, height: 1080 };
+  return { width: 1080, height: 1920 };
+}
+
+function clampTimelineNumber(value: number, min: number, max: number) {
+  return Math.round(Math.min(max, Math.max(min, value)));
 }
 
 function createLayerId(prefix: string) {
