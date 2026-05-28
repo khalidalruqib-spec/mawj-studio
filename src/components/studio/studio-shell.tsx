@@ -1471,26 +1471,31 @@ export function ProfessionalVideoStudio() {
   }
 
   function addTextLayer() {
+    const textLayer = createEditableTextLayer({
+      aspectRatio,
+      previewTime,
+      defaultText:
+        goal === "sales"
+          ? "عرض خاص لفترة محدودة"
+          : goal === "education"
+            ? "أهم نقطة في المقطع"
+            : "اكتب عنوانك هنا",
+    });
+
     commitTimeline((tracks) =>
       tracks.map((track) =>
         track.kind === "overlay"
           ? {
               ...track,
-              layers: [
-                ...track.layers,
-                {
-                  id: crypto.randomUUID(),
-                  type: "text",
-                  name: "Hook title",
-                  start: Math.max(0, Math.round(previewTime)),
-                  duration: 5,
-                  color: "#facc15",
-                },
-              ],
+              layers: [...track.layers, textLayer],
             }
           : track,
       ),
     );
+    setSelectedLayerId(textLayer.id);
+    selectEngineLayer(textLayer.id);
+    setActivePanel("editor");
+    setProjectStatus("Editable text layer added to preview and timeline");
   }
 
   keyboardActionsRef.current = {
@@ -3342,6 +3347,70 @@ function ensureCaptionLayer(tracks: TimelineTrack[], captions: CaptionLine[], du
         }
       : track,
   );
+}
+
+function createEditableTextLayer({
+  aspectRatio,
+  previewTime,
+  defaultText,
+}: {
+  aspectRatio: AspectRatio;
+  previewTime: number;
+  defaultText: string;
+}): TimelineLayer {
+  const geometry = getDefaultEditableTextGeometry(aspectRatio);
+
+  return {
+    id: createLayerId("text"),
+    type: "text",
+    name: defaultText,
+    start: Math.max(0, Math.round(previewTime * 10) / 10),
+    duration: 5,
+    color: "#ffffff",
+    textColor: "#ffffff",
+    backgroundColor: "#000000",
+    content: defaultText,
+    fontSize: aspectRatio === "16:9" ? 52 : 68,
+    fontWeight: "900",
+    borderRadius: 22,
+    opacity: 0.96,
+    ...geometry,
+  };
+}
+
+function getDefaultEditableTextGeometry(aspectRatio: AspectRatio) {
+  if (aspectRatio === "16:9") {
+    return {
+      x: 192,
+      y: 172,
+      width: 1536,
+      height: 150,
+    };
+  }
+
+  if (aspectRatio === "1:1") {
+    return {
+      x: 92,
+      y: 158,
+      width: 896,
+      height: 150,
+    };
+  }
+
+  return {
+    x: 86,
+    y: 260,
+    width: 908,
+    height: 190,
+  };
+}
+
+function createLayerId(prefix: string) {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function captionToTimelineLayer(caption: CaptionLine, index: number): TimelineLayer {

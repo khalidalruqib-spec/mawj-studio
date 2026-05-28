@@ -158,13 +158,46 @@ export function LayerInspector({
       </div>
       {layer.type === "text" || layer.type === "caption" ? (
         <div className="grid grid-cols-2 gap-2">
-          <NumberField label="Font size" value={layer.fontSize ?? 48} onChange={(fontSize) => onChange({ fontSize })} />
+          <NumberField label="Font size" value={layer.fontSize ?? 48} min={12} onChange={(fontSize) => onChange({ fontSize })} />
+          <Field label="Weight">
+            <select
+              value={layer.fontWeight ?? "900"}
+              onChange={(event) => onChange({ fontWeight: event.target.value })}
+              className="control-select"
+            >
+              <option value="500">Medium</option>
+              <option value="700">Bold</option>
+              <option value="800">Extra bold</option>
+              <option value="900">Black</option>
+              <option value="950">Heavy</option>
+            </select>
+          </Field>
           <Field label="Text color">
             <input
               type="color"
-              value={layer.textColor ?? layer.color}
+              value={normalizeHexColor(layer.textColor ?? layer.color)}
               onChange={(event) => onChange({ textColor: event.target.value, color: event.target.value })}
               className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1"
+            />
+          </Field>
+          <Field label="Background">
+            <input
+              type="color"
+              value={normalizeHexColor(layer.backgroundColor ?? "#000000")}
+              onChange={(event) => onChange({ backgroundColor: event.target.value })}
+              className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1"
+            />
+          </Field>
+          <NumberField label="Radius" value={layer.borderRadius ?? 0} min={0} onChange={(borderRadius) => onChange({ borderRadius })} />
+          <Field label="Opacity">
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={layer.opacity ?? 1}
+              onChange={(event) => onChange({ opacity: Number(event.target.value) })}
+              className="h-11 w-full accent-[var(--brand)]"
             />
           </Field>
         </div>
@@ -193,16 +226,19 @@ export function LayerInspector({
 export function NumberField({
   label,
   value,
+  min,
   onChange,
 }: {
   label: string;
   value: number;
+  min?: number;
   onChange: (value: number) => void;
 }) {
   return (
     <Field label={label}>
       <input
         type="number"
+        min={min}
         value={Number.isFinite(value) ? value : 0}
         onChange={(event) => onChange(Number(event.target.value))}
         className="control-input"
