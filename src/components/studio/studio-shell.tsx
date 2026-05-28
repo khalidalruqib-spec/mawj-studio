@@ -35,7 +35,10 @@ import {
   type BrowserRenderProgress,
   type BrowserRenderResult,
 } from "@/lib/browser-video-renderer";
-import { renderTemplateProject } from "@/lib/browser-template-renderer";
+import {
+  renderTemplateProject,
+  renderTemplateProjectThumbnail,
+} from "@/lib/browser-template-renderer";
 import {
   prepareMediaForTranscription,
   type PreparedTranscriptionFile,
@@ -2320,6 +2323,41 @@ export function ProfessionalVideoStudio() {
     downloadTextFile("mawj-captions.srt", srt, "text/plain;charset=utf-8");
   }
 
+  async function exportThumbnail() {
+    if (!studioFile && !templateProject) {
+      setError("افتح فيديو أو قالب قبل تصدير الصورة المصغرة.");
+      return;
+    }
+
+    setError("");
+    setProjectStatus("Preparing thumbnail...");
+
+    try {
+      if (templateProject) {
+        const thumbnail = await renderTemplateProjectThumbnail({
+          project: templateProject,
+          time: previewTime,
+        });
+        downloadBlobFile(thumbnail.fileName, thumbnail.blob);
+        revokeObjectUrl(thumbnail.url);
+        setProjectStatus(`Thumbnail exported: ${thumbnail.resolution}`);
+        return;
+      }
+
+      if (!studioFile) return;
+
+      const blob = await createSourceVideoThumbnail({
+        sourceUrl: studioFile.url,
+        time: previewTime,
+        aspectRatio,
+      });
+      downloadBlobFile(`${withoutFileExtension(studioFile.file.name)}-thumbnail.png`, blob);
+      setProjectStatus("Thumbnail exported from current preview frame");
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not export thumbnail.");
+    }
+  }
+
   async function importSrtFile(file: File) {
     try {
       const text = await file.text();
@@ -2925,16 +2963,17 @@ export function ProfessionalVideoStudio() {
               <span className="text-sm font-black">Drag media here</span>
               <span className="text-xs font-semibold text-[var(--muted)]">Video · Audio · Images</span>
             </button>
-            <div className="space-y-2">
-              {mediaAssets.slice(0, 8).map((asset) => (
+            <div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">
+              {mediaAssets.map((asset) => (
                 <div key={asset.id} className="rounded-lg border border-[var(--line)] bg-black/20 p-2">
                   <div className="mb-2 flex items-center gap-2">
-                    <AssetIcon kind={asset.kind} />
+                    <MediaAssetPreview asset={asset} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-black">{asset.name}</p>
                       <p className="text-[11px] font-semibold text-[var(--muted)]">
                         {asset.kind} · {formatBytes(asset.size)}
                         {asset.durationSeconds ? ` · ${formatDuration(asset.durationSeconds)}` : ""}
+                        {asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : ""}
                         {asset.persisted ? " · saved" : ""}
                       </p>
                     </div>
@@ -2961,7 +3000,11 @@ export function ProfessionalVideoStudio() {
                         onClick={() => addMediaAssetToTimeline(asset)}
                         className="toolbar-btn justify-center text-[11px]"
                       >
-                        Layer
+                        {asset.kind === "image" &&
+                        !studioFile &&
+                        (!templateProject || templateProject.templateId === "image-storyboard-generated")
+                          ? "Open video"
+                          : "Layer"}
                       </button>
                     )}
                     {(asset.kind === "video" || asset.kind === "audio") ? (
@@ -3262,6 +3305,7 @@ export function ProfessionalVideoStudio() {
           onFormatChange={setExportFormat}
           onRender={renderVideo}
           onDownloadSrt={downloadSrt}
+          onExportThumbnail={exportThumbnail}
         />
       );
     }
@@ -4499,6 +4543,42 @@ function uniqueMediaAssetsById(assets: MediaAsset[]) {
   });
 }
 
+function MediaAssetPreview({ asset }: { asset: MediaAsset }) {
+  if (asset.kind === "image") {
+    return (
+      <span
+        className="block h-12 w-12 shrink-0 rounded-md border border-white/10 bg-cover bg-center bg-no-repeat shadow-inner"
+        style={{ backgroundImage: `url("${asset.url}")` }}
+        aria-label={asset.name}
+        role="img"
+      />
+    );
+  }
+
+  if (asset.kind === "video") {
+    return (
+      <span className="relative block h-12 w-12 shrink-0 overflow-hidden rounded-md border border-white/10 bg-black shadow-inner">
+        <video
+          src={asset.url}
+          muted
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover"
+        />
+        <span className="absolute inset-0 grid place-items-center bg-black/20">
+          <AssetIcon kind={asset.kind} />
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-md border border-white/10 bg-white/[0.04]">
+      <AssetIcon kind={asset.kind} />
+    </span>
+  );
+}
+
 function createAssistantMessage(
   role: AssistantMessage["role"],
   content: string,
@@ -5678,6 +5758,10 @@ function storedMediaRecordToAsset(record: StoredMediaRecord): MediaAsset {
 
 function downloadTextFile(fileName: string, content: string, type: string) {
   const blob = new Blob([content], { type });
+  downloadBlobFile(fileName, blob);
+}
+
+function downloadBlobFile(fileName: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -5686,6 +5770,92 @@ function downloadTextFile(fileName: string, content: string, type: string) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+async function createSourceVideoThumbnail({
+  sourceUrl,
+  time,
+  aspectRatio,
+}: {
+  sourceUrl: string;
+  time: number;
+  aspectRatio: AspectRatio;
+}) {
+  const dimensions = getAspectCanvasDimensions(aspectRatio);
+  const canvas = document.createElement("canvas");
+  canvas.width = dimensions.width;
+  canvas.height = dimensions.height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Could not create thumbnail canvas.");
+
+  const video = await loadVideoFrame(sourceUrl, time);
+  drawVideoCover(context, video, dimensions.width, dimensions.height);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error("Could not export thumbnail image."));
+      }
+    }, "image/png");
+  });
+}
+
+function loadVideoFrame(sourceUrl: string, time: number) {
+  return new Promise<HTMLVideoElement>((resolve, reject) => {
+    const video = document.createElement("video");
+    const cleanup = () => {
+      video.onloadedmetadata = null;
+      video.onloadeddata = null;
+      video.onseeked = null;
+      video.onerror = null;
+    };
+
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "auto";
+    video.onloadedmetadata = () => {
+      const target = Math.max(0, Math.min(time || 0, Math.max(0, (video.duration || 1) - 0.05)));
+      if (target <= 0.05) return;
+      video.currentTime = target;
+    };
+    video.onloadeddata = () => {
+      const target = Math.max(0, Math.min(time || 0, Math.max(0, (video.duration || 1) - 0.05)));
+      if (target > 0.05) return;
+      cleanup();
+      resolve(video);
+    };
+    video.onseeked = () => {
+      cleanup();
+      resolve(video);
+    };
+    video.onerror = () => {
+      cleanup();
+      reject(new Error("Could not read the current video frame for thumbnail export."));
+    };
+    video.src = sourceUrl;
+  });
+}
+
+function drawVideoCover(
+  context: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+  width: number,
+  height: number,
+) {
+  const sourceWidth = video.videoWidth || width;
+  const sourceHeight = video.videoHeight || height;
+  const scale = Math.max(width / sourceWidth, height / sourceHeight);
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
+  const x = (width - drawWidth) / 2;
+  const y = (height - drawHeight) / 2;
+
+  context.fillStyle = "#050608";
+  context.fillRect(0, 0, width, height);
+  context.drawImage(video, x, y, drawWidth, drawHeight);
 }
 
 function secondsToSrt(seconds: number) {

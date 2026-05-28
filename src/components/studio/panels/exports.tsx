@@ -5,6 +5,14 @@ import { EXPORT_TIERS } from "../foundation";
 import { PanelHeading, SmallSetting } from "../ui";
 import { formatDuration } from "../utils";
 
+const EXPORT_FORMATS = [
+  { id: "MP4", disabled: false },
+  { id: "SRT", disabled: false },
+  { id: "Thumbnail", disabled: false },
+  { id: "GIF", disabled: true },
+  { id: "MP3", disabled: true },
+] as const;
+
 export function ExportsPanel({
   tier,
   format,
@@ -16,6 +24,7 @@ export function ExportsPanel({
   onFormatChange,
   onRender,
   onDownloadSrt,
+  onExportThumbnail,
 }: {
   tier: string;
   format: string;
@@ -27,7 +36,33 @@ export function ExportsPanel({
   onFormatChange: (format: string) => void;
   onRender: () => void;
   onDownloadSrt: () => void;
+  onExportThumbnail: () => void;
 }) {
+  const selectedFormat = EXPORT_FORMATS.find((item) => item.id === format);
+  const isUnsupported = Boolean(selectedFormat?.disabled);
+  const actionLabel =
+    format === "SRT"
+      ? "Download SRT"
+      : format === "Thumbnail"
+        ? "Download Thumbnail"
+        : isUnsupported
+          ? `${format} قريبًا`
+          : `Export ${format}`;
+
+  const runExportAction = () => {
+    if (format === "SRT") {
+      onDownloadSrt();
+      return;
+    }
+
+    if (format === "Thumbnail") {
+      onExportThumbnail();
+      return;
+    }
+
+    onRender();
+  };
+
   return (
     <section className="panel p-4">
       <PanelHeading icon={MonitorUp} title="Export center" />
@@ -49,29 +84,36 @@ export function ExportsPanel({
         ))}
       </div>
       <div className="mb-3 grid grid-cols-5 gap-2">
-        {["MP4", "GIF", "MP3", "SRT", "Thumbnail"].map((item) => (
+        {EXPORT_FORMATS.map((item) => (
           <button
-            key={item}
+            key={item.id}
             type="button"
-            onClick={() => onFormatChange(item)}
+            onClick={() => {
+              if (!item.disabled) onFormatChange(item.id);
+            }}
+            disabled={item.disabled}
             className={`min-h-10 rounded-lg border px-2 text-[11px] font-black transition ${
-              format === item
+              format === item.id
                 ? "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]"
-                : "border-[var(--line)] bg-[var(--panel-soft)] text-[var(--muted)]"
+                : item.disabled
+                  ? "cursor-not-allowed border-[var(--line)] bg-black/20 text-[var(--muted)] opacity-55"
+                  : "border-[var(--line)] bg-[var(--panel-soft)] text-[var(--muted)]"
             }`}
+            title={item.disabled ? "قريبًا في Mawj Pro" : undefined}
           >
-            {item}
+            {item.id}
+            {item.disabled ? <span className="mt-0.5 block text-[9px] font-black opacity-70">Soon</span> : null}
           </button>
         ))}
       </div>
       <button
         type="button"
-        onClick={format === "SRT" ? onDownloadSrt : onRender}
-        disabled={isRendering}
+        onClick={runExportAction}
+        disabled={isRendering || isUnsupported}
         className="mb-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 py-2 text-sm font-black text-black disabled:opacity-60"
       >
         {isRendering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-        {isRendering ? `Rendering ${renderProgress?.percent ?? 0}%` : `Export ${format}`}
+        {isRendering ? `Rendering ${renderProgress?.percent ?? 0}%` : actionLabel}
       </button>
       {isRendering ? (
         <div className="mb-3 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3">

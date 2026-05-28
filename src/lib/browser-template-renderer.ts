@@ -111,6 +111,40 @@ export async function renderTemplateProject({
   };
 }
 
+export async function renderTemplateProjectThumbnail({
+  project,
+  time = 0,
+}: {
+  project: TemplateProject;
+  time?: number;
+}) {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    throw new Error("Template thumbnail export works in the browser only.");
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = project.width;
+  canvas.height = project.height;
+
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Could not prepare thumbnail renderer.");
+
+  const assets = await loadTemplateAssets(project.timeline);
+  await playVideoAssets(assets);
+  drawTemplateFrame(context, project, assets, Math.max(0, Math.min(project.duration, time)));
+  stopVideoAssets(assets);
+
+  const blob = await canvasToBlob(canvas, "image/png");
+
+  return {
+    blob,
+    url: URL.createObjectURL(blob),
+    fileName: `${safeFileName(project.name)}-thumbnail.png`,
+    mimeType: "image/png",
+    resolution: `${project.width}x${project.height}`,
+  };
+}
+
 function drawTemplateFrame(
   context: CanvasRenderingContext2D,
   project: TemplateProject,
@@ -530,6 +564,18 @@ function waitForRecorderStop(recorder: MediaRecorder) {
     recorder.addEventListener("error", () => reject(new Error("Could not export template video.")), {
       once: true,
     });
+  });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error("Could not create image export."));
+      }
+    }, type);
   });
 }
 
