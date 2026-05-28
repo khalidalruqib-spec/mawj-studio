@@ -73,6 +73,7 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
   "Educational Videos":     { label: "تعليمي",           icon: BookOpen,       accent: "#38bdf8", gradFrom: "rgba(56,189,248,0.18)"  },
   "Lecture Summaries":      { label: "ملخص محاضرة",     icon: MessageSquareQuote, accent: "#60a5fa", gradFrom: "rgba(96,165,250,0.18)" },
   "Legal Services":         { label: "خدمات قانونية",   icon: Scale,          accent: "#94a3b8", gradFrom: "rgba(148,163,184,0.18)" },
+  "Business Services":      { label: "خدمات أعمال",     icon: Database,       accent: "#60a5fa", gradFrom: "rgba(96,165,250,0.18)" },
   "Before / After":         { label: "قبل وبعد",         icon: ArrowRight,     accent: "#7ef2bc", gradFrom: "rgba(126,242,188,0.18)" },
   "YouTube Shorts":         { label: "يوتيوب شورتس",    icon: Film,           accent: "#ff647c", gradFrom: "rgba(255,100,124,0.18)" },
   "Clinics":                { label: "عيادات",           icon: BadgeCheck,     accent: "#2dd4bf", gradFrom: "rgba(45,212,191,0.18)"  },

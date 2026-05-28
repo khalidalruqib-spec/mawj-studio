@@ -1,0 +1,440 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "pop",
+    "bounce",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 0.35
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "market-real-estate-tour",
+  "name": "Market Real Estate Tour 9:16",
+  "category": "Real Estate",
+  "aspectRatio": "9:16",
+  "duration": 18,
+  "description": "Original fast property tour template with listing hook, feature stack, price reveal, and contact CTA.",
+  "requiredInputs": [
+    {
+      "key": "propertyTitle",
+      "label": "عنوان العقار",
+      "type": "text",
+      "default": "فيلا زاوية فاخرة",
+      "required": true
+    },
+    {
+      "key": "location",
+      "label": "الموقع",
+      "type": "text",
+      "default": "حي الياسمين - الرياض"
+    },
+    {
+      "key": "price",
+      "label": "السعر",
+      "type": "text",
+      "default": "1,850,000 ر.س"
+    },
+    {
+      "key": "features",
+      "label": "المميزات",
+      "type": "textarea",
+      "default": "5 غرف | مسبح | مدخل سيارة | ضمانات"
+    },
+    {
+      "key": "mainImage",
+      "label": "الصورة الرئيسية",
+      "type": "image",
+      "required": true
+    },
+    {
+      "key": "secondImage",
+      "label": "صورة داخلية",
+      "type": "image"
+    },
+    {
+      "key": "phoneNumber",
+      "label": "رقم التواصل",
+      "type": "text",
+      "default": "05XXXXXXXX"
+    },
+    {
+      "key": "logo",
+      "label": "الشعار",
+      "type": "image"
+    },
+    {
+      "key": "brandColor",
+      "label": "لون الهوية",
+      "type": "color",
+      "default": "#0f766e"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "hero",
+      "name": "Listing Hook",
+      "start": 0,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#08110f"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "hero-image",
+          "type": "image",
+          "src": "{{mainImage}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "safeMargin": false,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.45
+          }
+        },
+        {
+          "id": "hero-shade",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 240,
+          "width": 940,
+          "height": 320,
+          "color": "#000000",
+          "opacity": 0.48,
+          "borderRadius": 38,
+          "safeMargin": true
+        },
+        {
+          "id": "hero-title",
+          "type": "text",
+          "content": "{{propertyTitle}}",
+          "x": 105,
+          "y": 290,
+          "width": 870,
+          "height": 120,
+          "fontSize": 64,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "hero-location",
+          "type": "text",
+          "content": "{{location}}",
+          "x": 110,
+          "y": 420,
+          "width": 860,
+          "height": 72,
+          "fontSize": 38,
+          "fontWeight": "bold",
+          "color": "#d1fae5",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        }
+      ]
+    },
+    {
+      "id": "features",
+      "name": "Feature Stack",
+      "start": 4,
+      "duration": 5,
+      "background": {
+        "type": "gradient",
+        "from": "#ffffff",
+        "to": "#e6fffb"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "interior",
+          "type": "image",
+          "src": "{{secondImage}}",
+          "x": 85,
+          "y": 215,
+          "width": 910,
+          "height": 670,
+          "fit": "cover",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.45
+          },
+          "borderRadius": 36
+        },
+        {
+          "id": "feature-pill",
+          "type": "shape",
+          "shape": "rect",
+          "x": 95,
+          "y": 970,
+          "width": 890,
+          "height": 150,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 75,
+          "safeMargin": true
+        },
+        {
+          "id": "feature-copy",
+          "type": "text",
+          "content": "{{features}}",
+          "x": 120,
+          "y": 1005,
+          "width": 840,
+          "height": 88,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "feature-title",
+          "type": "text",
+          "content": "جولة سريعة على أهم المميزات",
+          "x": 100,
+          "y": 1180,
+          "width": 880,
+          "height": 145,
+          "fontSize": 48,
+          "fontWeight": "bold",
+          "color": "#0f172a",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "id": "price",
+      "name": "Price Reveal",
+      "start": 9,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#071a18"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "price-label",
+          "type": "text",
+          "content": "السعر",
+          "x": 70,
+          "y": 420,
+          "width": 940,
+          "height": 90,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "#99f6e4",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "price-value",
+          "type": "text",
+          "content": "{{price}}",
+          "x": 70,
+          "y": 535,
+          "width": 940,
+          "height": 180,
+          "fontSize": 92,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.45
+          }
+        },
+        {
+          "id": "price-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 250,
+          "y": 760,
+          "width": 580,
+          "height": 12,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 8,
+          "safeMargin": true
+        },
+        {
+          "id": "price-note",
+          "type": "text",
+          "content": "مناسب للعائلات والاستثمار",
+          "x": 100,
+          "y": 835,
+          "width": 880,
+          "height": 100,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact",
+      "name": "Contact CTA",
+      "start": 13,
+      "duration": 5,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#052e2b"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "logo",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 410,
+          "y": 270,
+          "width": 260,
+          "height": 150,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.45
+          },
+          "borderRadius": 24
+        },
+        {
+          "id": "contact-title",
+          "type": "text",
+          "content": "احجز معاينة اليوم",
+          "x": 80,
+          "y": 535,
+          "width": 920,
+          "height": 120,
+          "fontSize": 68,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "contact-button",
+          "type": "shape",
+          "shape": "rect",
+          "x": 120,
+          "y": 770,
+          "width": 840,
+          "height": 130,
+          "color": "#ffffff",
+          "opacity": 1,
+          "borderRadius": 65,
+          "safeMargin": true
+        },
+        {
+          "id": "contact-phone",
+          "type": "text",
+          "content": "{{phoneNumber}}",
+          "x": 120,
+          "y": 805,
+          "width": 840,
+          "height": 70,
+          "fontSize": 48,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    }
+  ]
+}

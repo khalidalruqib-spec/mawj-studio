@@ -1,0 +1,281 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "pop",
+    "bounce",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 0.35
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "market-podcast-launch",
+  "name": "Market Podcast Launch 9:16",
+  "category": "Podcast Clips",
+  "aspectRatio": "9:16",
+  "duration": 20,
+  "description": "Original podcast release template with episode hook, guest card, captions zone, and waveform layer.",
+  "requiredInputs": [
+    {
+      "key": "episodeTitle",
+      "label": "عنوان الحلقة",
+      "type": "text",
+      "default": "لحظة غيرت طريقة تفكيري"
+    },
+    {
+      "key": "guestName",
+      "label": "اسم الضيف",
+      "type": "text",
+      "default": "ضيف الحلقة"
+    },
+    {
+      "key": "video",
+      "label": "فيديو البودكاست",
+      "type": "video",
+      "required": true
+    },
+    {
+      "key": "quote",
+      "label": "اقتباس",
+      "type": "textarea",
+      "default": "المحتوى الجيد يبدأ من سؤال واضح"
+    },
+    {
+      "key": "logo",
+      "label": "الشعار",
+      "type": "image"
+    },
+    {
+      "key": "brandColor",
+      "label": "لون الهوية",
+      "type": "color",
+      "default": "#7c3aed"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "main",
+      "name": "Podcast Frame",
+      "start": 0,
+      "duration": 10,
+      "background": {
+        "type": "color",
+        "value": "#0f172a"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "pod-video",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 80,
+          "y": 260,
+          "width": 920,
+          "height": 820,
+          "fit": "cover",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          },
+          "borderRadius": 40
+        },
+        {
+          "id": "episode",
+          "type": "text",
+          "content": "{{episodeTitle}}",
+          "x": 80,
+          "y": 95,
+          "width": 920,
+          "height": 112,
+          "fontSize": 54,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "guest",
+          "type": "text",
+          "content": "{{guestName}}",
+          "x": 80,
+          "y": 1130,
+          "width": 920,
+          "height": 70,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "captions",
+          "type": "captions",
+          "source": "auto",
+          "x": 90,
+          "y": 1260,
+          "width": 900,
+          "height": 280,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "highlightColor": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "style": "karaoke"
+        },
+        {
+          "id": "wave",
+          "type": "waveform",
+          "x": 120,
+          "y": 1620,
+          "width": 840,
+          "height": 95,
+          "color": "{{brandColor}}",
+          "opacity": 0.8
+        }
+      ]
+    },
+    {
+      "id": "quote",
+      "name": "Quote Pullout",
+      "start": 10,
+      "duration": 6,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#111827"
+      },
+      "transition": {
+        "type": "blur",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "quote",
+          "type": "text",
+          "content": "“{{quote}}”",
+          "x": 90,
+          "y": 420,
+          "width": 900,
+          "height": 310,
+          "fontSize": 62,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.55
+          }
+        },
+        {
+          "id": "logo",
+          "type": "image",
+          "src": "{{logo}}",
+          "x": 420,
+          "y": 920,
+          "width": 240,
+          "height": 120,
+          "fit": "contain",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.45
+          }
+        }
+      ]
+    },
+    {
+      "id": "listen",
+      "name": "Listen CTA",
+      "start": 16,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#020617"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.2
+      },
+      "layers": [
+        {
+          "id": "listen",
+          "type": "text",
+          "content": "شاهد الحلقة كاملة",
+          "x": 80,
+          "y": 560,
+          "width": 920,
+          "height": 130,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 260,
+          "y": 760,
+          "width": 560,
+          "height": 12,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 6,
+          "safeMargin": true
+        }
+      ]
+    }
+  ]
+}

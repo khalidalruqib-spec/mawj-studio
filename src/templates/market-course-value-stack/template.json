@@ -1,0 +1,358 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "pop",
+    "bounce",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 0.35
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "market-course-value-stack",
+  "name": "Market Course Value Stack 9:16",
+  "category": "Course Announcements",
+  "aspectRatio": "9:16",
+  "duration": 18,
+  "description": "Original course launch template with clear promise, instructor frame, value stack, date/price, and registration CTA.",
+  "requiredInputs": [
+    {
+      "key": "courseName",
+      "label": "اسم الدورة",
+      "type": "text",
+      "default": "دورة صناعة الإعلانات"
+    },
+    {
+      "key": "trainerName",
+      "label": "اسم المدرب",
+      "type": "text",
+      "default": "خالد الرقيب"
+    },
+    {
+      "key": "trainerImage",
+      "label": "صورة المدرب",
+      "type": "image"
+    },
+    {
+      "key": "learnPoints",
+      "label": "ماذا سيتعلم؟",
+      "type": "textarea",
+      "default": "كتابة الهوك | اختيار اللقطة | تصميم CTA | تصدير للمنصات"
+    },
+    {
+      "key": "date",
+      "label": "التاريخ",
+      "type": "text",
+      "default": "يبدأ 20 يوليو"
+    },
+    {
+      "key": "price",
+      "label": "السعر",
+      "type": "text",
+      "default": "399 ر.س"
+    },
+    {
+      "key": "cta",
+      "label": "الدعوة",
+      "type": "text",
+      "default": "سجّل الآن"
+    },
+    {
+      "key": "brandColor",
+      "label": "لون الهوية",
+      "type": "color",
+      "default": "#4f46e5"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "promise",
+      "name": "Course Promise",
+      "start": 0,
+      "duration": 4,
+      "background": {
+        "type": "gradient",
+        "from": "#111827",
+        "to": "{{brandColor}}"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "course",
+          "type": "text",
+          "content": "{{courseName}}",
+          "x": 70,
+          "y": 310,
+          "width": 940,
+          "height": 160,
+          "fontSize": 76,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "promise-line",
+          "type": "text",
+          "content": "من الفكرة إلى فيديو جاهز للنشر",
+          "x": 100,
+          "y": 520,
+          "width": 880,
+          "height": 90,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#e0e7ff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "trainer",
+      "name": "Trainer Frame",
+      "start": 4,
+      "duration": 4.5,
+      "background": {
+        "type": "color",
+        "value": "#f8fafc"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.25
+      },
+      "layers": [
+        {
+          "id": "trainer-img",
+          "type": "image",
+          "src": "{{trainerImage}}",
+          "x": 190,
+          "y": 260,
+          "width": 700,
+          "height": 700,
+          "fit": "cover",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.45
+          },
+          "borderRadius": 56
+        },
+        {
+          "id": "trainer",
+          "type": "text",
+          "content": "{{trainerName}}",
+          "x": 100,
+          "y": 1040,
+          "width": 880,
+          "height": 95,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "points",
+      "name": "Value Stack",
+      "start": 8.5,
+      "duration": 4.5,
+      "background": {
+        "type": "color",
+        "value": "#0f172a"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.24
+      },
+      "layers": [
+        {
+          "id": "learn",
+          "type": "text",
+          "content": "ماذا ستتعلم؟",
+          "x": 90,
+          "y": 270,
+          "width": 900,
+          "height": 90,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "points-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 90,
+          "y": 450,
+          "width": 900,
+          "height": 360,
+          "color": "#ffffff",
+          "opacity": 1,
+          "borderRadius": 42,
+          "safeMargin": true
+        },
+        {
+          "id": "points-text",
+          "type": "text",
+          "content": "{{learnPoints}}",
+          "x": 130,
+          "y": 510,
+          "width": 820,
+          "height": 230,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "register",
+      "name": "Register Now",
+      "start": 13,
+      "duration": 5,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#020617"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.22
+      },
+      "layers": [
+        {
+          "id": "date",
+          "type": "text",
+          "content": "{{date}}",
+          "x": 80,
+          "y": 340,
+          "width": 920,
+          "height": 90,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "price",
+          "type": "text",
+          "content": "{{price}}",
+          "x": 80,
+          "y": 480,
+          "width": 920,
+          "height": 150,
+          "fontSize": 90,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.45
+          }
+        },
+        {
+          "id": "cta-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 130,
+          "y": 790,
+          "width": 820,
+          "height": 130,
+          "color": "#ffffff",
+          "opacity": 1,
+          "borderRadius": 65,
+          "safeMargin": true
+        },
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 130,
+          "y": 824,
+          "width": 820,
+          "height": 72,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    }
+  ]
+}

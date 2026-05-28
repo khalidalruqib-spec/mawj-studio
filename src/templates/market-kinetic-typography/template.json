@@ -1,0 +1,287 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "pop",
+    "bounce",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 0.35
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "market-kinetic-typography",
+  "name": "Market Kinetic Typography 9:16",
+  "category": "TikTok / Reels",
+  "aspectRatio": "9:16",
+  "duration": 12,
+  "description": "Original bold kinetic typography reel for announcements, hooks, quotes, and high-retention social posts.",
+  "requiredInputs": [
+    {
+      "key": "hook",
+      "label": "الهوك",
+      "type": "text",
+      "default": "لا تبدأ إعلانك قبل ما تشوف هذا"
+    },
+    {
+      "key": "pointOne",
+      "label": "النقطة الأولى",
+      "type": "text",
+      "default": "اجذب الانتباه خلال 3 ثواني"
+    },
+    {
+      "key": "pointTwo",
+      "label": "النقطة الثانية",
+      "type": "text",
+      "default": "اختصر الرسالة بصريًا"
+    },
+    {
+      "key": "cta",
+      "label": "الدعوة",
+      "type": "text",
+      "default": "احفظها وطبّقها"
+    },
+    {
+      "key": "brandColor",
+      "label": "لون الهوية",
+      "type": "color",
+      "default": "#f97316"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "hook",
+      "name": "Type Hook",
+      "start": 0,
+      "duration": 3,
+      "background": {
+        "type": "color",
+        "value": "#050505"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0.1
+      },
+      "layers": [
+        {
+          "id": "hook-block",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 300,
+          "width": 940,
+          "height": 480,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 48,
+          "safeMargin": true
+        },
+        {
+          "id": "hook-text",
+          "type": "text",
+          "content": "{{hook}}",
+          "x": 110,
+          "y": 395,
+          "width": 860,
+          "height": 290,
+          "fontSize": 76,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "typewriter",
+            "duration": 0.8
+          }
+        }
+      ]
+    },
+    {
+      "id": "point-one",
+      "name": "Point One",
+      "start": 3,
+      "duration": 3,
+      "background": {
+        "type": "gradient",
+        "from": "#111827",
+        "to": "#000000"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.2
+      },
+      "layers": [
+        {
+          "id": "num-1",
+          "type": "text",
+          "content": "01",
+          "x": 70,
+          "y": 230,
+          "width": 940,
+          "height": 150,
+          "fontSize": 120,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "point-1",
+          "type": "text",
+          "content": "{{pointOne}}",
+          "x": 110,
+          "y": 520,
+          "width": 860,
+          "height": 230,
+          "fontSize": 66,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "point-two",
+      "name": "Point Two",
+      "start": 6,
+      "duration": 3,
+      "background": {
+        "type": "color",
+        "value": "#f8fafc"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.2
+      },
+      "layers": [
+        {
+          "id": "num-2",
+          "type": "text",
+          "content": "02",
+          "x": 70,
+          "y": 230,
+          "width": 940,
+          "height": 150,
+          "fontSize": 120,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "point-2",
+          "type": "text",
+          "content": "{{pointTwo}}",
+          "x": 110,
+          "y": 520,
+          "width": 860,
+          "height": 230,
+          "fontSize": 66,
+          "fontWeight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "name": "Save CTA",
+      "start": 9,
+      "duration": 3,
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#7c2d12"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.2
+      },
+      "layers": [
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 95,
+          "y": 520,
+          "width": 890,
+          "height": 180,
+          "fontSize": 78,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "bounce",
+            "duration": 0.45
+          }
+        },
+        {
+          "id": "cta-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 235,
+          "y": 760,
+          "width": 610,
+          "height": 14,
+          "color": "#ffffff",
+          "opacity": 1,
+          "borderRadius": 8,
+          "safeMargin": true
+        }
+      ]
+    }
+  ]
+}
