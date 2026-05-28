@@ -1985,6 +1985,36 @@ export function ProfessionalVideoStudio() {
     downloadTextFile("mawj-captions.srt", srt, "text/plain;charset=utf-8");
   }
 
+  async function importSrtFile(file: File) {
+    try {
+      const text = await file.text();
+      const importedCaptions = parseSrtCaptions(text);
+
+      if (!importedCaptions.length) {
+        setError("ملف SRT لا يحتوي على كابشن صالح.");
+        return;
+      }
+
+      const targetDuration = Math.max(
+        studioFile?.durationSeconds ?? 0,
+        templateProject?.duration ?? 0,
+        totalTimelineSeconds,
+        ...importedCaptions.map((caption) => caption.end),
+      );
+
+      setCaptions(importedCaptions);
+      setTranscript(importedCaptions.map(captionToTranscriptSegment));
+      setTranscriptionMode(null);
+      setTranscriptionNotice(`${file.name} imported as editable captions.`);
+      setActivePanel("captions");
+      clearRenderedOutput();
+      commitTimeline((tracks) => ensureCaptionLayer(tracks, importedCaptions, targetDuration));
+      setProjectStatus(`${importedCaptions.length} SRT captions imported and synced to timeline`);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not import this SRT file.");
+    }
+  }
+
   function saveProjectSnapshot() {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(
@@ -2791,6 +2821,7 @@ export function ProfessionalVideoStudio() {
           onTemplateChange={setCaptionTemplate}
           onCaptionChange={updateCaption}
           onAutoTranscribe={() => transcribeVideo()}
+          onImportSrt={(file) => void importSrtFile(file)}
           onDownloadSrt={downloadSrt}
           onBurnCaptions={renderVideo}
           isTranscribing={isTranscribing}
@@ -3864,6 +3895,16 @@ function captionToTimelineLayer(caption: CaptionLine, index: number): TimelineLa
     fontWeight: "900",
     borderRadius: 22,
     opacity: 1,
+  };
+}
+
+function captionToTranscriptSegment(caption: CaptionLine, index: number): TranscriptSegment {
+  return {
+    id: `srt-segment-${index + 1}-${Math.round(caption.start * 1000)}`,
+    start: caption.start,
+    end: caption.end,
+    speaker: "SRT",
+    text: caption.text,
   };
 }
 
@@ -5025,6 +5066,59 @@ function secondsToSrt(seconds: number) {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${rest
     .toString()
     .padStart(2, "0")},${millis.toString().padStart(3, "0")}`;
+}
+
+function parseSrtCaptions(content: string): CaptionLine[] {
+  const normalizedContent = content
+    .replace(/^\uFEFF/, "")
+    .replace(/\r/g, "")
+    .trim();
+  if (!normalizedContent) return [];
+
+  return normalizedContent
+    .split(/\n{2,}/)
+    .flatMap((block, blockIndex) => {
+      const lines = block
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const timingIndex = lines.findIndex((line) => line.includes("-->"));
+      if (timingIndex === -1) return [];
+
+      const [rawStart, rawEnd] = lines[timingIndex].split("-->").map((part) => part.trim());
+      const start = srtTimeToSeconds(rawStart);
+      const end = srtTimeToSeconds(rawEnd?.split(/\s+/)[0] ?? "");
+      const text = lines.slice(timingIndex + 1).join("\n").trim();
+
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || !text) {
+        return [];
+      }
+
+      return [
+        {
+          id: `srt-${blockIndex + 1}-${Math.round(start * 1000)}`,
+          start: roundTimelineSeconds(start),
+          end: roundTimelineSeconds(end),
+          text,
+        },
+      ];
+    });
+}
+
+function srtTimeToSeconds(value: string) {
+  const cleanValue = value.trim().replace(",", ".");
+  const parts = cleanValue.split(":");
+  if (parts.length < 2 || parts.length > 3) return Number.NaN;
+
+  const [hoursPart, minutesPart, secondsPart] =
+    parts.length === 3 ? parts : ["0", parts[0], parts[1]];
+  const hours = Number(hoursPart);
+  const minutes = Number(minutesPart);
+  const seconds = Number(secondsPart);
+
+  if (![hours, minutes, seconds].every(Number.isFinite)) return Number.NaN;
+
+  return hours * 3600 + minutes * 60 + seconds;
 }
 
 /* ── Stock Media Panel ─────────────────────────────────────────────── */
