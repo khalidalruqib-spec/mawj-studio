@@ -530,6 +530,48 @@ export function ProfessionalVideoStudio() {
     );
   }
 
+  function updateTimelineLayerGeometry(
+    layerId: string,
+    patch: Pick<TimelineLayer, "x" | "y" | "width" | "height">,
+  ) {
+    setSelectedLayerId(layerId);
+    selectEngineLayer(layerId);
+    commitTimeline((tracks) =>
+      tracks.map((track) => ({
+        ...track,
+        layers: track.layers.map((layer) =>
+          layer.id === layerId
+            ? {
+                ...layer,
+                ...patch,
+              }
+            : layer,
+        ),
+      })),
+    );
+
+    setTemplateProject((project) =>
+      project
+        ? {
+            ...project,
+            timeline: project.timeline.map((track) => ({
+              ...track,
+              layers: track.layers.map((layer) =>
+                layer.id === layerId
+                  ? {
+                      ...layer,
+                      ...toTemplateTimelinePatch(patch),
+                    }
+                  : layer,
+              ),
+            })),
+            updatedAt: new Date().toISOString(),
+          }
+        : project,
+    );
+    setProjectStatus("Preview layer position updated");
+  }
+
   const applyTemplateProject = useCallback((
     project: TemplateProject,
     options?: {
@@ -2383,6 +2425,9 @@ export function ProfessionalVideoStudio() {
                     onUploadClick={() => inputRef.current?.click()}
                     onCreatorCommand={runAssistantCommand}
                     onClearTemplateProject={clearActiveTemplateProject}
+                    selectedLayerId={selectedLayerId}
+                    onSelectLayer={selectTimelineLayer}
+                    onUpdateLayerGeometry={updateTimelineLayerGeometry}
                   />
                   <ProjectMetrics
                     plan={plan}

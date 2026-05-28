@@ -31,7 +31,7 @@ import {
   type TimelineHitZone,
 } from "@/lib/timeline-canvas-renderer";
 import { CREATOR_STARTERS } from "../foundation";
-import type { AIEngineState, PanelId, StudioFile, TimelineTrack } from "../foundation";
+import type { AIEngineState, PanelId, StudioFile, TimelineLayer, TimelineTrack } from "../foundation";
 import { Metric } from "../ui";
 import { formatDuration, normalizeHexColor } from "../utils";
 
@@ -54,6 +54,9 @@ export function VideoPreview({
   onUploadClick,
   onCreatorCommand,
   onClearTemplateProject,
+  selectedLayerId,
+  onSelectLayer,
+  onUpdateLayerGeometry,
 }: {
   studioFile: StudioFile | null;
   templateProject: TemplateProject | null;
@@ -73,6 +76,9 @@ export function VideoPreview({
   onUploadClick: () => void;
   onCreatorCommand: (commandOverride?: string) => void;
   onClearTemplateProject: () => void;
+  selectedLayerId?: string;
+  onSelectLayer?: (id: string) => void;
+  onUpdateLayerGeometry?: (layerId: string, patch: Pick<TimelineLayer, "x" | "y" | "width" | "height">) => void;
 }) {
   const previewDurationSeconds = isUsableMediaDuration(studioFile?.durationSeconds)
     ? studioFile.durationSeconds
@@ -124,7 +130,12 @@ export function VideoPreview({
                 : "max-w-[370px]"
           }`}
         >
-          <TemplateProjectPreview project={templateProject} />
+          <TemplateProjectPreview
+            project={templateProject}
+            selectedLayerId={selectedLayerId}
+            onSelectLayer={onSelectLayer}
+            onUpdateLayerGeometry={onUpdateLayerGeometry}
+          />
           <button
             type="button"
             onClick={onClearTemplateProject}
@@ -195,15 +206,98 @@ export function VideoPreview({
   );
 }
 
-export function TemplateProjectPreview({ project }: { project: TemplateProject }) {
+export function TemplateProjectPreview({
+  project,
+  selectedLayerId,
+  onSelectLayer,
+  onUpdateLayerGeometry,
+}: {
+  project: TemplateProject;
+  selectedLayerId?: string;
+  onSelectLayer?: (id: string) => void;
+  onUpdateLayerGeometry?: (layerId: string, patch: Pick<TimelineLayer, "x" | "y" | "width" | "height">) => void;
+}) {
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<PreviewLayerDragState | null>(null);
+  const [dragDraft, setDragDraft] = useState<PreviewLayerDragDraft | null>(null);
   const firstScene = project.scenes[0];
   const activeLayers = project.timeline
     .flatMap((track) => track.layers)
     .filter((layer) => layer.absoluteStart <= (firstScene?.duration ?? project.duration))
     .slice(0, 12);
 
+  const handleLayerPointerDown = useCallback(
+    (
+      event: React.PointerEvent<HTMLElement>,
+      layer: TemplateTimelineTrack["layers"][number],
+      mode: PreviewLayerDragMode,
+    ) => {
+      const stage = stageRef.current;
+      if (!stage || layer.type === "background") return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      stage.setPointerCapture(event.pointerId);
+      onSelectLayer?.(layer.id);
+
+      const point = getPreviewProjectPoint(event, stage, project);
+      dragRef.current = {
+        pointerId: event.pointerId,
+        layerId: layer.id,
+        mode,
+        initialX: point.x,
+        initialY: point.y,
+        originalX: layer.x ?? 0,
+        originalY: layer.y ?? 0,
+        originalWidth: layer.width ?? project.width,
+        originalHeight: layer.height ?? project.height,
+      };
+    },
+    [onSelectLayer, project],
+  );
+
+  const handlePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const stage = stageRef.current;
+      const drag = dragRef.current;
+      if (!stage || !drag) return;
+
+      const point = getPreviewProjectPoint(event, stage, project);
+      setDragDraft(getPreviewLayerDraft(drag, point, project));
+    },
+    [project],
+  );
+
+  const handlePointerUp = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const stage = stageRef.current;
+      const drag = dragRef.current;
+      if (!drag) return;
+
+      if (stage?.hasPointerCapture(event.pointerId)) {
+        stage.releasePointerCapture(event.pointerId);
+      }
+
+      const nextDraft = stage
+        ? getPreviewLayerDraft(drag, getPreviewProjectPoint(event, stage, project), project)
+        : dragDraft;
+
+      dragRef.current = null;
+      setDragDraft(null);
+
+      if (nextDraft) {
+        onUpdateLayerGeometry?.(nextDraft.layerId, nextDraft.geometry);
+      }
+    },
+    [dragDraft, onUpdateLayerGeometry, project],
+  );
+
   return (
     <div
+      ref={stageRef}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       className={`relative max-h-[660px] w-full overflow-hidden rounded-lg bg-black shadow-2xl ${
         project.aspectRatio === "16:9"
           ? "aspect-video max-w-[920px]"
@@ -213,9 +307,26 @@ export function TemplateProjectPreview({ project }: { project: TemplateProject }
       }`}
     >
       <div className="absolute inset-0 bg-[linear-gradient(145deg,#111827,#050608)]" />
-      {activeLayers.map((layer) => (
-        <TemplatePreviewLayer key={layer.id} layer={layer} project={project} />
-      ))}
+      {activeLayers.map((layer) => {
+        const draftLayer =
+          dragDraft?.layerId === layer.id
+            ? {
+                ...layer,
+                ...dragDraft.geometry,
+              }
+            : layer;
+
+        return (
+          <TemplatePreviewLayer
+            key={layer.id}
+            layer={draftLayer}
+            project={project}
+            isSelected={selectedLayerId === layer.id}
+            onPointerDown={(event) => handleLayerPointerDown(event, layer, "move")}
+            onResizePointerDown={(event) => handleLayerPointerDown(event, layer, "resize")}
+          />
+        );
+      })}
       <div className="absolute inset-x-4 top-4 flex justify-center">
         <span className="max-w-full truncate rounded-full border border-white/15 bg-black/55 px-3 py-1.5 text-xs font-black text-white shadow-lg backdrop-blur">
           {project.name}
@@ -228,9 +339,15 @@ export function TemplateProjectPreview({ project }: { project: TemplateProject }
 export function TemplatePreviewLayer({
   layer,
   project,
+  isSelected = false,
+  onPointerDown,
+  onResizePointerDown,
 }: {
   layer: TemplateTimelineTrack["layers"][number];
   project: TemplateProject;
+  isSelected?: boolean;
+  onPointerDown?: (event: React.PointerEvent<HTMLElement>) => void;
+  onResizePointerDown?: (event: React.PointerEvent<HTMLElement>) => void;
 }) {
   const style = {
     left: `${((layer.x ?? 0) / project.width) * 100}%`,
@@ -239,18 +356,42 @@ export function TemplatePreviewLayer({
     height: `${((layer.height ?? project.height) / project.height) * 100}%`,
   };
 
+  if (layer.type === "background") {
+    return (
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: normalizeHexColor(layer.backgroundColor ?? layer.color) }}
+      />
+    );
+  }
+
+  const shellStyle = {
+    ...style,
+    opacity: layer.opacity ?? 1,
+    boxShadow: isSelected ? "0 0 0 2px var(--brand), 0 0 0 5px rgba(142,247,194,0.18)" : undefined,
+  };
+  const resizeHandle = isSelected ? (
+    <span
+      aria-hidden="true"
+      onPointerDown={onResizePointerDown}
+      className="absolute bottom-0 right-0 h-3 w-3 translate-x-1/2 translate-y-1/2 cursor-nwse-resize rounded-sm border border-black/40 bg-[var(--brand)] shadow-lg"
+    />
+  ) : null;
+
   if (layer.type === "text" || layer.type === "captions") {
     return (
       <div
-        className="absolute grid place-items-center overflow-hidden px-2 text-center font-black leading-tight"
+        onPointerDown={onPointerDown}
+        className="absolute grid cursor-move place-items-center overflow-hidden px-2 text-center font-black leading-tight"
         style={{
-          ...style,
+          ...shellStyle,
           color: normalizeHexColor(layer.color),
           fontSize: `${Math.max(11, (layer.fontSize ?? 44) * 0.2)}px`,
           direction: layer.direction === "ltr" ? "ltr" : "rtl",
         }}
       >
         {layer.content ?? layer.name}
+        {resizeHandle}
       </div>
     );
   }
@@ -258,35 +399,109 @@ export function TemplatePreviewLayer({
   if (layer.type === "image" || layer.type === "video") {
     const src = layer.src && !layer.src.includes("{{") ? layer.src : "";
 
-    return src && layer.type === "image" ? (
-      <img src={src} alt={layer.name ?? layer.id} className="absolute object-cover" style={style} />
-    ) : (
-      <div className="absolute grid place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70" style={style}>
-        {layer.type.toUpperCase()}
-      </div>
-    );
-  }
-
-  if (layer.type === "background") {
     return (
       <div
-        className="absolute inset-0"
-        style={{ background: normalizeHexColor(layer.backgroundColor ?? layer.color) }}
-      />
+        onPointerDown={onPointerDown}
+        className="absolute cursor-move overflow-hidden"
+        style={shellStyle}
+      >
+        {src && layer.type === "image" ? (
+          <img src={src} alt={layer.name ?? layer.id} className="h-full w-full object-cover" />
+        ) : (
+          <div className="grid h-full w-full place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70">
+            {layer.type.toUpperCase()}
+          </div>
+        )}
+        {resizeHandle}
+      </div>
     );
   }
 
   return (
     <div
-      className="absolute"
+      onPointerDown={onPointerDown}
+      className="absolute cursor-move"
       style={{
-        ...style,
+        ...shellStyle,
         background: normalizeHexColor(layer.color),
         borderRadius: `${Math.min(28, (layer.borderRadius ?? 18) / 2)}px`,
-        opacity: layer.opacity ?? 0.75,
       }}
-    />
+    >
+      {resizeHandle}
+    </div>
   );
+}
+
+type PreviewLayerDragMode = "move" | "resize";
+
+type PreviewLayerDragState = {
+  pointerId: number;
+  layerId: string;
+  mode: PreviewLayerDragMode;
+  initialX: number;
+  initialY: number;
+  originalX: number;
+  originalY: number;
+  originalWidth: number;
+  originalHeight: number;
+};
+
+type PreviewLayerDragDraft = {
+  layerId: string;
+  geometry: Pick<TimelineLayer, "x" | "y" | "width" | "height">;
+};
+
+function getPreviewProjectPoint(
+  event: React.PointerEvent<HTMLElement>,
+  stage: HTMLElement,
+  project: TemplateProject,
+) {
+  const rect = stage.getBoundingClientRect();
+
+  return {
+    x: ((event.clientX - rect.left) / rect.width) * project.width,
+    y: ((event.clientY - rect.top) / rect.height) * project.height,
+  };
+}
+
+function getPreviewLayerDraft(
+  drag: PreviewLayerDragState,
+  point: { x: number; y: number },
+  project: TemplateProject,
+): PreviewLayerDragDraft {
+  const deltaX = point.x - drag.initialX;
+  const deltaY = point.y - drag.initialY;
+  const minSize = 36;
+
+  if (drag.mode === "resize") {
+    return {
+      layerId: drag.layerId,
+      geometry: {
+        x: Math.round(drag.originalX),
+        y: Math.round(drag.originalY),
+        width: Math.round(
+          clampPreviewValue(drag.originalWidth + deltaX, minSize, project.width - drag.originalX),
+        ),
+        height: Math.round(
+          clampPreviewValue(drag.originalHeight + deltaY, minSize, project.height - drag.originalY),
+        ),
+      },
+    };
+  }
+
+  return {
+    layerId: drag.layerId,
+    geometry: {
+      x: Math.round(clampPreviewValue(drag.originalX + deltaX, 0, project.width - drag.originalWidth)),
+      y: Math.round(clampPreviewValue(drag.originalY + deltaY, 0, project.height - drag.originalHeight)),
+      width: Math.round(drag.originalWidth),
+      height: Math.round(drag.originalHeight),
+    },
+  };
+}
+
+function clampPreviewValue(value: number, min: number, max: number) {
+  return Math.min(Math.max(min, value), Math.max(min, max));
 }
 
 export function TimelineEditor({
