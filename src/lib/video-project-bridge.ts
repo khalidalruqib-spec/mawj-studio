@@ -48,11 +48,18 @@ export type EditorTimelineLayerInput = {
   fontSize?: number;
   fontWeight?: string;
   textColor?: string;
+  textStrokeColor?: string;
+  textStrokeWidth?: number;
+  textShadowColor?: string;
+  textShadowBlur?: number;
+  textShadowOffsetX?: number;
+  textShadowOffsetY?: number;
   align?: "left" | "center" | "right";
   direction?: "ltr" | "rtl" | "auto";
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
+  fit?: "cover" | "contain" | "fill";
   locked?: boolean;
   hidden?: boolean;
 };
@@ -302,10 +309,17 @@ export function editorLayerPatchToVideoLayerPatch(
     fontSize: patch.fontSize,
     fontWeight: patch.fontWeight,
     color: patch.textColor ?? patch.color,
+    textStrokeColor: patch.textStrokeColor,
+    textStrokeWidth: patch.textStrokeWidth,
+    textShadowColor: patch.textShadowColor,
+    textShadowBlur: patch.textShadowBlur,
+    textShadowOffsetX: patch.textShadowOffsetX,
+    textShadowOffsetY: patch.textShadowOffsetY,
     backgroundColor: patch.backgroundColor,
     borderRadius: patch.borderRadius,
     align: patch.align,
     direction: patch.direction,
+    fit: patch.fit,
   };
   const cleanStyle = removeUndefined(style);
 
@@ -455,6 +469,12 @@ function templateLayerToVideoLayer(
       fontSize: layer.fontSize,
       fontWeight: layer.fontWeight,
       color: layer.color,
+      textStrokeColor: layer.textStrokeColor,
+      textStrokeWidth: layer.textStrokeWidth,
+      textShadowColor: layer.textShadowColor,
+      textShadowBlur: layer.textShadowBlur,
+      textShadowOffsetX: layer.textShadowOffsetX,
+      textShadowOffsetY: layer.textShadowOffsetY,
       backgroundColor: layer.backgroundColor,
       borderRadius: layer.borderRadius,
       align: layer.align,
@@ -503,11 +523,17 @@ function editorTimelineLayerToVideoLayer(
       fontSize: layer.fontSize ?? previous?.style?.fontSize,
       fontWeight: layer.fontWeight ?? previous?.style?.fontWeight,
       color: layer.textColor ?? layer.color ?? previous?.style?.color,
+      textStrokeColor: layer.textStrokeColor ?? previous?.style?.textStrokeColor,
+      textStrokeWidth: layer.textStrokeWidth ?? previous?.style?.textStrokeWidth,
+      textShadowColor: layer.textShadowColor ?? previous?.style?.textShadowColor,
+      textShadowBlur: layer.textShadowBlur ?? previous?.style?.textShadowBlur,
+      textShadowOffsetX: layer.textShadowOffsetX ?? previous?.style?.textShadowOffsetX,
+      textShadowOffsetY: layer.textShadowOffsetY ?? previous?.style?.textShadowOffsetY,
       backgroundColor: layer.backgroundColor ?? previous?.style?.backgroundColor,
       borderRadius: layer.borderRadius ?? previous?.style?.borderRadius,
       align: layer.align ?? previous?.style?.align ?? "center",
       direction: layer.direction ?? previous?.style?.direction ?? "auto",
-      fit: previous?.style?.fit ?? (type === "video" || type === "image" ? "cover" : undefined),
+      fit: layer.fit ?? previous?.style?.fit ?? (type === "video" || type === "image" ? "cover" : undefined),
     },
     effects:
       layer.type === "effect"

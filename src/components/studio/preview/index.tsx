@@ -517,6 +517,8 @@ function TimelinePreviewLayer({
     justifyItems: textAlign === "right" ? "end" : textAlign === "left" ? "start" : "center",
     textAlign,
     opacity: layer.opacity ?? 1,
+    WebkitTextStroke: resolvePreviewTextStroke(layer, fontScale),
+    textShadow: resolvePreviewTextShadow(layer, fontScale),
   } satisfies React.CSSProperties;
 
   if (editingDraft !== null) {
@@ -755,6 +757,24 @@ function scalePreviewRadius(radius?: number) {
   return radius ? `${Math.max(4, radius * 0.2)}px` : undefined;
 }
 
+function resolvePreviewTextStroke(layer: Pick<TimelineLayer, "textStrokeColor" | "textStrokeWidth">, scale: number) {
+  const width = layer.textStrokeWidth ?? 4;
+  if (width <= 0) return undefined;
+  return `${Math.max(0.4, width * scale)}px ${layer.textStrokeColor ?? "rgba(0,0,0,0.66)"}`;
+}
+
+function resolvePreviewTextShadow(
+  layer: Pick<TimelineLayer, "textShadowColor" | "textShadowBlur" | "textShadowOffsetX" | "textShadowOffsetY">,
+  scale: number,
+) {
+  const blur = Math.max(0, (layer.textShadowBlur ?? 0) * scale);
+  const offsetX = (layer.textShadowOffsetX ?? 0) * scale;
+  const offsetY = (layer.textShadowOffsetY ?? 0) * scale;
+
+  if (!blur && !offsetX && !offsetY) return undefined;
+  return `${offsetX}px ${offsetY}px ${blur}px ${layer.textShadowColor ?? "rgba(0,0,0,0.72)"}`;
+}
+
 export function TemplatePreviewLayer({
   layer,
   project,
@@ -781,6 +801,8 @@ export function TemplatePreviewLayer({
           fontFamily: resolveLayerFontFamily({ layer }),
           fontSize: `${Math.max(11, (layer.fontSize ?? 44) * 0.2)}px`,
           fontWeight: normalizeTemplateFontWeight(layer.fontWeight),
+          WebkitTextStroke: resolvePreviewTextStroke(layer, 0.2),
+          textShadow: resolvePreviewTextShadow(layer, 0.2),
           backgroundColor: layer.backgroundColor,
           borderRadius: layer.borderRadius ? `${Math.max(4, layer.borderRadius * 0.2)}px` : undefined,
           direction: layer.direction === "ltr" ? "ltr" : "rtl",

@@ -51,6 +51,12 @@ export type BrowserTimelineLayer = {
   fontSize?: number;
   fontWeight?: string;
   textColor?: string;
+  textStrokeColor?: string;
+  textStrokeWidth?: number;
+  textShadowColor?: string;
+  textShadowBlur?: number;
+  textShadowOffsetX?: number;
+  textShadowOffsetY?: number;
   align?: "left" | "center" | "right";
   direction?: "ltr" | "rtl" | "auto";
   backgroundColor?: string;
@@ -475,16 +481,30 @@ function drawTimelineTextLayer(
   const lineHeight = fontSize * 1.2;
   const startY = y + height / 2 - ((lines.length - 1) * lineHeight) / 2;
   const textX = layer.align === "left" ? x + width * 0.06 : layer.align === "right" ? x + width * 0.94 : x + width / 2;
+  const strokeWidth = getRenderTextStrokeWidth(layer, fontSize, scale);
 
+  context.save();
+  context.shadowColor = layer.textShadowColor ?? "rgba(0,0,0,0.72)";
+  context.shadowBlur = Math.max(0, (layer.textShadowBlur ?? 0) * scale);
+  context.shadowOffsetX = (layer.textShadowOffsetX ?? 0) * scale;
+  context.shadowOffsetY = (layer.textShadowOffsetY ?? 0) * scale;
   for (const [index, line] of lines.entries()) {
     const lineY = startY + index * lineHeight;
-    context.lineWidth = Math.max(4, fontSize * 0.08);
-    context.strokeStyle = "rgba(0,0,0,0.52)";
-    context.strokeText(line, textX, lineY, maxWidth);
+    if (strokeWidth > 0) {
+      context.lineWidth = strokeWidth;
+      context.strokeStyle = layer.textStrokeColor ?? "rgba(0,0,0,0.52)";
+      context.strokeText(line, textX, lineY, maxWidth);
+    }
     context.fillText(line, textX, lineY, maxWidth);
   }
+  context.restore();
 
   context.restore();
+}
+
+function getRenderTextStrokeWidth(layer: BrowserTimelineLayer, fontSize: number, scale: number) {
+  if (layer.textStrokeWidth !== undefined) return Math.max(0, layer.textStrokeWidth * scale);
+  return Math.max(4, fontSize * 0.08);
 }
 
 function drawImageFitted(

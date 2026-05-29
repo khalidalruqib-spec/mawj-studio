@@ -338,11 +338,26 @@ function drawTextLayer(
   }
 
   for (const [index, line] of lines.entries()) {
-    context.lineWidth = Math.max(4, fontSize * 0.08);
-    context.strokeStyle = "rgba(0,0,0,0.42)";
-    context.strokeText(line, textX, startY + index * lineHeight, width * 0.92);
+    const strokeWidth = getTemplateTextStrokeWidth(layer, fontSize);
+    context.save();
+    context.shadowColor = layer.textShadowColor ?? "rgba(0,0,0,0.72)";
+    context.shadowBlur = Math.max(0, layer.textShadowBlur ?? 0);
+    context.shadowOffsetX = layer.textShadowOffsetX ?? 0;
+    context.shadowOffsetY = layer.textShadowOffsetY ?? 0;
+
+    if (strokeWidth > 0) {
+      context.lineWidth = strokeWidth;
+      context.strokeStyle = layer.textStrokeColor ?? "rgba(0,0,0,0.42)";
+      context.strokeText(line, textX, startY + index * lineHeight, width * 0.92);
+    }
     context.fillText(line, textX, startY + index * lineHeight, width * 0.92);
+    context.restore();
   }
+}
+
+function getTemplateTextStrokeWidth(layer: TemplateTimelineLayer, fontSize: number) {
+  if (layer.textStrokeWidth !== undefined) return Math.max(0, layer.textStrokeWidth);
+  return Math.max(4, fontSize * 0.08);
 }
 
 function resolveTemplateTextForRender(layer: TemplateTimelineLayer, time: number) {

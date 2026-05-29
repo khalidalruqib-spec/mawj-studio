@@ -137,6 +137,12 @@ export interface LayerStyle {
   fontSize?: number;
   fontWeight?: string;
   color?: string;
+  textStrokeColor?: string;
+  textStrokeWidth?: number;
+  textShadowColor?: string;
+  textShadowBlur?: number;
+  textShadowOffsetX?: number;
+  textShadowOffsetY?: number;
   backgroundColor?: string;
   borderRadius?: number;
   borderColor?: string;
@@ -204,6 +210,12 @@ export const layerStyleSchema = z.object({
   fontSize: z.number().positive().optional(),
   fontWeight: z.string().optional(),
   color: z.string().optional(),
+  textStrokeColor: z.string().optional(),
+  textStrokeWidth: z.number().min(0).optional(),
+  textShadowColor: z.string().optional(),
+  textShadowBlur: z.number().min(0).optional(),
+  textShadowOffsetX: z.number().optional(),
+  textShadowOffsetY: z.number().optional(),
   backgroundColor: z.string().optional(),
   borderRadius: z.number().min(0).optional(),
   borderColor: z.string().optional(),

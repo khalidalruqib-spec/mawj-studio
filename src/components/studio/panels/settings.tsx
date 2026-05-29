@@ -252,6 +252,8 @@ export function LayerInspector({
                 fontFamily: resolveInspectorFontValue(layer),
                 fontWeight: normalizeInspectorFontWeight(layer.fontWeight),
                 textAlign: layer.align ?? "center",
+                WebkitTextStroke: resolveInspectorTextStroke(layer, 1),
+                textShadow: resolveInspectorTextShadow(layer, 0.3),
               }}
             >
               {layer.content ?? layer.name}
@@ -318,6 +320,54 @@ export function LayerInspector({
               className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </Field>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Outline color">
+              <input
+                type="color"
+                value={resolveInspectorColorInputValue(layer.textStrokeColor, "#000000")}
+                disabled={locked}
+                onChange={(event) => onChange({ textStrokeColor: event.target.value })}
+                className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </Field>
+            <NumberField
+              label="Outline px"
+              value={layer.textStrokeWidth ?? 4}
+              disabled={locked}
+              onChange={(textStrokeWidth) => onChange({ textStrokeWidth: clampInspectorNumber(textStrokeWidth, 0, 40) })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Shadow color">
+              <input
+                type="color"
+                value={resolveInspectorColorInputValue(layer.textShadowColor, "#000000")}
+                disabled={locked}
+                onChange={(event) => onChange({ textShadowColor: event.target.value })}
+                className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </Field>
+            <NumberField
+              label="Shadow blur"
+              value={layer.textShadowBlur ?? 0}
+              disabled={locked}
+              onChange={(textShadowBlur) => onChange({ textShadowBlur: clampInspectorNumber(textShadowBlur, 0, 80) })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <NumberField
+              label="Shadow X"
+              value={layer.textShadowOffsetX ?? 0}
+              disabled={locked}
+              onChange={(textShadowOffsetX) => onChange({ textShadowOffsetX: clampInspectorNumber(textShadowOffsetX, -80, 80) })}
+            />
+            <NumberField
+              label="Shadow Y"
+              value={layer.textShadowOffsetY ?? 0}
+              disabled={locked}
+              onChange={(textShadowOffsetY) => onChange({ textShadowOffsetY: clampInspectorNumber(textShadowOffsetY, -80, 80) })}
+            />
+          </div>
           <BackgroundColorField layer={layer} locked={locked} onChange={onChange} />
         </div>
       ) : (
@@ -361,6 +411,21 @@ function normalizeInspectorFontWeight(weight?: string) {
   if (weight === "normal") return 500;
   if (weight === "bold") return 900;
   return weight ?? 900;
+}
+
+function resolveInspectorTextStroke(layer: TimelineLayer, scale = 1) {
+  const width = Math.max(0, (layer.textStrokeWidth ?? 4) * scale);
+  if (!width) return undefined;
+  return `${width}px ${layer.textStrokeColor ?? "rgba(0,0,0,0.66)"}`;
+}
+
+function resolveInspectorTextShadow(layer: TimelineLayer, scale = 1) {
+  const blur = Math.max(0, (layer.textShadowBlur ?? 0) * scale);
+  const offsetX = (layer.textShadowOffsetX ?? 0) * scale;
+  const offsetY = (layer.textShadowOffsetY ?? 0) * scale;
+
+  if (!blur && !offsetX && !offsetY) return undefined;
+  return `${offsetX}px ${offsetY}px ${blur}px ${layer.textShadowColor ?? "rgba(0,0,0,0.72)"}`;
 }
 
 function BackgroundColorField({
