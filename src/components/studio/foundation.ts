@@ -108,6 +108,7 @@ export type TimelineLayer = {
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
+  lineHeight?: number;
   textColor?: string;
   textStrokeColor?: string;
   textStrokeWidth?: number;

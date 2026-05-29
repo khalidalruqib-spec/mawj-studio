@@ -136,6 +136,7 @@ export interface LayerStyle {
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
+  lineHeight?: number;
   color?: string;
   textStrokeColor?: string;
   textStrokeWidth?: number;
@@ -209,6 +210,7 @@ export const layerStyleSchema = z.object({
   fontFamily: z.string().optional(),
   fontSize: z.number().positive().optional(),
   fontWeight: z.string().optional(),
+  lineHeight: z.number().positive().optional(),
   color: z.string().optional(),
   textStrokeColor: z.string().optional(),
   textStrokeWidth: z.number().min(0).optional(),

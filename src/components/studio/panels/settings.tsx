@@ -19,6 +19,7 @@ const TEXT_STYLE_PRESETS: Array<{
     patch: {
       fontSize: 72,
       fontWeight: "900",
+      lineHeight: 1.05,
       textColor: "#ffffff",
       color: "#ffffff",
       textStrokeColor: "#000000",
@@ -39,6 +40,7 @@ const TEXT_STYLE_PRESETS: Array<{
     patch: {
       fontSize: 68,
       fontWeight: "900",
+      lineHeight: 1.1,
       textColor: "#f8e7b0",
       color: "#f8e7b0",
       textStrokeColor: "#050608",
@@ -60,6 +62,7 @@ const TEXT_STYLE_PRESETS: Array<{
     patch: {
       fontSize: 44,
       fontWeight: "600",
+      lineHeight: 1.25,
       textColor: "#111827",
       color: "#111827",
       textStrokeWidth: 0,
@@ -79,6 +82,7 @@ const TEXT_STYLE_PRESETS: Array<{
     patch: {
       fontSize: 50,
       fontWeight: "900",
+      lineHeight: 1.1,
       textColor: "#050608",
       color: "#050608",
       textStrokeWidth: 0,
@@ -390,6 +394,7 @@ export function LayerInspector({
                 color: layer.textColor ?? layer.color,
                 fontFamily: resolveInspectorFontValue(layer),
                 fontWeight: normalizeInspectorFontWeight(layer.fontWeight),
+                lineHeight: layer.lineHeight ?? 1.15,
                 textAlign: layer.align ?? "center",
                 WebkitTextStroke: resolveInspectorTextStroke(layer, 1),
                 textShadow: resolveInspectorTextShadow(layer, 0.3),
@@ -423,6 +428,15 @@ export function LayerInspector({
           </Field>
           <div className="grid grid-cols-2 gap-2">
             <NumberField label="Font size" value={layer.fontSize ?? 48} disabled={locked} onChange={(fontSize) => onChange({ fontSize })} />
+            <NumberField
+              label="Line height"
+              value={layer.lineHeight ?? 1.15}
+              disabled={locked}
+              step={0.05}
+              onChange={(lineHeight) => onChange({ lineHeight: clampInspectorNumber(lineHeight, 0.8, 2.2) })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
             <Field label="Font weight">
               <select
                 value={layer.fontWeight ?? "bold"}
@@ -777,11 +791,13 @@ export function NumberField({
   label,
   value,
   disabled = false,
+  step = 1,
   onChange,
 }: {
   label: string;
   value: number;
   disabled?: boolean;
+  step?: number;
   onChange: (value: number) => void;
 }) {
   return (
@@ -790,6 +806,7 @@ export function NumberField({
         type="number"
         value={Number.isFinite(value) ? value : 0}
         disabled={disabled}
+        step={step}
         onChange={(event) => onChange(Number(event.target.value))}
         className="control-input disabled:cursor-not-allowed disabled:opacity-50"
       />

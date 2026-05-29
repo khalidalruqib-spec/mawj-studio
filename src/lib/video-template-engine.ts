@@ -98,6 +98,7 @@ export type TemplateLayer = {
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
+  lineHeight?: number;
   textStrokeColor?: string;
   textStrokeWidth?: number;
   textShadowColor?: string;

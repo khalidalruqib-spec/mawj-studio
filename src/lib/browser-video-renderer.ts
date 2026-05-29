@@ -52,6 +52,7 @@ export type BrowserTimelineLayer = {
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
+  lineHeight?: number;
   textColor?: string;
   textStrokeColor?: string;
   textStrokeWidth?: number;
@@ -552,7 +553,7 @@ function drawTimelineTextLayer(
 
   const maxWidth = width * 0.9;
   const lines = wrapText(context, text, maxWidth, 3, fontSize);
-  const lineHeight = fontSize * 1.2;
+  const lineHeight = fontSize * (layer.lineHeight ?? 1.2);
   const startY = y + height / 2 - ((lines.length - 1) * lineHeight) / 2;
   const textX = layer.align === "left" ? x + width * 0.06 : layer.align === "right" ? x + width * 0.94 : x + width / 2;
   const strokeWidth = getRenderTextStrokeWidth(layer, fontSize, scale);

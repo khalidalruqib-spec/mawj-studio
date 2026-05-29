@@ -49,6 +49,7 @@ export type EditorTimelineLayerInput = {
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
+  lineHeight?: number;
   textColor?: string;
   textStrokeColor?: string;
   textStrokeWidth?: number;
@@ -312,6 +313,7 @@ export function editorLayerPatchToVideoLayerPatch(
     fontFamily: patch.fontFamily,
     fontSize: patch.fontSize,
     fontWeight: patch.fontWeight,
+    lineHeight: patch.lineHeight,
     color: patch.textColor ?? patch.color,
     textStrokeColor: patch.textStrokeColor,
     textStrokeWidth: patch.textStrokeWidth,
@@ -475,6 +477,7 @@ function templateLayerToVideoLayer(
       fontFamily: layer.fontFamily ?? defaultFontForDirection(layer.direction),
       fontSize: layer.fontSize,
       fontWeight: layer.fontWeight,
+      lineHeight: layer.lineHeight,
       color: layer.color,
       textStrokeColor: layer.textStrokeColor,
       textStrokeWidth: layer.textStrokeWidth,
@@ -529,6 +532,7 @@ function editorTimelineLayerToVideoLayer(
       fontFamily: layer.fontFamily ?? previous?.style?.fontFamily ?? defaultFontForDirection(layer.direction ?? "auto"),
       fontSize: layer.fontSize ?? previous?.style?.fontSize,
       fontWeight: layer.fontWeight ?? previous?.style?.fontWeight,
+      lineHeight: layer.lineHeight ?? previous?.style?.lineHeight,
       color: layer.textColor ?? layer.color ?? previous?.style?.color,
       textStrokeColor: layer.textStrokeColor ?? previous?.style?.textStrokeColor,
       textStrokeWidth: layer.textStrokeWidth ?? previous?.style?.textStrokeWidth,

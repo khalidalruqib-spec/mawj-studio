@@ -303,7 +303,7 @@ function drawTextLayer(
   context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
   const rawText = resolveTemplateTextForRender(layer, time);
   const lines = wrapText(context, rawText, width * 0.92, fontSize);
-  const lineHeight = fontSize * 1.22;
+  const lineHeight = fontSize * (layer.lineHeight ?? 1.22);
 
   context.textAlign = layer.align ?? "center";
   context.textBaseline = "middle";
