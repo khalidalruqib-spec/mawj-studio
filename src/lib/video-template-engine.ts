@@ -152,6 +152,29 @@ export type VideoTemplate = {
 
 export type TemplateUserInputs = Record<string, string>;
 
+const STOCK_PROXY_PREFIX = "/api/stock/proxy?url=";
+
+const DEMO_MEDIA = {
+  photos: {
+    business: "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=900",
+    city: "https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress&cs=tinysrgb&w=900",
+    coffee: "https://images.pexels.com/photos/1591056/pexels-photo-1591056.jpeg?auto=compress&cs=tinysrgb&w=900",
+    food: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=900",
+    luxury: "https://images.pexels.com/photos/380769/pexels-photo-380769.jpeg?auto=compress&cs=tinysrgb&w=900",
+    nature: "https://images.pexels.com/photos/1261731/pexels-photo-1261731.jpeg?auto=compress&cs=tinysrgb&w=900",
+    phone: "https://images.pexels.com/photos/1092644/pexels-photo-1092644.jpeg?auto=compress&cs=tinysrgb&w=900",
+    portrait: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=900",
+    product: "https://images.pexels.com/photos/1072824/pexels-photo-1072824.jpeg?auto=compress&cs=tinysrgb&w=900",
+    property: "https://images.pexels.com/photos/164634/pexels-photo-164634.jpeg?auto=compress&cs=tinysrgb&w=900",
+    tech: "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=900",
+    team: "https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=900",
+  },
+  videos: {
+    city: "https://videos.pexels.com/video-files/855564/855564-hd_1280_720_24fps.mp4",
+    studio: "https://videos.pexels.com/video-files/2795405/2795405-uhd_1440_2560_25fps.mp4",
+  },
+};
+
 export type TemplateTimelineLayer = TemplateLayer & {
   id: string;
   sceneId: string;
@@ -310,9 +333,50 @@ export function buildTemplateInputs(
   userInputs: TemplateUserInputs,
 ): TemplateUserInputs {
   return template.requiredInputs.reduce<TemplateUserInputs>((inputs, input) => {
-    inputs[input.key] = userInputs[input.key] ?? input.default ?? "";
+    inputs[input.key] = userInputs[input.key] ?? input.default ?? getDemoMediaDefault(template, input) ?? "";
     return inputs;
   }, {});
+}
+
+function getDemoMediaDefault(template: VideoTemplate, input: VideoTemplateInput) {
+  if (input.type === "image") {
+    return stockProxyUrl(selectDemoPhoto(template, input));
+  }
+
+  if (input.type === "video") {
+    return stockProxyUrl(selectDemoVideo(template, input));
+  }
+
+  return undefined;
+}
+
+function selectDemoPhoto(template: VideoTemplate, input: VideoTemplateInput) {
+  const signal = `${template.id} ${template.category} ${template.name} ${input.key} ${input.label}`.toLowerCase();
+
+  if (signal.includes("logo")) return "/platform-logo.png";
+  if (signal.includes("food") || signal.includes("restaurant") || signal.includes("menu") || signal.includes("مطعم")) return DEMO_MEDIA.photos.food;
+  if (signal.includes("estate") || signal.includes("property") || signal.includes("real") || signal.includes("عقار")) return DEMO_MEDIA.photos.property;
+  if (signal.includes("course") || signal.includes("lecture") || signal.includes("education") || signal.includes("trainer")) return DEMO_MEDIA.photos.tech;
+  if (signal.includes("personal") || signal.includes("portrait") || signal.includes("profile") || signal.includes("photo")) return DEMO_MEDIA.photos.portrait;
+  if (signal.includes("fashion") || signal.includes("look")) return DEMO_MEDIA.photos.luxury;
+  if (signal.includes("news") || signal.includes("city")) return DEMO_MEDIA.photos.city;
+  if (signal.includes("business") || signal.includes("team") || signal.includes("legal")) return DEMO_MEDIA.photos.business;
+  if (signal.includes("phone") || signal.includes("social") || signal.includes("tiktok")) return DEMO_MEDIA.photos.phone;
+  if (signal.includes("coffee") || signal.includes("cafe")) return DEMO_MEDIA.photos.coffee;
+  if (signal.includes("background") || signal.includes("cover")) return DEMO_MEDIA.photos.nature;
+
+  return DEMO_MEDIA.photos.product;
+}
+
+function selectDemoVideo(template: VideoTemplate, input: VideoTemplateInput) {
+  const signal = `${template.id} ${template.category} ${template.name} ${input.key} ${input.label}`.toLowerCase();
+  if (signal.includes("city") || signal.includes("news") || signal.includes("story")) return DEMO_MEDIA.videos.city;
+  return DEMO_MEDIA.videos.studio;
+}
+
+function stockProxyUrl(url: string) {
+  if (!url || url.startsWith("/") || url.startsWith("blob:") || url.startsWith("data:")) return url;
+  return `${STOCK_PROXY_PREFIX}${encodeURIComponent(url)}`;
 }
 
 export function getDefaultSafeMargins(aspectRatio: VideoTemplate["aspectRatio"]) {
