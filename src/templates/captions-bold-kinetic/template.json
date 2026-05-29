@@ -1,0 +1,189 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "captions-bold-kinetic",
+  "name": "Captions — Bold Kinetic",
+  "category": "Caption Styles",
+  "duration": 20,
+  "description": "High-impact kinetic typography: white bold words fly in from the side on a near-black background. MrBeast-style energy.",
+  "requiredInputs": [
+    {
+      "key": "video",
+      "label": "Your Video",
+      "type": "video",
+      "required": false
+    },
+    {
+      "key": "title",
+      "label": "Hook Title",
+      "type": "text",
+      "default": "هذا ما لم يخبرك به أحد",
+      "required": true
+    },
+    {
+      "key": "brandColor",
+      "label": "Highlight Color",
+      "type": "color",
+      "default": "#facc15",
+      "required": false
+    },
+    {
+      "key": "cta",
+      "label": "CTA",
+      "type": "text",
+      "default": "متابعة للاستمرار →",
+      "required": true
+    }
+  ],
+  "scenes": [
+    {
+      "id": "main",
+      "name": "Kinetic Captions",
+      "start": 0,
+      "duration": 20,
+      "background": {
+        "type": "color",
+        "value": "#050505"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "vid",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "opacity": 0.3
+        },
+        {
+          "id": "title-accent",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 172,
+          "width": 8,
+          "height": 130,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 4
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "content": "{{title}}",
+          "x": 100,
+          "y": 183,
+          "width": 900,
+          "height": 120,
+          "fontSize": 70,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "right",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideRight",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "captions",
+          "type": "captions",
+          "source": "auto",
+          "x": 60,
+          "y": 1140,
+          "width": 960,
+          "height": 380,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "highlightColor": "{{brandColor}}",
+          "align": "right",
+          "style": "bold",
+          "direction": "rtl",
+          "safeMargin": true
+        },
+        {
+          "id": "cta-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 1595,
+          "width": 940,
+          "height": 2,
+          "color": "{{brandColor}}",
+          "opacity": 0.7,
+          "borderRadius": 0
+        },
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 70,
+          "y": 1608,
+          "width": 940,
+          "height": 68,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.35,
+            "delay": 0.3
+          }
+        }
+      ]
+    }
+  ]
+}

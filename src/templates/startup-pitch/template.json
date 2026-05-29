@@ -1,0 +1,767 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "startup-pitch",
+  "name": "Startup Pitch Deck",
+  "category": "Business",
+  "duration": 45,
+  "description": "5-scene investor pitch: problem → solution → metrics → traction → CTA. Perfect for product launches and investor decks.",
+  "requiredInputs": [
+    {
+      "key": "startupName",
+      "label": "Startup Name",
+      "type": "text",
+      "default": "TechVenture SA",
+      "required": true
+    },
+    {
+      "key": "tagline",
+      "label": "One-Line Tagline",
+      "type": "text",
+      "default": "نحل المشكلة الكبيرة بطريقة ذكية",
+      "required": true
+    },
+    {
+      "key": "problem",
+      "label": "Problem Statement",
+      "type": "textarea",
+      "default": "٧٠٪ من الشركات الصغيرة تعاني من إدارة العمليات",
+      "required": true
+    },
+    {
+      "key": "solution",
+      "label": "Your Solution",
+      "type": "textarea",
+      "default": "منصة ذكاء اصطناعي تدير عملياتك وتوفر وقتك",
+      "required": true
+    },
+    {
+      "key": "m1",
+      "label": "Metric 1 Value",
+      "type": "text",
+      "default": "١٠x",
+      "required": true
+    },
+    {
+      "key": "m1l",
+      "label": "Metric 1 Label",
+      "type": "text",
+      "default": "زيادة الإنتاجية",
+      "required": true
+    },
+    {
+      "key": "m2",
+      "label": "Metric 2 Value",
+      "type": "text",
+      "default": "٩٥٪",
+      "required": true
+    },
+    {
+      "key": "m2l",
+      "label": "Metric 2 Label",
+      "type": "text",
+      "default": "رضا العملاء",
+      "required": true
+    },
+    {
+      "key": "m3",
+      "label": "Metric 3 Value",
+      "type": "text",
+      "default": "+٥٠٠",
+      "required": true
+    },
+    {
+      "key": "m3l",
+      "label": "Metric 3 Label",
+      "type": "text",
+      "default": "شركة مشتركة",
+      "required": true
+    },
+    {
+      "key": "ask",
+      "label": "The Ask / CTA",
+      "type": "text",
+      "default": "نبحث عن ٢M$ لتوسيع نطاق العمل",
+      "required": true
+    },
+    {
+      "key": "website",
+      "label": "Website",
+      "type": "text",
+      "default": "techventure.sa",
+      "required": false
+    },
+    {
+      "key": "accentColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#6c63ff",
+      "required": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "problem",
+      "name": "Problem",
+      "start": 0,
+      "duration": 9,
+      "background": {
+        "type": "color",
+        "value": "#0b0b1a"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
+      "layers": [
+        {
+          "id": "p-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": -200,
+          "y": 400,
+          "width": 800,
+          "height": 800,
+          "color": "#ef4444",
+          "opacity": 0.08,
+          "borderRadius": 400
+        },
+        {
+          "id": "p-tag",
+          "type": "text",
+          "content": "المشكلة",
+          "x": 70,
+          "y": 185,
+          "width": 400,
+          "height": 65,
+          "fontSize": 32,
+          "fontWeight": "bold",
+          "color": "#ef4444",
+          "align": "right",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "p-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 262,
+          "width": 160,
+          "height": 3,
+          "color": "#ef4444",
+          "opacity": 0.8,
+          "borderRadius": 2
+        },
+        {
+          "id": "p-text",
+          "type": "text",
+          "content": "{{problem}}",
+          "x": 70,
+          "y": 680,
+          "width": 940,
+          "height": 420,
+          "fontSize": 70,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.6,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "p-brand",
+          "type": "text",
+          "content": "{{startupName}}",
+          "x": 70,
+          "y": 1600,
+          "width": 940,
+          "height": 70,
+          "fontSize": 36,
+          "fontWeight": "normal",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.8
+          }
+        }
+      ]
+    },
+    {
+      "id": "solution",
+      "name": "Solution",
+      "start": 9,
+      "duration": 9,
+      "background": {
+        "type": "color",
+        "value": "#08080f"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.4,
+        "direction": "left"
+      },
+      "layers": [
+        {
+          "id": "s-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 300,
+          "y": 400,
+          "width": 800,
+          "height": 800,
+          "color": "{{accentColor}}",
+          "opacity": 0.07,
+          "borderRadius": 400
+        },
+        {
+          "id": "s-tag",
+          "type": "text",
+          "content": "الحل",
+          "x": 70,
+          "y": 185,
+          "width": 400,
+          "height": 65,
+          "fontSize": 32,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "right",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "s-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 262,
+          "width": 100,
+          "height": 3,
+          "color": "{{accentColor}}",
+          "opacity": 0.8,
+          "borderRadius": 2
+        },
+        {
+          "id": "s-name",
+          "type": "text",
+          "content": "{{startupName}}",
+          "x": 70,
+          "y": 590,
+          "width": 940,
+          "height": 130,
+          "fontSize": 88,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.6
+          }
+        },
+        {
+          "id": "s-div",
+          "type": "shape",
+          "shape": "rect",
+          "x": 300,
+          "y": 755,
+          "width": 480,
+          "height": 2,
+          "color": "{{accentColor}}",
+          "opacity": 0.4,
+          "borderRadius": 0
+        },
+        {
+          "id": "s-text",
+          "type": "text",
+          "content": "{{solution}}",
+          "x": 70,
+          "y": 810,
+          "width": 940,
+          "height": 340,
+          "fontSize": 56,
+          "fontWeight": "normal",
+          "color": "#e2e2f0",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.55,
+            "delay": 0.3
+          }
+        },
+        {
+          "id": "s-tag2",
+          "type": "text",
+          "content": "{{tagline}}",
+          "x": 70,
+          "y": 1200,
+          "width": 940,
+          "height": 90,
+          "fontSize": 38,
+          "fontWeight": "normal",
+          "color": "#7777aa",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5,
+            "delay": 0.6
+          }
+        }
+      ]
+    },
+    {
+      "id": "metrics",
+      "name": "Key Metrics",
+      "start": 18,
+      "duration": 10,
+      "background": {
+        "type": "color",
+        "value": "#080812"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.4
+      },
+      "layers": [
+        {
+          "id": "m-head",
+          "type": "text",
+          "content": "الأرقام تتحدث",
+          "x": 70,
+          "y": 200,
+          "width": 940,
+          "height": 80,
+          "fontSize": 38,
+          "fontWeight": "normal",
+          "color": "#888899",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "m1-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 370,
+          "width": 880,
+          "height": 195,
+          "color": "{{accentColor}}",
+          "opacity": 0.1,
+          "borderRadius": 24
+        },
+        {
+          "id": "m1-val",
+          "type": "text",
+          "content": "{{m1}}",
+          "x": 70,
+          "y": 388,
+          "width": 880,
+          "height": 120,
+          "fontSize": 88,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5,
+            "delay": 0.1
+          }
+        },
+        {
+          "id": "m1-lbl",
+          "type": "text",
+          "content": "{{m1l}}",
+          "x": 70,
+          "y": 522,
+          "width": 880,
+          "height": 54,
+          "fontSize": 34,
+          "fontWeight": "normal",
+          "color": "#ccccdd",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.4
+          }
+        },
+        {
+          "id": "m2-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 635,
+          "width": 880,
+          "height": 195,
+          "color": "{{accentColor}}",
+          "opacity": 0.08,
+          "borderRadius": 24
+        },
+        {
+          "id": "m2-val",
+          "type": "text",
+          "content": "{{m2}}",
+          "x": 70,
+          "y": 653,
+          "width": 880,
+          "height": 120,
+          "fontSize": 88,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5,
+            "delay": 0.35
+          }
+        },
+        {
+          "id": "m2-lbl",
+          "type": "text",
+          "content": "{{m2l}}",
+          "x": 70,
+          "y": 787,
+          "width": 880,
+          "height": 54,
+          "fontSize": 34,
+          "fontWeight": "normal",
+          "color": "#ccccdd",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.65
+          }
+        },
+        {
+          "id": "m3-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 900,
+          "width": 880,
+          "height": 195,
+          "color": "{{accentColor}}",
+          "opacity": 0.06,
+          "borderRadius": 24
+        },
+        {
+          "id": "m3-val",
+          "type": "text",
+          "content": "{{m3}}",
+          "x": 70,
+          "y": 918,
+          "width": 880,
+          "height": 120,
+          "fontSize": 88,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5,
+            "delay": 0.6
+          }
+        },
+        {
+          "id": "m3-lbl",
+          "type": "text",
+          "content": "{{m3l}}",
+          "x": 70,
+          "y": 1052,
+          "width": 880,
+          "height": 54,
+          "fontSize": 34,
+          "fontWeight": "normal",
+          "color": "#ccccdd",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "traction",
+      "name": "Traction",
+      "start": 28,
+      "duration": 8,
+      "background": {
+        "type": "color",
+        "value": "#070710"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.4
+      },
+      "layers": [
+        {
+          "id": "t-label",
+          "type": "text",
+          "content": "الجذب التجاري",
+          "x": 70,
+          "y": 200,
+          "width": 940,
+          "height": 70,
+          "fontSize": 36,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "t-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 380,
+          "y": 285,
+          "width": 320,
+          "height": 2,
+          "color": "{{accentColor}}",
+          "opacity": 0.4,
+          "borderRadius": 0
+        },
+        {
+          "id": "t-tag",
+          "type": "text",
+          "content": "{{tagline}}",
+          "x": 70,
+          "y": 720,
+          "width": 940,
+          "height": 300,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.6,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "t-name",
+          "type": "text",
+          "content": "{{startupName}}",
+          "x": 70,
+          "y": 1070,
+          "width": 940,
+          "height": 90,
+          "fontSize": 48,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5,
+            "delay": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "name": "CTA",
+      "start": 36,
+      "duration": 9,
+      "background": {
+        "type": "color",
+        "value": "#050510"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.6
+      },
+      "layers": [
+        {
+          "id": "c-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 700,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.12,
+          "borderRadius": 450
+        },
+        {
+          "id": "c-name",
+          "type": "text",
+          "content": "{{startupName}}",
+          "x": 70,
+          "y": 580,
+          "width": 940,
+          "height": 130,
+          "fontSize": 80,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.6
+          }
+        },
+        {
+          "id": "c-div",
+          "type": "shape",
+          "shape": "rect",
+          "x": 280,
+          "y": 745,
+          "width": 520,
+          "height": 2,
+          "color": "{{accentColor}}",
+          "opacity": 0.6,
+          "borderRadius": 0
+        },
+        {
+          "id": "c-ask",
+          "type": "text",
+          "content": "{{ask}}",
+          "x": 70,
+          "y": 800,
+          "width": 940,
+          "height": 260,
+          "fontSize": 56,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.55,
+            "delay": 0.3
+          }
+        },
+        {
+          "id": "c-web-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 200,
+          "y": 1120,
+          "width": 680,
+          "height": 90,
+          "color": "{{accentColor}}",
+          "opacity": 0.9,
+          "borderRadius": 45
+        },
+        {
+          "id": "c-web",
+          "type": "text",
+          "content": "{{website}}",
+          "x": 220,
+          "y": 1138,
+          "width": 640,
+          "height": 56,
+          "fontSize": 38,
+          "fontWeight": "bold",
+          "color": "#050510",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.7
+          }
+        }
+      ]
+    }
+  ]
+}

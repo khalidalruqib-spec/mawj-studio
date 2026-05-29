@@ -1,0 +1,634 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "review-verdict",
+  "name": "Product Review — تقييم المنتج",
+  "category": "Reviews",
+  "duration": 30,
+  "description": "4-scene review template: product intro → pros → cons → final verdict with star rating. Perfect for unboxings and honest reviews.",
+  "requiredInputs": [
+    {
+      "key": "productName",
+      "label": "Product Name",
+      "type": "text",
+      "default": "سماعة Sony WH-1000XM5",
+      "required": true
+    },
+    {
+      "key": "image",
+      "label": "Product Image",
+      "type": "image",
+      "required": false
+    },
+    {
+      "key": "price",
+      "label": "Price",
+      "type": "text",
+      "default": "١٤٩٩ ريال",
+      "required": false
+    },
+    {
+      "key": "pro1",
+      "label": "Pro 1",
+      "type": "text",
+      "default": "جودة صوت استثنائية",
+      "required": true
+    },
+    {
+      "key": "pro2",
+      "label": "Pro 2",
+      "type": "text",
+      "default": "عزل صوت احترافي",
+      "required": false
+    },
+    {
+      "key": "pro3",
+      "label": "Pro 3",
+      "type": "text",
+      "default": "بطارية ٣٠ ساعة",
+      "required": false
+    },
+    {
+      "key": "con1",
+      "label": "Con 1",
+      "type": "text",
+      "default": "سعر مرتفع نسبياً",
+      "required": true
+    },
+    {
+      "key": "con2",
+      "label": "Con 2",
+      "type": "text",
+      "default": "تصميم بلاستيكي",
+      "required": false
+    },
+    {
+      "key": "verdict",
+      "label": "Final Verdict",
+      "type": "textarea",
+      "default": "استثمار يستحق لمحبي الصوت عالي الجودة",
+      "required": true
+    },
+    {
+      "key": "rating",
+      "label": "Rating (e.g. ٩/١٠)",
+      "type": "text",
+      "default": "٩/١٠",
+      "required": true
+    },
+    {
+      "key": "brandName",
+      "label": "Your Channel / Brand",
+      "type": "text",
+      "default": "@reviewchannel",
+      "required": false
+    },
+    {
+      "key": "accentColor",
+      "label": "Accent Color",
+      "type": "color",
+      "default": "#f59e0b",
+      "required": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "intro",
+      "name": "Product Intro",
+      "start": 0,
+      "duration": 6,
+      "background": {
+        "type": "color",
+        "value": "#0a0805"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
+      "layers": [
+        {
+          "id": "i-img",
+          "type": "image",
+          "src": "{{image}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "opacity": 0.4,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.8
+          }
+        },
+        {
+          "id": "i-overlay",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 900,
+          "width": 1080,
+          "height": 1020,
+          "color": "#000000",
+          "opacity": 0.75,
+          "borderRadius": 0
+        },
+        {
+          "id": "i-review-tag",
+          "type": "text",
+          "content": "مراجعة صادقة",
+          "x": 70,
+          "y": 180,
+          "width": 940,
+          "height": 70,
+          "fontSize": 38,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "right",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "i-name",
+          "type": "text",
+          "content": "{{productName}}",
+          "x": 70,
+          "y": 940,
+          "width": 940,
+          "height": 280,
+          "fontSize": 78,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.55,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "i-price",
+          "type": "text",
+          "content": "{{price}}",
+          "x": 70,
+          "y": 1270,
+          "width": 940,
+          "height": 90,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.5
+          }
+        },
+        {
+          "id": "i-brand",
+          "type": "text",
+          "content": "{{brandName}}",
+          "x": 70,
+          "y": 1600,
+          "width": 940,
+          "height": 70,
+          "fontSize": 38,
+          "fontWeight": "normal",
+          "color": "#999999",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3,
+            "delay": 0.8
+          }
+        }
+      ]
+    },
+    {
+      "id": "pros",
+      "name": "The Pros",
+      "start": 6,
+      "duration": 8,
+      "background": {
+        "type": "color",
+        "value": "#030a06"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.35,
+        "direction": "left"
+      },
+      "layers": [
+        {
+          "id": "pr-tag",
+          "type": "text",
+          "content": "✓ الإيجابيات",
+          "x": 70,
+          "y": 185,
+          "width": 940,
+          "height": 80,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "#10b981",
+          "align": "right",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
+        },
+        {
+          "id": "pr-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 278,
+          "width": 220,
+          "height": 3,
+          "color": "#10b981",
+          "opacity": 0.7,
+          "borderRadius": 2
+        },
+        {
+          "id": "pr1-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 380,
+          "width": 880,
+          "height": 100,
+          "color": "#10b981",
+          "opacity": 0.09,
+          "borderRadius": 16
+        },
+        {
+          "id": "pr1",
+          "type": "text",
+          "content": "{{pro1}}",
+          "x": 140,
+          "y": 398,
+          "width": 810,
+          "height": 64,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "right",
+          "direction": "rtl",
+          "editable": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.4,
+            "delay": 0.1
+          }
+        },
+        {
+          "id": "pr2-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 520,
+          "width": 880,
+          "height": 100,
+          "color": "#10b981",
+          "opacity": 0.07,
+          "borderRadius": 16
+        },
+        {
+          "id": "pr2",
+          "type": "text",
+          "content": "{{pro2}}",
+          "x": 140,
+          "y": 538,
+          "width": 810,
+          "height": 64,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "#e2e2e2",
+          "align": "right",
+          "direction": "rtl",
+          "editable": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.4,
+            "delay": 0.25
+          }
+        },
+        {
+          "id": "pr3-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 660,
+          "width": 880,
+          "height": 100,
+          "color": "#10b981",
+          "opacity": 0.05,
+          "borderRadius": 16
+        },
+        {
+          "id": "pr3",
+          "type": "text",
+          "content": "{{pro3}}",
+          "x": 140,
+          "y": 678,
+          "width": 810,
+          "height": 64,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "#cccccc",
+          "align": "right",
+          "direction": "rtl",
+          "editable": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.4,
+            "delay": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "cons",
+      "name": "The Cons",
+      "start": 14,
+      "duration": 7,
+      "background": {
+        "type": "color",
+        "value": "#0a0303"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.35,
+        "direction": "left"
+      },
+      "layers": [
+        {
+          "id": "cn-tag",
+          "type": "text",
+          "content": "✕ السلبيات",
+          "x": 70,
+          "y": 185,
+          "width": 940,
+          "height": 80,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "right",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
+        },
+        {
+          "id": "cn-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 278,
+          "width": 200,
+          "height": 3,
+          "color": "{{accentColor}}",
+          "opacity": 0.7,
+          "borderRadius": 2
+        },
+        {
+          "id": "cn1-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 380,
+          "width": 880,
+          "height": 100,
+          "color": "{{accentColor}}",
+          "opacity": 0.09,
+          "borderRadius": 16
+        },
+        {
+          "id": "cn1",
+          "type": "text",
+          "content": "{{con1}}",
+          "x": 140,
+          "y": 398,
+          "width": 810,
+          "height": 64,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "right",
+          "direction": "rtl",
+          "editable": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.4,
+            "delay": 0.1
+          }
+        },
+        {
+          "id": "cn2-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 520,
+          "width": 880,
+          "height": 100,
+          "color": "{{accentColor}}",
+          "opacity": 0.07,
+          "borderRadius": 16
+        },
+        {
+          "id": "cn2",
+          "type": "text",
+          "content": "{{con2}}",
+          "x": 140,
+          "y": 538,
+          "width": 810,
+          "height": 64,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "#e2e2e2",
+          "align": "right",
+          "direction": "rtl",
+          "editable": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.4,
+            "delay": 0.25
+          }
+        }
+      ]
+    },
+    {
+      "id": "verdict",
+      "name": "Verdict",
+      "start": 21,
+      "duration": 9,
+      "background": {
+        "type": "color",
+        "value": "#080604"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
+      "layers": [
+        {
+          "id": "v-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 500,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.08,
+          "borderRadius": 450
+        },
+        {
+          "id": "v-label",
+          "type": "text",
+          "content": "الحكم النهائي",
+          "x": 70,
+          "y": 200,
+          "width": 940,
+          "height": 80,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "v-rating",
+          "type": "text",
+          "content": "{{rating}}",
+          "x": 70,
+          "y": 600,
+          "width": 940,
+          "height": 220,
+          "fontSize": 160,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.55,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "v-divider",
+          "type": "shape",
+          "shape": "rect",
+          "x": 300,
+          "y": 840,
+          "width": 480,
+          "height": 2,
+          "color": "{{accentColor}}",
+          "opacity": 0.4,
+          "borderRadius": 0
+        },
+        {
+          "id": "v-text",
+          "type": "text",
+          "content": "{{verdict}}",
+          "x": 70,
+          "y": 880,
+          "width": 940,
+          "height": 240,
+          "fontSize": 56,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.55,
+            "delay": 0.4
+          }
+        },
+        {
+          "id": "v-brand",
+          "type": "text",
+          "content": "{{brandName}}",
+          "x": 70,
+          "y": 1600,
+          "width": 940,
+          "height": 70,
+          "fontSize": 38,
+          "fontWeight": "normal",
+          "color": "#888888",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.8
+          }
+        }
+      ]
+    }
+  ]
+}

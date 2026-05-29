@@ -1,0 +1,269 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "captions-typewriter",
+  "name": "Captions — Typewriter Reveal",
+  "category": "Caption Styles",
+  "duration": 20,
+  "description": "Classic typewriter animation style on dark background. Perfect for quotes, educational content, and storytelling.",
+  "requiredInputs": [
+    {
+      "key": "video",
+      "label": "Your Video",
+      "type": "video",
+      "required": false
+    },
+    {
+      "key": "title",
+      "label": "Opening Line",
+      "type": "text",
+      "default": "الحقيقة التي غيرت حياتي",
+      "required": true
+    },
+    {
+      "key": "line1",
+      "label": "Key Line 1",
+      "type": "text",
+      "default": "كل يوم هو فرصة جديدة للنمو",
+      "required": true
+    },
+    {
+      "key": "line2",
+      "label": "Key Line 2",
+      "type": "text",
+      "default": "لا تنتظر الإذن — ابدأ الآن",
+      "required": true
+    },
+    {
+      "key": "cta",
+      "label": "CTA",
+      "type": "text",
+      "default": "تابعني لمزيد من الأفكار",
+      "required": true
+    },
+    {
+      "key": "brandColor",
+      "label": "Cursor Color",
+      "type": "color",
+      "default": "#8ef7c2",
+      "required": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "main",
+      "name": "Typewriter",
+      "start": 0,
+      "duration": 20,
+      "background": {
+        "type": "color",
+        "value": "#050505"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "vid",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "opacity": 0.2
+        },
+        {
+          "id": "overlay",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "color": "#000000",
+          "opacity": 0.55,
+          "borderRadius": 0
+        },
+        {
+          "id": "cursor-bar",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 172,
+          "width": 6,
+          "height": 120,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 3
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "content": "{{title}}",
+          "x": 100,
+          "y": 183,
+          "width": 900,
+          "height": 110,
+          "fontSize": 62,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "right",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "typewriter",
+            "duration": 1.2
+          }
+        },
+        {
+          "id": "div-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 400,
+          "width": 500,
+          "height": 2,
+          "color": "{{brandColor}}",
+          "opacity": 0.4,
+          "borderRadius": 0
+        },
+        {
+          "id": "line1",
+          "type": "text",
+          "content": "{{line1}}",
+          "x": 70,
+          "y": 760,
+          "width": 940,
+          "height": 150,
+          "fontSize": 66,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "typewriter",
+            "duration": 1.0,
+            "delay": 1.5
+          }
+        },
+        {
+          "id": "line2",
+          "type": "text",
+          "content": "{{line2}}",
+          "x": 70,
+          "y": 960,
+          "width": 940,
+          "height": 150,
+          "fontSize": 66,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "typewriter",
+            "duration": 1.0,
+            "delay": 3.0
+          }
+        },
+        {
+          "id": "captions",
+          "type": "captions",
+          "source": "auto",
+          "x": 70,
+          "y": 1200,
+          "width": 940,
+          "height": 280,
+          "fontSize": 54,
+          "fontWeight": "normal",
+          "color": "#cccccc",
+          "highlightColor": "{{brandColor}}",
+          "align": "center",
+          "style": "minimal",
+          "direction": "auto",
+          "safeMargin": true
+        },
+        {
+          "id": "cta-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 130,
+          "y": 1558,
+          "width": 820,
+          "height": 90,
+          "color": "{{brandColor}}",
+          "opacity": 0.1,
+          "borderRadius": 45
+        },
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 150,
+          "y": 1572,
+          "width": 780,
+          "height": 62,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5,
+            "delay": 4.5
+          }
+        }
+      ]
+    }
+  ]
+}

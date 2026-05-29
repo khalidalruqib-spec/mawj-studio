@@ -1,0 +1,503 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "flash-sale",
+  "name": "Flash Sale — تخفيض مفاجئ",
+  "category": "E-commerce",
+  "duration": 15,
+  "description": "High-energy 3-scene flash sale: announcement → deal details → promo code. Creates urgency and drives action.",
+  "requiredInputs": [
+    {
+      "key": "headline",
+      "label": "Sale Headline",
+      "type": "text",
+      "default": "تخفيض مفاجئ!",
+      "required": true
+    },
+    {
+      "key": "discount",
+      "label": "Discount Amount",
+      "type": "text",
+      "default": "٥٠٪",
+      "required": true
+    },
+    {
+      "key": "productName",
+      "label": "Product / Category",
+      "type": "text",
+      "default": "جميع العطور الفاخرة",
+      "required": true
+    },
+    {
+      "key": "originalPrice",
+      "label": "Original Price",
+      "type": "text",
+      "default": "٤٩٩ ريال",
+      "required": false
+    },
+    {
+      "key": "salePrice",
+      "label": "Sale Price",
+      "type": "text",
+      "default": "٢٤٩ ريال",
+      "required": true
+    },
+    {
+      "key": "promoCode",
+      "label": "Promo Code",
+      "type": "text",
+      "default": "FLASH50",
+      "required": false
+    },
+    {
+      "key": "deadline",
+      "label": "Offer Deadline",
+      "type": "text",
+      "default": "٢٤ ساعة فقط!",
+      "required": true
+    },
+    {
+      "key": "brandName",
+      "label": "Brand Name",
+      "type": "text",
+      "default": "متجرك",
+      "required": true
+    },
+    {
+      "key": "accentColor",
+      "label": "Sale Color",
+      "type": "color",
+      "default": "#ef4444",
+      "required": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "announce",
+      "name": "Announcement",
+      "start": 0,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#0f0202"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "a-flash-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 600,
+          "width": 1080,
+          "height": 720,
+          "color": "{{accentColor}}",
+          "opacity": 0.12,
+          "borderRadius": 0
+        },
+        {
+          "id": "a-tag",
+          "type": "text",
+          "content": "⚡ {{headline}}",
+          "x": 70,
+          "y": 580,
+          "width": 940,
+          "height": 160,
+          "fontSize": 100,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "a-brand",
+          "type": "text",
+          "content": "{{brandName}}",
+          "x": 70,
+          "y": 200,
+          "width": 940,
+          "height": 80,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
+        },
+        {
+          "id": "a-disc",
+          "type": "text",
+          "content": "{{discount}} خصم",
+          "x": 70,
+          "y": 800,
+          "width": 940,
+          "height": 220,
+          "fontSize": 160,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.45,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "a-deadline",
+          "type": "text",
+          "content": "{{deadline}}",
+          "x": 70,
+          "y": 1070,
+          "width": 940,
+          "height": 90,
+          "fontSize": 50,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3,
+            "delay": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "id": "deal",
+      "name": "Deal Details",
+      "start": 4,
+      "duration": 7,
+      "background": {
+        "type": "color",
+        "value": "#0c0202"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "d-product",
+          "type": "text",
+          "content": "{{productName}}",
+          "x": 70,
+          "y": 220,
+          "width": 940,
+          "height": 160,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideDown",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "d-divider",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 402,
+          "width": 940,
+          "height": 3,
+          "color": "{{accentColor}}",
+          "opacity": 0.5,
+          "borderRadius": 0
+        },
+        {
+          "id": "d-orig-label",
+          "type": "text",
+          "content": "السعر الأصلي",
+          "x": 70,
+          "y": 480,
+          "width": 940,
+          "height": 60,
+          "fontSize": 36,
+          "fontWeight": "normal",
+          "color": "#888888",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
+        },
+        {
+          "id": "d-orig",
+          "type": "text",
+          "content": "{{originalPrice}}",
+          "x": 70,
+          "y": 555,
+          "width": 940,
+          "height": 100,
+          "fontSize": 72,
+          "fontWeight": "normal",
+          "color": "#888888",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3,
+            "delay": 0.1
+          }
+        },
+        {
+          "id": "d-cross",
+          "type": "shape",
+          "shape": "rect",
+          "x": 280,
+          "y": 608,
+          "width": 520,
+          "height": 5,
+          "color": "#888888",
+          "opacity": 0.8,
+          "borderRadius": 0
+        },
+        {
+          "id": "d-sale-label",
+          "type": "text",
+          "content": "سعر التخفيض",
+          "x": 70,
+          "y": 720,
+          "width": 940,
+          "height": 60,
+          "fontSize": 36,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "d-sale",
+          "type": "text",
+          "content": "{{salePrice}}",
+          "x": 70,
+          "y": 800,
+          "width": 940,
+          "height": 180,
+          "fontSize": 130,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.45,
+            "delay": 0.3
+          }
+        },
+        {
+          "id": "d-disc-badge",
+          "type": "shape",
+          "shape": "rect",
+          "x": 300,
+          "y": 1040,
+          "width": 480,
+          "height": 80,
+          "color": "{{accentColor}}",
+          "opacity": 0.15,
+          "borderRadius": 40
+        },
+        {
+          "id": "d-disc-text",
+          "type": "text",
+          "content": "وفّر {{discount}}",
+          "x": 320,
+          "y": 1054,
+          "width": 440,
+          "height": 52,
+          "fontSize": 38,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3,
+            "delay": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "id": "promo",
+      "name": "Promo Code",
+      "start": 11,
+      "duration": 4,
+      "background": {
+        "type": "color",
+        "value": "#0f0202"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "pr-brand",
+          "type": "text",
+          "content": "{{brandName}}",
+          "x": 70,
+          "y": 200,
+          "width": 940,
+          "height": 80,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
+        },
+        {
+          "id": "pr-code-label",
+          "type": "text",
+          "content": "كود الخصم",
+          "x": 70,
+          "y": 680,
+          "width": 940,
+          "height": 70,
+          "fontSize": 42,
+          "fontWeight": "normal",
+          "color": "#cccccc",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
+        },
+        {
+          "id": "pr-code-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 100,
+          "y": 775,
+          "width": 880,
+          "height": 160,
+          "color": "{{accentColor}}",
+          "opacity": 0.15,
+          "borderRadius": 24
+        },
+        {
+          "id": "pr-code",
+          "type": "text",
+          "content": "{{promoCode}}",
+          "x": 120,
+          "y": 793,
+          "width": 840,
+          "height": 124,
+          "fontSize": 96,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "pr-deadline",
+          "type": "text",
+          "content": "⏰ {{deadline}}",
+          "x": 70,
+          "y": 1010,
+          "width": 940,
+          "height": 90,
+          "fontSize": 52,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "bounce",
+            "duration": 0.5,
+            "delay": 0.4
+          }
+        }
+      ]
+    }
+  ]
+}

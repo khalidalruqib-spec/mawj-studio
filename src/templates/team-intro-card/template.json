@@ -1,0 +1,424 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "team-intro-card",
+  "name": "Team Intro Card — بطاقة تعريف الفريق",
+  "category": "Personal Branding",
+  "duration": 20,
+  "description": "Professional 3-scene team member introduction: company header → member bio → contact details. Perfect for LinkedIn and corporate content.",
+  "requiredInputs": [
+    {
+      "key": "companyName",
+      "label": "Company / Brand Name",
+      "type": "text",
+      "default": "شركة مواج",
+      "required": true
+    },
+    {
+      "key": "memberName",
+      "label": "Member Full Name",
+      "type": "text",
+      "default": "خالد الرويشد",
+      "required": true
+    },
+    {
+      "key": "role",
+      "label": "Role / Title",
+      "type": "text",
+      "default": "مدير التطوير الرقمي",
+      "required": true
+    },
+    {
+      "key": "bio",
+      "label": "Short Bio",
+      "type": "textarea",
+      "default": "٨ سنوات من الخبرة في التحول الرقمي وبناء المنتجات التقنية",
+      "required": true
+    },
+    {
+      "key": "photo",
+      "label": "Profile Photo",
+      "type": "image",
+      "required": false
+    },
+    {
+      "key": "email",
+      "label": "Email",
+      "type": "text",
+      "default": "khalid@mawj.sa",
+      "required": false
+    },
+    {
+      "key": "linkedin",
+      "label": "LinkedIn / Social",
+      "type": "text",
+      "default": "linkedin.com/in/khalidr",
+      "required": false
+    },
+    {
+      "key": "accentColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#3b82f6",
+      "required": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "company",
+      "name": "Company Header",
+      "start": 0,
+      "duration": 5,
+      "background": {
+        "type": "color",
+        "value": "#030811"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
+      "layers": [
+        {
+          "id": "co-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 400,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.07,
+          "borderRadius": 450
+        },
+        {
+          "id": "co-name",
+          "type": "text",
+          "content": "{{companyName}}",
+          "x": 70,
+          "y": 700,
+          "width": 940,
+          "height": 200,
+          "fontSize": 96,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.7
+          }
+        },
+        {
+          "id": "co-tagline",
+          "type": "text",
+          "content": "يُقدم",
+          "x": 70,
+          "y": 940,
+          "width": 940,
+          "height": 90,
+          "fontSize": 44,
+          "fontWeight": "normal",
+          "color": "#888888",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5,
+            "delay": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "member",
+      "name": "Member Bio",
+      "start": 5,
+      "duration": 10,
+      "background": {
+        "type": "color",
+        "value": "#040c14"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.4,
+        "direction": "left"
+      },
+      "layers": [
+        {
+          "id": "mb-photo",
+          "type": "image",
+          "src": "{{photo}}",
+          "x": 290,
+          "y": 220,
+          "width": 500,
+          "height": 500,
+          "fit": "cover",
+          "borderRadius": 250,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.6
+          }
+        },
+        {
+          "id": "mb-circle",
+          "type": "shape",
+          "shape": "circle",
+          "x": 255,
+          "y": 185,
+          "width": 570,
+          "height": 570,
+          "color": "{{accentColor}}",
+          "opacity": 0.15,
+          "borderRadius": 285
+        },
+        {
+          "id": "mb-name",
+          "type": "text",
+          "content": "{{memberName}}",
+          "x": 70,
+          "y": 790,
+          "width": 940,
+          "height": 130,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.5,
+            "delay": 0.3
+          }
+        },
+        {
+          "id": "mb-role-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 200,
+          "y": 938,
+          "width": 680,
+          "height": 70,
+          "color": "{{accentColor}}",
+          "opacity": 0.15,
+          "borderRadius": 35
+        },
+        {
+          "id": "mb-role",
+          "type": "text",
+          "content": "{{role}}",
+          "x": 220,
+          "y": 950,
+          "width": 640,
+          "height": 46,
+          "fontSize": 36,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.5
+          }
+        },
+        {
+          "id": "mb-bio",
+          "type": "text",
+          "content": "{{bio}}",
+          "x": 70,
+          "y": 1060,
+          "width": 940,
+          "height": 220,
+          "fontSize": 46,
+          "fontWeight": "normal",
+          "color": "#ccddee",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.5,
+            "delay": 0.7
+          }
+        }
+      ]
+    },
+    {
+      "id": "contact",
+      "name": "Contact",
+      "start": 15,
+      "duration": 5,
+      "background": {
+        "type": "color",
+        "value": "#030811"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.4
+      },
+      "layers": [
+        {
+          "id": "ct-company",
+          "type": "text",
+          "content": "{{companyName}}",
+          "x": 70,
+          "y": 200,
+          "width": 940,
+          "height": 90,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "ct-div",
+          "type": "shape",
+          "shape": "rect",
+          "x": 300,
+          "y": 308,
+          "width": 480,
+          "height": 2,
+          "color": "{{accentColor}}",
+          "opacity": 0.4,
+          "borderRadius": 0
+        },
+        {
+          "id": "ct-name",
+          "type": "text",
+          "content": "{{memberName}}",
+          "x": 70,
+          "y": 760,
+          "width": 940,
+          "height": 130,
+          "fontSize": 78,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.5
+          }
+        },
+        {
+          "id": "ct-role",
+          "type": "text",
+          "content": "{{role}}",
+          "x": 70,
+          "y": 920,
+          "width": 940,
+          "height": 75,
+          "fontSize": 42,
+          "fontWeight": "normal",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.3
+          }
+        },
+        {
+          "id": "ct-email",
+          "type": "text",
+          "content": "{{email}}",
+          "x": 70,
+          "y": 1070,
+          "width": 940,
+          "height": 65,
+          "fontSize": 38,
+          "fontWeight": "normal",
+          "color": "#cccccc",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.5
+          }
+        },
+        {
+          "id": "ct-social",
+          "type": "text",
+          "content": "{{linkedin}}",
+          "x": 70,
+          "y": 1155,
+          "width": 940,
+          "height": 65,
+          "fontSize": 36,
+          "fontWeight": "normal",
+          "color": "#aaaacc",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.7
+          }
+        }
+      ]
+    }
+  ]
+}

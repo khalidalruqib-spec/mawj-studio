@@ -1,0 +1,188 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "captions-minimal-pill",
+  "name": "Captions — Minimal Pill",
+  "category": "Caption Styles",
+  "duration": 20,
+  "description": "Clean minimal caption style: white text on a frosted pill background. Professional and readable for any video type.",
+  "requiredInputs": [
+    {
+      "key": "video",
+      "label": "Your Video",
+      "type": "video",
+      "required": false
+    },
+    {
+      "key": "title",
+      "label": "Title (optional)",
+      "type": "text",
+      "default": "",
+      "required": false
+    },
+    {
+      "key": "brandColor",
+      "label": "Pill Color",
+      "type": "color",
+      "default": "#ffffff",
+      "required": false
+    },
+    {
+      "key": "cta",
+      "label": "CTA",
+      "type": "text",
+      "default": "تابع للمزيد",
+      "required": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "main",
+      "name": "Minimal Captions",
+      "start": 0,
+      "duration": 20,
+      "background": {
+        "type": "color",
+        "value": "#000000"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "vid",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "content": "{{title}}",
+          "x": 70,
+          "y": 190,
+          "width": 940,
+          "height": 100,
+          "fontSize": 60,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "pill-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 80,
+          "y": 1200,
+          "width": 920,
+          "height": 280,
+          "color": "#000000",
+          "opacity": 0.55,
+          "borderRadius": 32
+        },
+        {
+          "id": "captions",
+          "type": "captions",
+          "source": "auto",
+          "x": 100,
+          "y": 1215,
+          "width": 880,
+          "height": 260,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "highlightColor": "{{brandColor}}",
+          "align": "center",
+          "style": "minimal",
+          "direction": "auto",
+          "safeMargin": true
+        },
+        {
+          "id": "cta-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 220,
+          "y": 1560,
+          "width": 640,
+          "height": 80,
+          "color": "{{brandColor}}",
+          "opacity": 0.15,
+          "borderRadius": 40
+        },
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 240,
+          "y": 1574,
+          "width": 600,
+          "height": 52,
+          "fontSize": 38,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.5
+          }
+        }
+      ]
+    }
+  ]
+}

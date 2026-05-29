@@ -1,0 +1,227 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "captions-broadcast",
+  "name": "Captions — Broadcast News",
+  "category": "Caption Styles",
+  "duration": 20,
+  "description": "Professional news-style lower-third caption overlay. Authoritative, clean, and trusted — ideal for serious content and interviews.",
+  "requiredInputs": [
+    {
+      "key": "video",
+      "label": "Your Video",
+      "type": "video",
+      "required": false
+    },
+    {
+      "key": "speakerName",
+      "label": "Speaker Name",
+      "type": "text",
+      "default": "خالد الرويشد",
+      "required": true
+    },
+    {
+      "key": "speakerTitle",
+      "label": "Speaker Title",
+      "type": "text",
+      "default": "خبير في التقنية والذكاء الاصطناعي",
+      "required": true
+    },
+    {
+      "key": "channelName",
+      "label": "Channel / Show Name",
+      "type": "text",
+      "default": "مواج ميديا",
+      "required": false
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#dc2626",
+      "required": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "main",
+      "name": "Broadcast Lower Third",
+      "start": 0,
+      "duration": 20,
+      "background": {
+        "type": "color",
+        "value": "#000000"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "vid",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover"
+        },
+        {
+          "id": "captions",
+          "type": "captions",
+          "source": "auto",
+          "x": 60,
+          "y": 1100,
+          "width": 960,
+          "height": 280,
+          "fontSize": 54,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "highlightColor": "{{brandColor}}",
+          "align": "center",
+          "style": "karaoke",
+          "direction": "rtl",
+          "safeMargin": true
+        },
+        {
+          "id": "lt-bar",
+          "type": "shape",
+          "shape": "rect",
+          "x": 60,
+          "y": 1460,
+          "width": 960,
+          "height": 130,
+          "color": "#000000",
+          "opacity": 0.85,
+          "borderRadius": 0
+        },
+        {
+          "id": "lt-accent",
+          "type": "shape",
+          "shape": "rect",
+          "x": 60,
+          "y": 1460,
+          "width": 12,
+          "height": 130,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 0
+        },
+        {
+          "id": "lt-name",
+          "type": "text",
+          "content": "{{speakerName}}",
+          "x": 90,
+          "y": 1470,
+          "width": 880,
+          "height": 60,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "right",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "lt-title",
+          "type": "text",
+          "content": "{{speakerTitle}}",
+          "x": 90,
+          "y": 1538,
+          "width": 880,
+          "height": 52,
+          "fontSize": 34,
+          "fontWeight": "normal",
+          "color": "#cccccc",
+          "align": "right",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.4,
+            "delay": 0.15
+          }
+        },
+        {
+          "id": "channel-badge",
+          "type": "shape",
+          "shape": "rect",
+          "x": 60,
+          "y": 182,
+          "width": 400,
+          "height": 70,
+          "color": "{{brandColor}}",
+          "opacity": 0.9,
+          "borderRadius": 0
+        },
+        {
+          "id": "channel-name",
+          "type": "text",
+          "content": "{{channelName}}",
+          "x": 70,
+          "y": 196,
+          "width": 380,
+          "height": 42,
+          "fontSize": 32,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "right",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideDown",
+            "duration": 0.4
+          }
+        }
+      ]
+    }
+  ]
+}

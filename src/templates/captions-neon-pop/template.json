@@ -1,0 +1,212 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "captions-neon-pop",
+  "name": "Captions — Neon Pop",
+  "category": "Caption Styles",
+  "duration": 20,
+  "description": "High-energy neon green word-by-word caption style on dark background. Optimised for TikTok & Reels.",
+  "requiredInputs": [
+    {
+      "key": "video",
+      "label": "Your Video",
+      "type": "video",
+      "required": false
+    },
+    {
+      "key": "title",
+      "label": "Hook Title",
+      "type": "text",
+      "default": "لن تصدق هذا!",
+      "required": true
+    },
+    {
+      "key": "brandColor",
+      "label": "Neon Color",
+      "type": "color",
+      "default": "#39ff14",
+      "required": false
+    },
+    {
+      "key": "cta",
+      "label": "CTA",
+      "type": "text",
+      "default": "اتبع للمزيد 🔥",
+      "required": true
+    }
+  ],
+  "scenes": [
+    {
+      "id": "main",
+      "name": "Neon Captions",
+      "start": 0,
+      "duration": 20,
+      "background": {
+        "type": "color",
+        "value": "#060606"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "vid",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover"
+        },
+        {
+          "id": "neon-glow-top",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 400,
+          "color": "#000000",
+          "opacity": 0.55,
+          "borderRadius": 0
+        },
+        {
+          "id": "neon-glow-btm",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 1300,
+          "width": 1080,
+          "height": 620,
+          "color": "#000000",
+          "opacity": 0.7,
+          "borderRadius": 0
+        },
+        {
+          "id": "title-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 60,
+          "y": 172,
+          "width": 960,
+          "height": 175,
+          "color": "{{brandColor}}",
+          "opacity": 0.12,
+          "borderRadius": 36
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "content": "{{title}}",
+          "x": 80,
+          "y": 195,
+          "width": 920,
+          "height": 130,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideDown",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "captions",
+          "type": "captions",
+          "source": "auto",
+          "x": 60,
+          "y": 1190,
+          "width": 960,
+          "height": 330,
+          "fontSize": 68,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "highlightColor": "{{brandColor}}",
+          "align": "center",
+          "style": "bold",
+          "direction": "auto",
+          "safeMargin": true
+        },
+        {
+          "id": "cta-glow",
+          "type": "shape",
+          "shape": "rect",
+          "x": 180,
+          "y": 1570,
+          "width": 720,
+          "height": 100,
+          "color": "{{brandColor}}",
+          "opacity": 0.18,
+          "borderRadius": 50
+        },
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 200,
+          "y": 1586,
+          "width": 680,
+          "height": 68,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "bounce",
+            "duration": 0.4,
+            "delay": 0.6
+          }
+        }
+      ]
+    }
+  ]
+}

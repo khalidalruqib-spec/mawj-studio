@@ -1,0 +1,255 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "cinematic-quote",
+  "name": "Cinematic Quote — اقتباس سينمائي",
+  "category": "Inspirational",
+  "duration": 15,
+  "description": "Minimal 2-scene cinematic quote template. Atmospheric dark background, powerful typography reveal, author credit.",
+  "requiredInputs": [
+    {
+      "key": "quote",
+      "label": "Quote Text",
+      "type": "textarea",
+      "default": "النجاح ليس نهاية المطاف، والفشل ليس نهاية العالم — المهم هو الشجاعة للمضي قدماً",
+      "required": true
+    },
+    {
+      "key": "author",
+      "label": "Author",
+      "type": "text",
+      "default": "ونستون تشرشل",
+      "required": false
+    },
+    {
+      "key": "brandName",
+      "label": "Brand / Creator",
+      "type": "text",
+      "default": "@مستوحى",
+      "required": false
+    },
+    {
+      "key": "image",
+      "label": "Background Image (optional)",
+      "type": "image",
+      "required": false
+    },
+    {
+      "key": "accentColor",
+      "label": "Accent Color",
+      "type": "color",
+      "default": "#a78bfa",
+      "required": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "quote-reveal",
+      "name": "Quote",
+      "start": 0,
+      "duration": 10,
+      "background": {
+        "type": "color",
+        "value": "#050408"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.8
+      },
+      "layers": [
+        {
+          "id": "q-img",
+          "type": "image",
+          "src": "{{image}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "opacity": 0.15,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 1.2
+          }
+        },
+        {
+          "id": "q-vignette",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "color": "#000000",
+          "opacity": 0.6,
+          "borderRadius": 0
+        },
+        {
+          "id": "q-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 500,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.07,
+          "borderRadius": 450
+        },
+        {
+          "id": "q-open",
+          "type": "text",
+          "content": "\",\"x\":70,\"y\":440,\"width\":200,\"height\":200,\n        \"fontSize\":180,\"fontWeight\":\"bold\",\"color\":\"{{accentColor}}\",\"align\":\"right\",\"direction\":\"ltr\",\n        \"opacity\":0.4,\"animationIn\":{\"type\":\"fadeIn\",\"duration\":0.5}},\n       {\"id\":\"q-text\",\"type\":\"text\",\"content\":\"{{quote}}\",\"x\":80,\"y\":620,\"width\":920,\"height\":560,\n        \"fontSize\":64,\"fontWeight\":\"bold\",\"color\":\"#ffffff\",\"align\":\"center\",\"direction\":\"rtl\",\n        \"safeMargin\":True,\"editable\":True,\"animationIn\":{\"type\":\"blurReveal\",\"duration\":0.9,\"delay\":0.3}},\n       {\"id\":\"q-close\",\"type\":\"text\",\"content\":",
+          "x": 810,
+          "y": 1140,
+          "width": 200,
+          "height": 200,
+          "fontSize": 180,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "left",
+          "direction": "ltr",
+          "opacity": 0.4,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5,
+            "delay": 0.6
+          }
+        }
+      ]
+    },
+    {
+      "id": "credit",
+      "name": "Author Credit",
+      "start": 10,
+      "duration": 5,
+      "background": {
+        "type": "color",
+        "value": "#040307"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.6
+      },
+      "layers": [
+        {
+          "id": "cr-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 700,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.07,
+          "borderRadius": 450
+        },
+        {
+          "id": "cr-line1",
+          "type": "shape",
+          "shape": "rect",
+          "x": 200,
+          "y": 820,
+          "width": 680,
+          "height": 1,
+          "color": "{{accentColor}}",
+          "opacity": 0.4,
+          "borderRadius": 0
+        },
+        {
+          "id": "cr-author",
+          "type": "text",
+          "content": "{{author}}",
+          "x": 70,
+          "y": 850,
+          "width": 940,
+          "height": 130,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.6,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "cr-line2",
+          "type": "shape",
+          "shape": "rect",
+          "x": 200,
+          "y": 1000,
+          "width": 680,
+          "height": 1,
+          "color": "{{accentColor}}",
+          "opacity": 0.4,
+          "borderRadius": 0
+        },
+        {
+          "id": "cr-brand",
+          "type": "text",
+          "content": "{{brandName}}",
+          "x": 70,
+          "y": 1040,
+          "width": 940,
+          "height": 70,
+          "fontSize": 38,
+          "fontWeight": "normal",
+          "color": "#888888",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5,
+            "delay": 0.5
+          }
+        }
+      ]
+    }
+  ]
+}

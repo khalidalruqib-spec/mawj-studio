@@ -1,0 +1,462 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "fashion-editorial",
+  "name": "Fashion Editorial — موضة وأناقة",
+  "category": "Fashion & Lifestyle",
+  "duration": 25,
+  "description": "Elegant 3-scene fashion editorial: brand reveal → lookbook showcase → shop now CTA. Perfect for clothing brands and stylists.",
+  "requiredInputs": [
+    {
+      "key": "brandName",
+      "label": "Brand Name",
+      "type": "text",
+      "default": "Nour Atelier",
+      "required": true
+    },
+    {
+      "key": "collectionName",
+      "label": "Collection Name",
+      "type": "text",
+      "default": "مجموعة الخريف ٢٠٢٦",
+      "required": true
+    },
+    {
+      "key": "look1Image",
+      "label": "Look 1 Image",
+      "type": "image",
+      "required": true
+    },
+    {
+      "key": "look1Caption",
+      "label": "Look 1 Caption",
+      "type": "text",
+      "default": "عباءة الشموخ — أسود فاخر",
+      "required": true
+    },
+    {
+      "key": "look2Image",
+      "label": "Look 2 Image (optional)",
+      "type": "image",
+      "required": false
+    },
+    {
+      "key": "look2Caption",
+      "label": "Look 2 Caption",
+      "type": "text",
+      "default": "كيمونو الكريستال — ذهبي",
+      "required": false
+    },
+    {
+      "key": "tagline",
+      "label": "Brand Tagline",
+      "type": "text",
+      "default": "تميّزي في كل خطوة",
+      "required": true
+    },
+    {
+      "key": "shopLink",
+      "label": "Shop Link",
+      "type": "text",
+      "default": "shop.nour-atelier.com",
+      "required": false
+    },
+    {
+      "key": "accentColor",
+      "label": "Accent Color",
+      "type": "color",
+      "default": "#d4af37",
+      "required": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "brand",
+      "name": "Brand Reveal",
+      "start": 0,
+      "duration": 7,
+      "background": {
+        "type": "color",
+        "value": "#080604"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.7
+      },
+      "layers": [
+        {
+          "id": "b-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 500,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.06,
+          "borderRadius": 450
+        },
+        {
+          "id": "b-top-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 182,
+          "width": 940,
+          "height": 1,
+          "color": "{{accentColor}}",
+          "opacity": 0.4,
+          "borderRadius": 0
+        },
+        {
+          "id": "b-name",
+          "type": "text",
+          "content": "{{brandName}}",
+          "x": 70,
+          "y": 730,
+          "width": 940,
+          "height": 200,
+          "fontSize": 100,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.9
+          }
+        },
+        {
+          "id": "b-collection",
+          "type": "text",
+          "content": "{{collectionName}}",
+          "x": 70,
+          "y": 970,
+          "width": 940,
+          "height": 100,
+          "fontSize": 46,
+          "fontWeight": "normal",
+          "color": "#ccbbaa",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.7,
+            "delay": 0.5
+          }
+        },
+        {
+          "id": "b-tagline",
+          "type": "text",
+          "content": "{{tagline}}",
+          "x": 70,
+          "y": 1110,
+          "width": 940,
+          "height": 80,
+          "fontSize": 38,
+          "fontWeight": "normal",
+          "color": "#888877",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.6,
+            "delay": 0.8
+          }
+        },
+        {
+          "id": "b-bottom-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 1660,
+          "width": 940,
+          "height": 1,
+          "color": "{{accentColor}}",
+          "opacity": 0.3,
+          "borderRadius": 0
+        }
+      ]
+    },
+    {
+      "id": "lookbook",
+      "name": "Lookbook",
+      "start": 7,
+      "duration": 12,
+      "background": {
+        "type": "color",
+        "value": "#060504"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
+      "layers": [
+        {
+          "id": "lk-img",
+          "type": "image",
+          "src": "{{look1Image}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "opacity": 0.85,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.8
+          }
+        },
+        {
+          "id": "lk-overlay",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 1280,
+          "width": 1080,
+          "height": 640,
+          "color": "#000000",
+          "opacity": 0.75,
+          "borderRadius": 0
+        },
+        {
+          "id": "lk-img2",
+          "type": "image",
+          "src": "{{look2Image}}",
+          "x": 540,
+          "y": 100,
+          "width": 470,
+          "height": 700,
+          "fit": "cover",
+          "opacity": 0.7,
+          "animationIn": {
+            "type": "slideDown",
+            "duration": 0.6,
+            "delay": 0.5
+          }
+        },
+        {
+          "id": "lk-accent-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 1310,
+          "width": 200,
+          "height": 3,
+          "color": "{{accentColor}}",
+          "opacity": 1,
+          "borderRadius": 2
+        },
+        {
+          "id": "lk-caption1",
+          "type": "text",
+          "content": "{{look1Caption}}",
+          "x": 70,
+          "y": 1360,
+          "width": 940,
+          "height": 120,
+          "fontSize": 58,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "right",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.5,
+            "delay": 0.3
+          }
+        },
+        {
+          "id": "lk-caption2",
+          "type": "text",
+          "content": "{{look2Caption}}",
+          "x": 70,
+          "y": 1510,
+          "width": 940,
+          "height": 90,
+          "fontSize": 44,
+          "fontWeight": "normal",
+          "color": "{{accentColor}}",
+          "align": "right",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5,
+            "delay": 0.6
+          }
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "name": "Shop Now",
+      "start": 19,
+      "duration": 6,
+      "background": {
+        "type": "color",
+        "value": "#070605"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
+      "layers": [
+        {
+          "id": "ct-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 600,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.08,
+          "borderRadius": 450
+        },
+        {
+          "id": "ct-brand",
+          "type": "text",
+          "content": "{{brandName}}",
+          "x": 70,
+          "y": 600,
+          "width": 940,
+          "height": 130,
+          "fontSize": 80,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.6
+          }
+        },
+        {
+          "id": "ct-collection",
+          "type": "text",
+          "content": "{{collectionName}}",
+          "x": 70,
+          "y": 770,
+          "width": 940,
+          "height": 90,
+          "fontSize": 44,
+          "fontWeight": "normal",
+          "color": "#ccbbaa",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5,
+            "delay": 0.3
+          }
+        },
+        {
+          "id": "ct-shop-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 160,
+          "y": 950,
+          "width": 760,
+          "height": 100,
+          "color": "{{accentColor}}",
+          "opacity": 0.9,
+          "borderRadius": 50
+        },
+        {
+          "id": "ct-shop",
+          "type": "text",
+          "content": "تسوّقي الآن",
+          "x": 180,
+          "y": 968,
+          "width": 720,
+          "height": 64,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "#060504",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4,
+            "delay": 0.5
+          }
+        },
+        {
+          "id": "ct-link",
+          "type": "text",
+          "content": "{{shopLink}}",
+          "x": 70,
+          "y": 1110,
+          "width": 940,
+          "height": 65,
+          "fontSize": 36,
+          "fontWeight": "normal",
+          "color": "#888877",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.8
+          }
+        }
+      ]
+    }
+  ]
+}

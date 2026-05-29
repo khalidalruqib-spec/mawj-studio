@@ -1,0 +1,445 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "sports-energy",
+  "name": "Sports Energy — إنجاز رياضي",
+  "category": "Sports & Fitness",
+  "duration": 20,
+  "description": "High-energy 3-scene sports template: athlete reveal → stats highlights → motivational CTA. Perfect for fitness and sports content.",
+  "requiredInputs": [
+    {
+      "key": "athleteName",
+      "label": "Athlete / Team Name",
+      "type": "text",
+      "default": "الأبطال الرياضيون",
+      "required": true
+    },
+    {
+      "key": "sport",
+      "label": "Sport / Activity",
+      "type": "text",
+      "default": "كرة القدم",
+      "required": true
+    },
+    {
+      "key": "image",
+      "label": "Athlete / Action Photo",
+      "type": "image",
+      "required": false
+    },
+    {
+      "key": "stat1",
+      "label": "Stat 1 (e.g. 45)",
+      "type": "text",
+      "default": "٤٥",
+      "required": true
+    },
+    {
+      "key": "stat1Label",
+      "label": "Stat 1 Label",
+      "type": "text",
+      "default": "هدف هذا الموسم",
+      "required": true
+    },
+    {
+      "key": "stat2",
+      "label": "Stat 2",
+      "type": "text",
+      "default": "٩٢٪",
+      "required": true
+    },
+    {
+      "key": "stat2Label",
+      "label": "Stat 2 Label",
+      "type": "text",
+      "default": "دقة التمريرات",
+      "required": true
+    },
+    {
+      "key": "motivationalLine",
+      "label": "Motivational Line",
+      "type": "textarea",
+      "default": "الفوز ليس حظاً — إنه تدريب يومي بلا توقف",
+      "required": true
+    },
+    {
+      "key": "cta",
+      "label": "CTA",
+      "type": "text",
+      "default": "تابع المسيرة ⚡",
+      "required": true
+    },
+    {
+      "key": "accentColor",
+      "label": "Accent Color",
+      "type": "color",
+      "default": "#ef4444",
+      "required": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "reveal",
+      "name": "Athlete Reveal",
+      "start": 0,
+      "duration": 6,
+      "background": {
+        "type": "color",
+        "value": "#0a0202"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "r-img",
+          "type": "image",
+          "src": "{{image}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "opacity": 0.6,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.8
+          }
+        },
+        {
+          "id": "r-vignette",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 1100,
+          "width": 1080,
+          "height": 820,
+          "color": "#000000",
+          "opacity": 0.8,
+          "borderRadius": 0
+        },
+        {
+          "id": "r-sport",
+          "type": "text",
+          "content": "{{sport}}",
+          "x": 70,
+          "y": 190,
+          "width": 940,
+          "height": 75,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "right",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          }
+        },
+        {
+          "id": "r-name",
+          "type": "text",
+          "content": "{{athleteName}}",
+          "x": 70,
+          "y": 1160,
+          "width": 940,
+          "height": 240,
+          "fontSize": 100,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.55,
+            "delay": 0.2
+          }
+        }
+      ]
+    },
+    {
+      "id": "stats",
+      "name": "Stats",
+      "start": 6,
+      "duration": 8,
+      "background": {
+        "type": "color",
+        "value": "#080202"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "st-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 400,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.06,
+          "borderRadius": 450
+        },
+        {
+          "id": "st-head",
+          "type": "text",
+          "content": "الإحصائيات",
+          "x": 70,
+          "y": 185,
+          "width": 940,
+          "height": 70,
+          "fontSize": 38,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
+        },
+        {
+          "id": "st1-val",
+          "type": "text",
+          "content": "{{stat1}}",
+          "x": 70,
+          "y": 480,
+          "width": 940,
+          "height": 250,
+          "fontSize": 180,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5,
+            "delay": 0.1
+          }
+        },
+        {
+          "id": "st1-lbl",
+          "type": "text",
+          "content": "{{stat1Label}}",
+          "x": 70,
+          "y": 760,
+          "width": 940,
+          "height": 80,
+          "fontSize": 48,
+          "fontWeight": "normal",
+          "color": "#dddddd",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.4
+          }
+        },
+        {
+          "id": "st-div",
+          "type": "shape",
+          "shape": "rect",
+          "x": 400,
+          "y": 880,
+          "width": 280,
+          "height": 3,
+          "color": "{{accentColor}}",
+          "opacity": 0.5,
+          "borderRadius": 0
+        },
+        {
+          "id": "st2-val",
+          "type": "text",
+          "content": "{{stat2}}",
+          "x": 70,
+          "y": 920,
+          "width": 940,
+          "height": 180,
+          "fontSize": 130,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "ltr",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5,
+            "delay": 0.3
+          }
+        },
+        {
+          "id": "st2-lbl",
+          "type": "text",
+          "content": "{{stat2Label}}",
+          "x": 70,
+          "y": 1130,
+          "width": 940,
+          "height": 70,
+          "fontSize": 44,
+          "fontWeight": "normal",
+          "color": "#bbbbbb",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.6
+          }
+        }
+      ]
+    },
+    {
+      "id": "motivate",
+      "name": "Motivation + CTA",
+      "start": 14,
+      "duration": 6,
+      "background": {
+        "type": "color",
+        "value": "#050101"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.4
+      },
+      "layers": [
+        {
+          "id": "mv-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 700,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.1,
+          "borderRadius": 450
+        },
+        {
+          "id": "mv-line",
+          "type": "text",
+          "content": "{{motivationalLine}}",
+          "x": 70,
+          "y": 600,
+          "width": 940,
+          "height": 400,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.6,
+            "delay": 0.1
+          }
+        },
+        {
+          "id": "mv-cta-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 160,
+          "y": 1090,
+          "width": 760,
+          "height": 100,
+          "color": "{{accentColor}}",
+          "opacity": 0.9,
+          "borderRadius": 50
+        },
+        {
+          "id": "mv-cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 180,
+          "y": 1108,
+          "width": 720,
+          "height": 64,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "#050101",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4,
+            "delay": 0.4
+          }
+        },
+        {
+          "id": "mv-name",
+          "type": "text",
+          "content": "{{athleteName}}",
+          "x": 70,
+          "y": 1260,
+          "width": 940,
+          "height": 70,
+          "fontSize": 38,
+          "fontWeight": "normal",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.7
+          }
+        }
+      ]
+    }
+  ]
+}

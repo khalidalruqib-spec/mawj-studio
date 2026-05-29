@@ -1,0 +1,225 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "captions-gradient-glow",
+  "name": "Captions — Gradient Glow",
+  "category": "Caption Styles",
+  "duration": 20,
+  "description": "Cinematic caption style with purple-to-cyan gradient highlight and soft glow. Perfect for premium and aesthetic content.",
+  "requiredInputs": [
+    {
+      "key": "video",
+      "label": "Your Video",
+      "type": "video",
+      "required": false
+    },
+    {
+      "key": "title",
+      "label": "Hook Title",
+      "type": "text",
+      "default": "اكتشف السر",
+      "required": true
+    },
+    {
+      "key": "brandColor",
+      "label": "Glow Color",
+      "type": "color",
+      "default": "#a78bfa",
+      "required": false
+    },
+    {
+      "key": "cta",
+      "label": "CTA",
+      "type": "text",
+      "default": "احفظ هذا الفيديو ✨",
+      "required": true
+    }
+  ],
+  "scenes": [
+    {
+      "id": "main",
+      "name": "Gradient Captions",
+      "start": 0,
+      "duration": 20,
+      "background": {
+        "type": "color",
+        "value": "#060409"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0
+      },
+      "layers": [
+        {
+          "id": "vid",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover",
+          "opacity": 0.6
+        },
+        {
+          "id": "top-vignette",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 350,
+          "color": "#000000",
+          "opacity": 0.6,
+          "borderRadius": 0
+        },
+        {
+          "id": "btm-vignette",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 1200,
+          "width": 1080,
+          "height": 720,
+          "color": "#000000",
+          "opacity": 0.75,
+          "borderRadius": 0
+        },
+        {
+          "id": "glow-orb",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 900,
+          "width": 900,
+          "height": 900,
+          "color": "{{brandColor}}",
+          "opacity": 0.08,
+          "borderRadius": 450
+        },
+        {
+          "id": "title-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 80,
+          "y": 172,
+          "width": 920,
+          "height": 165,
+          "color": "{{brandColor}}",
+          "opacity": 0.1,
+          "borderRadius": 36
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "content": "{{title}}",
+          "x": 100,
+          "y": 192,
+          "width": 880,
+          "height": 130,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.6
+          }
+        },
+        {
+          "id": "captions",
+          "type": "captions",
+          "source": "auto",
+          "x": 60,
+          "y": 1170,
+          "width": 960,
+          "height": 350,
+          "fontSize": 64,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "highlightColor": "{{brandColor}}",
+          "align": "center",
+          "style": "karaoke",
+          "direction": "auto",
+          "safeMargin": true
+        },
+        {
+          "id": "cta-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 120,
+          "y": 1572,
+          "width": 840,
+          "height": 95,
+          "color": "{{brandColor}}",
+          "opacity": 0.12,
+          "borderRadius": 48
+        },
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 140,
+          "y": 1588,
+          "width": 800,
+          "height": 63,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5,
+            "delay": 0.5
+          }
+        }
+      ]
+    }
+  ]
+}

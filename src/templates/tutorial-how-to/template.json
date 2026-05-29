@@ -1,0 +1,645 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "tutorial-how-to",
+  "name": "Tutorial — خطوة بخطوة",
+  "category": "Education",
+  "duration": 35,
+  "description": "4-scene step-by-step tutorial template with numbered steps, hook, and CTA. Perfect for educational content.",
+  "requiredInputs": [
+    {
+      "key": "topicTitle",
+      "label": "Topic Title",
+      "type": "text",
+      "default": "كيف تبني عادة يومية ناجحة",
+      "required": true
+    },
+    {
+      "key": "step1",
+      "label": "Step 1",
+      "type": "text",
+      "default": "حدد هدفك بدقة وكتابة",
+      "required": true
+    },
+    {
+      "key": "step2",
+      "label": "Step 2",
+      "type": "text",
+      "default": "ابدأ بـ٥ دقائق فقط يومياً",
+      "required": true
+    },
+    {
+      "key": "step3",
+      "label": "Step 3",
+      "type": "text",
+      "default": "اربط العادة بنشاط موجود",
+      "required": true
+    },
+    {
+      "key": "step4",
+      "label": "Step 4",
+      "type": "text",
+      "default": "تتبع التقدم أسبوعياً",
+      "required": true
+    },
+    {
+      "key": "summary",
+      "label": "Key Takeaway",
+      "type": "textarea",
+      "default": "الاستمرارية أهم من الكمال",
+      "required": true
+    },
+    {
+      "key": "cta",
+      "label": "CTA",
+      "type": "text",
+      "default": "احفظ الفيديو للتطبيق ✓",
+      "required": true
+    },
+    {
+      "key": "accentColor",
+      "label": "Accent Color",
+      "type": "color",
+      "default": "#10b981",
+      "required": false
+    },
+    {
+      "key": "brandName",
+      "label": "Brand / Creator Name",
+      "type": "text",
+      "default": "@creatorname",
+      "required": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "hook",
+      "name": "Hook",
+      "start": 0,
+      "duration": 6,
+      "background": {
+        "type": "color",
+        "value": "#050f0a"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.4
+      },
+      "layers": [
+        {
+          "id": "h-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 400,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.08,
+          "borderRadius": 450
+        },
+        {
+          "id": "h-num",
+          "type": "text",
+          "content": "٤ خطوات",
+          "x": 70,
+          "y": 540,
+          "width": 940,
+          "height": 130,
+          "fontSize": 100,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5
+          }
+        },
+        {
+          "id": "h-title",
+          "type": "text",
+          "content": "{{topicTitle}}",
+          "x": 70,
+          "y": 720,
+          "width": 940,
+          "height": 260,
+          "fontSize": 68,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.55,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "h-brand",
+          "type": "text",
+          "content": "{{brandName}}",
+          "x": 70,
+          "y": 1600,
+          "width": 940,
+          "height": 70,
+          "fontSize": 38,
+          "fontWeight": "normal",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.7
+          }
+        }
+      ]
+    },
+    {
+      "id": "steps12",
+      "name": "Steps 1 & 2",
+      "start": 6,
+      "duration": 10,
+      "background": {
+        "type": "color",
+        "value": "#060d09"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.4,
+        "direction": "left"
+      },
+      "layers": [
+        {
+          "id": "s-head",
+          "type": "text",
+          "content": "الخطوات",
+          "x": 70,
+          "y": 185,
+          "width": 940,
+          "height": 65,
+          "fontSize": 32,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
+        },
+        {
+          "id": "n1-circle",
+          "type": "shape",
+          "shape": "circle",
+          "x": 80,
+          "y": 360,
+          "width": 120,
+          "height": 120,
+          "color": "{{accentColor}}",
+          "opacity": 0.9,
+          "borderRadius": 60
+        },
+        {
+          "id": "n1",
+          "type": "text",
+          "content": "١",
+          "x": 80,
+          "y": 365,
+          "width": 120,
+          "height": 110,
+          "fontSize": 70,
+          "fontWeight": "bold",
+          "color": "#050f0a",
+          "align": "center",
+          "direction": "ltr",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
+        },
+        {
+          "id": "s1-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 220,
+          "y": 360,
+          "width": 790,
+          "height": 120,
+          "color": "{{accentColor}}",
+          "opacity": 0.08,
+          "borderRadius": 16
+        },
+        {
+          "id": "s1",
+          "type": "text",
+          "content": "{{step1}}",
+          "x": 230,
+          "y": 378,
+          "width": 770,
+          "height": 85,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "right",
+          "direction": "rtl",
+          "editable": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.45,
+            "delay": 0.1
+          }
+        },
+        {
+          "id": "n2-circle",
+          "type": "shape",
+          "shape": "circle",
+          "x": 80,
+          "y": 560,
+          "width": 120,
+          "height": 120,
+          "color": "{{accentColor}}",
+          "opacity": 0.7,
+          "borderRadius": 60
+        },
+        {
+          "id": "n2",
+          "type": "text",
+          "content": "٢",
+          "x": 80,
+          "y": 565,
+          "width": 120,
+          "height": 110,
+          "fontSize": 70,
+          "fontWeight": "bold",
+          "color": "#050f0a",
+          "align": "center",
+          "direction": "ltr",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "s2-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 220,
+          "y": 560,
+          "width": 790,
+          "height": 120,
+          "color": "{{accentColor}}",
+          "opacity": 0.06,
+          "borderRadius": 16
+        },
+        {
+          "id": "s2",
+          "type": "text",
+          "content": "{{step2}}",
+          "x": 230,
+          "y": 578,
+          "width": 770,
+          "height": 85,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "#e8e8e8",
+          "align": "right",
+          "direction": "rtl",
+          "editable": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.45,
+            "delay": 0.3
+          }
+        }
+      ]
+    },
+    {
+      "id": "steps34",
+      "name": "Steps 3 & 4",
+      "start": 16,
+      "duration": 10,
+      "background": {
+        "type": "color",
+        "value": "#060d09"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.4,
+        "direction": "left"
+      },
+      "layers": [
+        {
+          "id": "s-head2",
+          "type": "text",
+          "content": "الخطوات",
+          "x": 70,
+          "y": 185,
+          "width": 940,
+          "height": 65,
+          "fontSize": 32,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
+        },
+        {
+          "id": "n3-circle",
+          "type": "shape",
+          "shape": "circle",
+          "x": 80,
+          "y": 360,
+          "width": 120,
+          "height": 120,
+          "color": "{{accentColor}}",
+          "opacity": 0.9,
+          "borderRadius": 60
+        },
+        {
+          "id": "n3",
+          "type": "text",
+          "content": "٣",
+          "x": 80,
+          "y": 365,
+          "width": 120,
+          "height": 110,
+          "fontSize": 70,
+          "fontWeight": "bold",
+          "color": "#050f0a",
+          "align": "center",
+          "direction": "ltr",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          }
+        },
+        {
+          "id": "s3-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 220,
+          "y": 360,
+          "width": 790,
+          "height": 120,
+          "color": "{{accentColor}}",
+          "opacity": 0.08,
+          "borderRadius": 16
+        },
+        {
+          "id": "s3",
+          "type": "text",
+          "content": "{{step3}}",
+          "x": 230,
+          "y": 378,
+          "width": 770,
+          "height": 85,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "right",
+          "direction": "rtl",
+          "editable": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.45,
+            "delay": 0.1
+          }
+        },
+        {
+          "id": "n4-circle",
+          "type": "shape",
+          "shape": "circle",
+          "x": 80,
+          "y": 560,
+          "width": 120,
+          "height": 120,
+          "color": "{{accentColor}}",
+          "opacity": 0.7,
+          "borderRadius": 60
+        },
+        {
+          "id": "n4",
+          "type": "text",
+          "content": "٤",
+          "x": 80,
+          "y": 565,
+          "width": 120,
+          "height": 110,
+          "fontSize": 70,
+          "fontWeight": "bold",
+          "color": "#050f0a",
+          "align": "center",
+          "direction": "ltr",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "s4-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 220,
+          "y": 560,
+          "width": 790,
+          "height": 120,
+          "color": "{{accentColor}}",
+          "opacity": 0.06,
+          "borderRadius": 16
+        },
+        {
+          "id": "s4",
+          "type": "text",
+          "content": "{{step4}}",
+          "x": 230,
+          "y": 578,
+          "width": 770,
+          "height": 85,
+          "fontSize": 46,
+          "fontWeight": "bold",
+          "color": "#e8e8e8",
+          "align": "right",
+          "direction": "rtl",
+          "editable": true,
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.45,
+            "delay": 0.3
+          }
+        }
+      ]
+    },
+    {
+      "id": "summary",
+      "name": "Takeaway + CTA",
+      "start": 26,
+      "duration": 9,
+      "background": {
+        "type": "color",
+        "value": "#040c08"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
+      "layers": [
+        {
+          "id": "sum-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 500,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.09,
+          "borderRadius": 450
+        },
+        {
+          "id": "sum-label",
+          "type": "text",
+          "content": "الفكرة الرئيسية",
+          "x": 70,
+          "y": 200,
+          "width": 940,
+          "height": 70,
+          "fontSize": 36,
+          "fontWeight": "normal",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "sum-text",
+          "type": "text",
+          "content": "{{summary}}",
+          "x": 70,
+          "y": 700,
+          "width": 940,
+          "height": 300,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.7,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "cta-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 130,
+          "y": 1090,
+          "width": 820,
+          "height": 100,
+          "color": "{{accentColor}}",
+          "opacity": 0.9,
+          "borderRadius": 50
+        },
+        {
+          "id": "cta",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 150,
+          "y": 1108,
+          "width": 780,
+          "height": 64,
+          "fontSize": 42,
+          "fontWeight": "bold",
+          "color": "#040c08",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4,
+            "delay": 0.5
+          }
+        },
+        {
+          "id": "sum-brand",
+          "type": "text",
+          "content": "{{brandName}}",
+          "x": 70,
+          "y": 1620,
+          "width": 940,
+          "height": 65,
+          "fontSize": 36,
+          "fontWeight": "normal",
+          "color": "#557766",
+          "align": "center",
+          "direction": "auto",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4,
+            "delay": 0.8
+          }
+        }
+      ]
+    }
+  ]
+}

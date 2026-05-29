@@ -1,0 +1,480 @@
+{
+  "language": "mixed",
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
+  "aspectRatio": "9:16",
+  "width": 1080,
+  "height": 1920,
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  },
+  "id": "story-arc",
+  "name": "Story Arc — قصة تحويل",
+  "category": "Storytelling",
+  "duration": 40,
+  "description": "4-scene personal transformation story: before → turning point → result → offer. Powerful for testimonials and coaching content.",
+  "requiredInputs": [
+    {
+      "key": "creatorName",
+      "label": "Your Name / Brand",
+      "type": "text",
+      "default": "منى العمري",
+      "required": true
+    },
+    {
+      "key": "beforeState",
+      "label": "Before — The Struggle",
+      "type": "textarea",
+      "default": "كنت أعاني من التشتت وعدم الوضوح في مسيرتي المهنية",
+      "required": true
+    },
+    {
+      "key": "turningPoint",
+      "label": "The Turning Point",
+      "type": "textarea",
+      "default": "قررت أن أضع خطة واضحة بمساعدة مختص",
+      "required": true
+    },
+    {
+      "key": "result",
+      "label": "The Result / After",
+      "type": "textarea",
+      "default": "حققت دخلاً إضافياً ٢٠,٠٠٠ ريال خلال ٣ أشهر",
+      "required": true
+    },
+    {
+      "key": "offer",
+      "label": "Your Offer / CTA",
+      "type": "textarea",
+      "default": "برنامجي يفتح الأبواب التالي — سجّل اسمك الآن",
+      "required": true
+    },
+    {
+      "key": "image",
+      "label": "Your Photo",
+      "type": "image",
+      "required": false
+    },
+    {
+      "key": "accentColor",
+      "label": "Accent Color",
+      "type": "color",
+      "default": "#8b5cf6",
+      "required": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "before",
+      "name": "Before",
+      "start": 0,
+      "duration": 10,
+      "background": {
+        "type": "color",
+        "value": "#0a080d"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
+      "layers": [
+        {
+          "id": "bf-tag",
+          "type": "text",
+          "content": "قبل ذلك",
+          "x": 70,
+          "y": 185,
+          "width": 400,
+          "height": 65,
+          "fontSize": 34,
+          "fontWeight": "bold",
+          "color": "#888888",
+          "align": "right",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "bf-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 262,
+          "width": 140,
+          "height": 3,
+          "color": "#888888",
+          "opacity": 0.6,
+          "borderRadius": 2
+        },
+        {
+          "id": "bf-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 400,
+          "width": 900,
+          "height": 900,
+          "color": "#6366f1",
+          "opacity": 0.05,
+          "borderRadius": 450
+        },
+        {
+          "id": "bf-text",
+          "type": "text",
+          "content": "{{beforeState}}",
+          "x": 70,
+          "y": 660,
+          "width": 940,
+          "height": 460,
+          "fontSize": 68,
+          "fontWeight": "bold",
+          "color": "#ccccdd",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.6,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "bf-name",
+          "type": "text",
+          "content": "{{creatorName}}",
+          "x": 70,
+          "y": 1200,
+          "width": 940,
+          "height": 80,
+          "fontSize": 44,
+          "fontWeight": "normal",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5,
+            "delay": 0.8
+          }
+        }
+      ]
+    },
+    {
+      "id": "turning",
+      "name": "Turning Point",
+      "start": 10,
+      "duration": 10,
+      "background": {
+        "type": "color",
+        "value": "#0a080d"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
+      "layers": [
+        {
+          "id": "tp-tag",
+          "type": "text",
+          "content": "نقطة التحول",
+          "x": 70,
+          "y": 185,
+          "width": 600,
+          "height": 65,
+          "fontSize": 34,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "right",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "tp-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 262,
+          "width": 220,
+          "height": 3,
+          "color": "{{accentColor}}",
+          "opacity": 0.7,
+          "borderRadius": 2
+        },
+        {
+          "id": "tp-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 500,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.08,
+          "borderRadius": 450
+        },
+        {
+          "id": "tp-text",
+          "type": "text",
+          "content": "{{turningPoint}}",
+          "x": 70,
+          "y": 680,
+          "width": 940,
+          "height": 440,
+          "fontSize": 68,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.7,
+            "delay": 0.2
+          }
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "name": "The Result",
+      "start": 20,
+      "duration": 10,
+      "background": {
+        "type": "color",
+        "value": "#060a0a"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.4
+      },
+      "layers": [
+        {
+          "id": "rs-tag",
+          "type": "text",
+          "content": "النتيجة",
+          "x": 70,
+          "y": 185,
+          "width": 400,
+          "height": 65,
+          "fontSize": 34,
+          "fontWeight": "bold",
+          "color": "#10b981",
+          "align": "right",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "rs-line",
+          "type": "shape",
+          "shape": "rect",
+          "x": 70,
+          "y": 262,
+          "width": 120,
+          "height": 3,
+          "color": "#10b981",
+          "opacity": 0.7,
+          "borderRadius": 2
+        },
+        {
+          "id": "rs-photo",
+          "type": "image",
+          "src": "{{image}}",
+          "x": 215,
+          "y": 360,
+          "width": 650,
+          "height": 650,
+          "fit": "cover",
+          "borderRadius": 325,
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.6
+          }
+        },
+        {
+          "id": "rs-text",
+          "type": "text",
+          "content": "{{result}}",
+          "x": 70,
+          "y": 1090,
+          "width": 940,
+          "height": 340,
+          "fontSize": 62,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.6,
+            "delay": 0.4
+          }
+        },
+        {
+          "id": "rs-check",
+          "type": "text",
+          "content": "✓",
+          "x": 70,
+          "y": 1470,
+          "width": 940,
+          "height": 100,
+          "fontSize": 80,
+          "fontWeight": "bold",
+          "color": "#10b981",
+          "align": "center",
+          "direction": "ltr",
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4,
+            "delay": 0.8
+          }
+        }
+      ]
+    },
+    {
+      "id": "offer",
+      "name": "The Offer",
+      "start": 30,
+      "duration": 10,
+      "background": {
+        "type": "color",
+        "value": "#050408"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.6
+      },
+      "layers": [
+        {
+          "id": "of-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 90,
+          "y": 700,
+          "width": 900,
+          "height": 900,
+          "color": "{{accentColor}}",
+          "opacity": 0.12,
+          "borderRadius": 450
+        },
+        {
+          "id": "of-creator",
+          "type": "text",
+          "content": "{{creatorName}}",
+          "x": 70,
+          "y": 200,
+          "width": 940,
+          "height": 90,
+          "fontSize": 44,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
+        },
+        {
+          "id": "of-div",
+          "type": "shape",
+          "shape": "rect",
+          "x": 300,
+          "y": 308,
+          "width": 480,
+          "height": 2,
+          "color": "{{accentColor}}",
+          "opacity": 0.4,
+          "borderRadius": 0
+        },
+        {
+          "id": "of-text",
+          "type": "text",
+          "content": "{{offer}}",
+          "x": 70,
+          "y": 620,
+          "width": 940,
+          "height": 500,
+          "fontSize": 66,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.6,
+            "delay": 0.2
+          }
+        },
+        {
+          "id": "of-arrow",
+          "type": "text",
+          "content": "↓",
+          "x": 70,
+          "y": 1220,
+          "width": 940,
+          "height": 100,
+          "fontSize": 80,
+          "fontWeight": "bold",
+          "color": "{{accentColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "animationIn": {
+            "type": "bounce",
+            "duration": 0.6,
+            "delay": 0.6
+          }
+        }
+      ]
+    }
+  ]
+}
