@@ -1236,6 +1236,7 @@ export function ProfessionalVideoStudio() {
         style: activeStyle,
         brandName,
         plan: renderPlan,
+        timelineLayers: timelineTracks.flatMap((track) => track.layers),
         onProgress: setRenderProgress,
       });
       setRenderResult(result);
@@ -2296,6 +2297,8 @@ export function ProfessionalVideoStudio() {
                     activeStyle={activeStyle}
                     brandName={brandName}
                     showCaptionOverlay={Boolean(plan || captions.length)}
+                    timelineTracks={timelineTracks}
+                    selectedLayerId={selectedLayerId}
                     isPlaying={isPlaying}
                     previewTime={previewTime}
                     onLoadedMetadata={captureDuration}
@@ -2305,6 +2308,7 @@ export function ProfessionalVideoStudio() {
                     onUploadClick={() => inputRef.current?.click()}
                     onCreatorCommand={runAssistantCommand}
                     onClearTemplateProject={clearActiveTemplateProject}
+                    onSelectLayer={selectTimelineLayer}
                   />
                   <ProjectMetrics
                     plan={plan}

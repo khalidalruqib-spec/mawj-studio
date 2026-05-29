@@ -30,7 +30,7 @@ import {
   type TimelineCanvasRenderPayload,
 } from "@/lib/timeline-canvas-renderer";
 import { CREATOR_STARTERS } from "../foundation";
-import type { AIEngineState, PanelId, StudioFile, TimelineTrack } from "../foundation";
+import type { AIEngineState, PanelId, StudioFile, TimelineLayer, TimelineTrack } from "../foundation";
 import { Metric } from "../ui";
 import { formatDuration, normalizeHexColor } from "../utils";
 
@@ -44,6 +44,8 @@ export function VideoPreview({
   activeStyle,
   brandName,
   showCaptionOverlay,
+  timelineTracks,
+  selectedLayerId,
   isPlaying,
   previewTime,
   onLoadedMetadata,
@@ -53,6 +55,7 @@ export function VideoPreview({
   onUploadClick,
   onCreatorCommand,
   onClearTemplateProject,
+  onSelectLayer,
 }: {
   studioFile: StudioFile | null;
   templateProject: TemplateProject | null;
@@ -63,6 +66,8 @@ export function VideoPreview({
   activeStyle: VideoStyle;
   brandName: string;
   showCaptionOverlay: boolean;
+  timelineTracks: TimelineTrack[];
+  selectedLayerId: string;
   isPlaying: boolean;
   previewTime: number;
   onLoadedMetadata: () => void;
@@ -72,6 +77,7 @@ export function VideoPreview({
   onUploadClick: () => void;
   onCreatorCommand: (commandOverride?: string) => void;
   onClearTemplateProject: () => void;
+  onSelectLayer: (id: string) => void;
 }) {
   const previewDurationSeconds = isUsableMediaDuration(studioFile?.durationSeconds)
     ? studioFile.durationSeconds
@@ -102,6 +108,13 @@ export function VideoPreview({
             style={{ filter: previewFilter }}
           />
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.36),transparent_31%,transparent_61%,rgba(0,0,0,0.56))]" />
+          <TimelinePreviewOverlay
+            aspectRatio={aspectRatio}
+            tracks={timelineTracks}
+            currentTime={previewTime}
+            selectedLayerId={selectedLayerId}
+            onSelectLayer={onSelectLayer}
+          />
           <div className="pointer-events-none absolute inset-x-4 top-4 flex justify-center">
             <span className="max-w-full truncate rounded-full border border-white/15 bg-black/55 px-3 py-1.5 text-xs font-black text-white shadow-lg backdrop-blur">
               {brandName || "Mawj Studio"} · {activeStyle.arabicName}
@@ -222,6 +235,158 @@ export function TemplateProjectPreview({ project }: { project: TemplateProject }
       </div>
     </div>
   );
+}
+
+function TimelinePreviewOverlay({
+  aspectRatio,
+  tracks,
+  currentTime,
+  selectedLayerId,
+  onSelectLayer,
+}: {
+  aspectRatio: AspectRatio;
+  tracks: TimelineTrack[];
+  currentTime: number;
+  selectedLayerId: string;
+  onSelectLayer: (id: string) => void;
+}) {
+  const dimensions = getPreviewDesignDimensions(aspectRatio);
+  const layers = tracks
+    .flatMap((track) => track.layers)
+    .filter((layer) => isRenderablePreviewLayer(layer, currentTime));
+
+  if (!layers.length) return null;
+
+  return (
+    <div className="absolute inset-0 z-10">
+      {layers.map((layer) => (
+        <TimelinePreviewLayer
+          key={layer.id}
+          layer={layer}
+          dimensions={dimensions}
+          selected={layer.id === selectedLayerId}
+          onSelect={() => onSelectLayer(layer.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function TimelinePreviewLayer({
+  layer,
+  dimensions,
+  selected,
+  onSelect,
+}: {
+  layer: TimelineLayer;
+  dimensions: { width: number; height: number };
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const box = getTimelineLayerBox(layer, dimensions);
+  const baseClass =
+    "absolute overflow-hidden transition outline-offset-2 " +
+    (selected ? "outline outline-2 outline-[var(--brand)]" : "outline outline-1 outline-transparent hover:outline-white/45");
+
+  if (layer.type === "image") {
+    if (!layer.src) return null;
+
+    return (
+      <button
+        type="button"
+        aria-label={`Select ${layer.name}`}
+        onClick={onSelect}
+        className={`${baseClass} cursor-pointer border-0 p-0`}
+        style={box}
+      >
+        <img src={layer.src} alt={layer.name} className="h-full w-full object-cover" />
+      </button>
+    );
+  }
+
+  if (layer.type === "shape") {
+    return (
+      <button
+        type="button"
+        aria-label={`Select ${layer.name}`}
+        onClick={onSelect}
+        className={`${baseClass} cursor-pointer border-0 p-0`}
+        style={{
+          ...box,
+          backgroundColor: layer.backgroundColor ?? layer.color,
+          borderRadius: scalePreviewRadius(layer.borderRadius),
+          opacity: layer.opacity ?? 1,
+        }}
+      />
+    );
+  }
+
+  const text = layer.content ?? layer.name;
+  if (!text.trim()) return null;
+
+  const textAlign = layer.align ?? "center";
+  const fontScale = getPreviewFontScale(dimensions);
+
+  return (
+    <button
+      type="button"
+      aria-label={`Select ${layer.name}`}
+      onClick={onSelect}
+      className={`${baseClass} grid cursor-pointer place-items-center border-0 px-2 text-center font-black leading-tight`}
+      dir={layer.direction ?? "auto"}
+      style={{
+        ...box,
+        color: layer.textColor ?? layer.color,
+        backgroundColor: layer.backgroundColor,
+        borderRadius: scalePreviewRadius(layer.borderRadius),
+        fontFamily: layer.fontFamily,
+        fontSize: `${Math.max(11, (layer.fontSize ?? 48) * fontScale)}px`,
+        fontWeight: normalizeTemplateFontWeight(layer.fontWeight),
+        justifyItems: textAlign === "right" ? "end" : textAlign === "left" ? "start" : "center",
+        textAlign,
+        opacity: layer.opacity ?? 1,
+      }}
+    >
+      {text}
+    </button>
+  );
+}
+
+function isRenderablePreviewLayer(layer: TimelineLayer, currentTime: number) {
+  if (currentTime < layer.start || currentTime > layer.start + layer.duration) return false;
+  if (layer.type === "image") return Boolean(layer.src);
+  if (layer.type === "shape") return true;
+  if (layer.type === "text") return Boolean(layer.content?.trim());
+  if (layer.type === "caption") return Boolean(layer.content?.trim());
+  return false;
+}
+
+function getTimelineLayerBox(layer: TimelineLayer, dimensions: { width: number; height: number }) {
+  const x = layer.x ?? 0;
+  const y = layer.y ?? 0;
+  const width = layer.width ?? dimensions.width;
+  const height = layer.height ?? Math.max(120, dimensions.height * 0.08);
+
+  return {
+    left: `${(x / dimensions.width) * 100}%`,
+    top: `${(y / dimensions.height) * 100}%`,
+    width: `${(width / dimensions.width) * 100}%`,
+    height: `${(height / dimensions.height) * 100}%`,
+  };
+}
+
+function getPreviewFontScale(dimensions: { width: number }) {
+  return 100 / dimensions.width;
+}
+
+function getPreviewDesignDimensions(aspectRatio: AspectRatio) {
+  if (aspectRatio === "16:9") return { width: 1920, height: 1080 };
+  if (aspectRatio === "1:1") return { width: 1080, height: 1080 };
+  return { width: 1080, height: 1920 };
+}
+
+function scalePreviewRadius(radius?: number) {
+  return radius ? `${Math.max(4, radius * 0.2)}px` : undefined;
 }
 
 export function TemplatePreviewLayer({
