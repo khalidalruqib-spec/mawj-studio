@@ -79,7 +79,7 @@ export function VideoPreview({
   onCreatorCommand: (commandOverride?: string) => void;
   onClearTemplateProject: () => void;
   onSelectLayer: (id: string) => void;
-  onUpdateLayer: (id: string, patch: Pick<TimelineLayer, "x" | "y" | "width" | "height">) => void;
+  onUpdateLayer: (id: string, patch: Partial<TimelineLayer>) => void;
 }) {
   const previewDurationSeconds = isUsableMediaDuration(studioFile?.durationSeconds)
     ? studioFile.durationSeconds
@@ -253,12 +253,13 @@ function TimelinePreviewOverlay({
   currentTime: number;
   selectedLayerId: string;
   onSelectLayer: (id: string) => void;
-  onUpdateLayer: (id: string, patch: Pick<TimelineLayer, "x" | "y" | "width" | "height">) => void;
+  onUpdateLayer: (id: string, patch: Partial<TimelineLayer>) => void;
 }) {
   const dimensions = useMemo(() => getPreviewDesignDimensions(aspectRatio), [aspectRatio]);
   const designWidth = dimensions.width;
   const designHeight = dimensions.height;
   const [interactionState, setInteractionState] = useState<PreviewInteractionState | null>(null);
+  const [editingText, setEditingText] = useState<PreviewTextEditState | null>(null);
   const layers = tracks
     .flatMap((track) => track.layers)
     .filter((layer) => isRenderablePreviewLayer(layer, currentTime));
@@ -343,6 +344,37 @@ function TimelinePreviewOverlay({
     },
     [designHeight, designWidth, onUpdateLayer],
   );
+  const startTextEdit = useCallback(
+    (layer: TimelineLayer) => {
+      if (layer.type !== "text" && layer.type !== "caption") return;
+      onSelectLayer(layer.id);
+      setEditingText({
+        layerId: layer.id,
+        draft: layer.content ?? layer.name,
+      });
+    },
+    [onSelectLayer],
+  );
+  const updateTextDraft = useCallback((layerId: string, draft: string) => {
+    setEditingText((state) => (state?.layerId === layerId ? { ...state, draft } : state));
+  }, []);
+  const commitTextEdit = useCallback(
+    (layer: TimelineLayer) => {
+      setEditingText((state) => {
+        if (!state || state.layerId !== layer.id) return state;
+
+        const content = state.draft.trim() ? state.draft : layer.content ?? layer.name;
+        onUpdateLayer(layer.id, {
+          content,
+          name: content.slice(0, 42) || layer.name,
+        });
+
+        return null;
+      });
+    },
+    [onUpdateLayer],
+  );
+  const cancelTextEdit = useCallback(() => setEditingText(null), []);
 
   if (!layers.length) return null;
 
@@ -361,6 +393,11 @@ function TimelinePreviewOverlay({
           onPointerUp={endInteraction}
           onPointerCancel={endInteraction}
           onResizePointerDown={(handle, event) => startResize(layer, handle, event)}
+          editingDraft={editingText?.layerId === layer.id ? editingText.draft : null}
+          onStartTextEdit={() => startTextEdit(layer)}
+          onChangeTextDraft={(draft) => updateTextDraft(layer.id, draft)}
+          onCommitTextEdit={() => commitTextEdit(layer)}
+          onCancelTextEdit={cancelTextEdit}
         />
       ))}
     </div>
@@ -378,6 +415,11 @@ function TimelinePreviewLayer({
   onPointerUp,
   onPointerCancel,
   onResizePointerDown,
+  editingDraft,
+  onStartTextEdit,
+  onChangeTextDraft,
+  onCommitTextEdit,
+  onCancelTextEdit,
 }: {
   layer: TimelineLayer;
   dimensions: { width: number; height: number };
@@ -389,6 +431,11 @@ function TimelinePreviewLayer({
   onPointerUp: (event: React.PointerEvent<HTMLElement>) => void;
   onPointerCancel: (event: React.PointerEvent<HTMLElement>) => void;
   onResizePointerDown: (handle: ResizeHandle, event: React.PointerEvent<HTMLElement>) => void;
+  editingDraft: string | null;
+  onStartTextEdit: () => void;
+  onChangeTextDraft: (draft: string) => void;
+  onCommitTextEdit: () => void;
+  onCancelTextEdit: () => void;
 }) {
   const box = getTimelineLayerBox(layer, dimensions, interactionFrame);
   const baseClass =
@@ -444,27 +491,60 @@ function TimelinePreviewLayer({
 
   const textAlign = layer.align ?? "center";
   const fontScale = getPreviewFontScale(dimensions);
+  const textLayerStyle = {
+    ...box,
+    color: layer.textColor ?? layer.color,
+    backgroundColor: layer.backgroundColor,
+    borderRadius: scalePreviewRadius(layer.borderRadius),
+    fontFamily: layer.fontFamily,
+    fontSize: `${Math.max(11, (layer.fontSize ?? 48) * fontScale)}px`,
+    fontWeight: normalizeTemplateFontWeight(layer.fontWeight),
+    justifyItems: textAlign === "right" ? "end" : textAlign === "left" ? "start" : "center",
+    textAlign,
+    opacity: layer.opacity ?? 1,
+  } satisfies React.CSSProperties;
+
+  if (editingDraft !== null) {
+    return (
+      <textarea
+        value={editingDraft}
+        autoFocus
+        aria-label={`Edit ${layer.name}`}
+        onChange={(event) => onChangeTextDraft(event.target.value)}
+        onBlur={onCommitTextEdit}
+        onPointerDown={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            onCancelTextEdit();
+          }
+
+          if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+            event.preventDefault();
+            onCommitTextEdit();
+          }
+        }}
+        dir={layer.direction ?? "auto"}
+        className={`${baseClass} resize-none border-0 p-2 text-center font-black leading-tight outline outline-2 outline-[var(--brand)]`}
+        style={textLayerStyle}
+      />
+    );
+  }
 
   return (
     <button
       type="button"
       aria-label={`Select ${layer.name}`}
       onClick={onSelect}
+      onDoubleClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onStartTextEdit();
+      }}
       {...pointerHandlers}
       className={`${baseClass} grid cursor-pointer place-items-center border-0 px-2 text-center font-black leading-tight`}
       dir={layer.direction ?? "auto"}
-      style={{
-        ...box,
-        color: layer.textColor ?? layer.color,
-        backgroundColor: layer.backgroundColor,
-        borderRadius: scalePreviewRadius(layer.borderRadius),
-        fontFamily: layer.fontFamily,
-        fontSize: `${Math.max(11, (layer.fontSize ?? 48) * fontScale)}px`,
-        fontWeight: normalizeTemplateFontWeight(layer.fontWeight),
-        justifyItems: textAlign === "right" ? "end" : textAlign === "left" ? "start" : "center",
-        textAlign,
-        opacity: layer.opacity ?? 1,
-      }}
+      style={textLayerStyle}
     >
       {text}
       <ResizeHandles selected={selected} onResizePointerDown={onResizePointerDown} />
@@ -529,6 +609,11 @@ type PreviewLayerFrame = {
   y: number;
   width: number;
   height: number;
+};
+
+type PreviewTextEditState = {
+  layerId: string;
+  draft: string;
 };
 
 const RESIZE_HANDLES: ResizeHandle[] = ["nw", "ne", "sw", "se"];
