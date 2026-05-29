@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
   Captions,
   Cloud,
   Copy,
@@ -247,6 +249,23 @@ export function ProfessionalVideoStudio() {
         .flatMap((track) => track.layers)
         .find((layer) => layer.id === selectedLayerId) ?? null,
     [selectedLayerId, timelineTracks],
+  );
+  const selectedLayerStackInfo = useMemo(() => {
+    for (const track of timelineTracks) {
+      const layerIndex = track.layers.findIndex((layer) => layer.id === selectedLayerId);
+      if (layerIndex !== -1) {
+        return {
+          layerIndex,
+          layerCount: track.layers.length,
+        };
+      }
+    }
+
+    return null;
+  }, [selectedLayerId, timelineTracks]);
+  const canSendLayerBackward = Boolean(selectedLayerStackInfo && selectedLayerStackInfo.layerIndex > 0);
+  const canBringLayerForward = Boolean(
+    selectedLayerStackInfo && selectedLayerStackInfo.layerIndex < selectedLayerStackInfo.layerCount - 1,
   );
 
   const computedEngineState = useMemo<AIEngineState>(
@@ -513,6 +532,20 @@ export function ProfessionalVideoStudio() {
       if (commandPressed && key === "d") {
         event.preventDefault();
         duplicateSelectedLayer();
+        return;
+      }
+
+      if (event.key === "[" || event.key === "]") {
+        event.preventDefault();
+        reorderSelectedLayer(
+          event.key === "]"
+            ? commandPressed
+              ? "front"
+              : "forward"
+            : commandPressed
+              ? "back"
+              : "backward",
+        );
         return;
       }
 
@@ -1500,6 +1533,50 @@ export function ProfessionalVideoStudio() {
     setProjectStatus(`${selectedLayer.name} duplicated`);
   }
 
+  function reorderSelectedLayer(direction: "forward" | "backward" | "front" | "back") {
+    if (!selectedLayer) {
+      setProjectStatus("Select a layer to change its order");
+      return;
+    }
+
+    let moved = false;
+    const nextTracks = timelineTracks.map((track) => {
+      const currentIndex = track.layers.findIndex((layer) => layer.id === selectedLayer.id);
+      if (currentIndex === -1) return track;
+
+      const layers = [...track.layers];
+      const [layer] = layers.splice(currentIndex, 1);
+      const nextIndex =
+        direction === "front"
+          ? layers.length
+          : direction === "back"
+            ? 0
+            : direction === "forward"
+              ? Math.min(layers.length, currentIndex + 1)
+              : Math.max(0, currentIndex - 1);
+
+      if (nextIndex === currentIndex) return track;
+
+      layers.splice(nextIndex, 0, layer);
+      moved = true;
+
+      return {
+        ...track,
+        layers,
+      };
+    });
+
+    if (!moved) {
+      setProjectStatus(`${selectedLayer.name} is already at this layer edge`);
+      return;
+    }
+
+    commitTimeline(nextTracks);
+    setSelectedLayerId(selectedLayer.id);
+    selectEngineLayer(selectedLayer.id);
+    setProjectStatus(`${selectedLayer.name} layer order updated`);
+  }
+
   function nudgeSelectedLayer(deltaX: number, deltaY: number) {
     if (!selectedLayer || !isPositionableEditorLayer(selectedLayer)) return;
 
@@ -2348,6 +2425,18 @@ export function ProfessionalVideoStudio() {
                       icon={Copy}
                       onClick={duplicateSelectedLayer}
                       disabled={!isDuplicableEditorLayer(selectedLayer)}
+                    />
+                    <ToolbarButton
+                      label="Back"
+                      icon={ArrowDown}
+                      onClick={() => reorderSelectedLayer("backward")}
+                      disabled={!canSendLayerBackward}
+                    />
+                    <ToolbarButton
+                      label="Forward"
+                      icon={ArrowUp}
+                      onClick={() => reorderSelectedLayer("forward")}
+                      disabled={!canBringLayerForward}
                     />
                     <ToolbarButton label="Update" icon={Save} onClick={saveProjectSnapshot} />
                     <ToolbarButton
