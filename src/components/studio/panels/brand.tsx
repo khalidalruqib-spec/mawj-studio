@@ -10,6 +10,7 @@ export function BrandKitPanel({
   onChange,
   onBrandNameChange,
   onApplyToSelectedLayer,
+  onApplyToAllTextLayers,
 }: {
   brandKit: BrandKitState;
   brandName: string;
@@ -17,6 +18,7 @@ export function BrandKitPanel({
   onChange: (brandKit: BrandKitState) => void;
   onBrandNameChange: (name: string) => void;
   onApplyToSelectedLayer: () => void;
+  onApplyToAllTextLayers: () => void;
 }) {
   const fontValue = resolveBrandKitFontValue(brandKit.font);
 
@@ -67,6 +69,13 @@ export function BrandKitPanel({
           className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-black text-black transition hover:bg-white"
         >
           Apply brand to selected text
+        </button>
+        <button
+          type="button"
+          onClick={onApplyToAllTextLayers}
+          className="mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-[var(--line)] bg-black/20 px-3 py-2 text-xs font-black text-white transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
+        >
+          Apply brand to all text layers
         </button>
       </div>
       <Field label="Caption style">

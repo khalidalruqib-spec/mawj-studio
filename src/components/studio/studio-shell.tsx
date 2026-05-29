@@ -556,6 +556,26 @@ export function ProfessionalVideoStudio() {
     setProjectStatus(`Brand Kit applied to ${selectedLayer.name}`);
   }
 
+  function applyBrandKitToAllTextLayers() {
+    const textLayers = timelineTracks
+      .flatMap((track) => track.layers)
+      .filter((layer) => (layer.type === "text" || layer.type === "caption") && !layer.locked);
+
+    if (!textLayers.length) {
+      setProjectStatus("No unlocked text or caption layers found");
+      return;
+    }
+
+    const patch: Partial<TimelineLayer> = {
+      fontFamily: resolveBrandKitFontValue(brandKit.font),
+      textColor: brandKit.primaryColor,
+      color: brandKit.primaryColor,
+    };
+
+    textLayers.forEach((layer) => updateTimelineLayer(layer.id, patch));
+    setProjectStatus(`Brand Kit applied to ${textLayers.length} text layers`);
+  }
+
   useEffect(() => {
     function handleEditorKeyDown(event: KeyboardEvent) {
       if (activePanel !== "editor" || isEditableKeyboardTarget(event.target)) return;
@@ -2943,6 +2963,7 @@ export function ProfessionalVideoStudio() {
           selectedLayerName={selectedLayer?.name}
           onBrandNameChange={setBrandName}
           onApplyToSelectedLayer={applyBrandKitToSelectedLayer}
+          onApplyToAllTextLayers={applyBrandKitToAllTextLayers}
         />
       );
     }
