@@ -170,7 +170,7 @@ function drawLayer(
       drawMissingMedia(context, x, y, width, height, layer.type);
     }
   } else if (layer.type === "text" || layer.type === "captions") {
-    drawTextLayer(context, layer);
+    drawTextLayer(context, layer, time);
   } else if (layer.type === "waveform") {
     drawWaveform(context, layer, time);
   }
@@ -278,14 +278,15 @@ function easeOut(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
-function drawTextLayer(context: CanvasRenderingContext2D, layer: TemplateTimelineLayer) {
+function drawTextLayer(context: CanvasRenderingContext2D, layer: TemplateTimelineLayer, time: number) {
   const x = layer.x ?? 0;
   const y = layer.y ?? 0;
   const width = layer.width ?? context.canvas.width;
   const height = layer.height ?? 120;
   const fontSize = layer.fontSize ?? 48;
   const fontWeight = layer.fontWeight ?? "800";
-  const lines = wrapText(context, layer.content ?? layer.name ?? "", width * 0.92, fontSize);
+  const rawText = resolveTemplateTextForRender(layer, time);
+  const lines = wrapText(context, rawText, width * 0.92, fontSize);
   const lineHeight = fontSize * 1.22;
 
   context.font = `${fontWeight} ${fontSize}px "IBM Plex Sans Arabic", "Noto Sans Arabic", Tahoma, Arial, sans-serif`;
@@ -296,6 +297,23 @@ function drawTextLayer(context: CanvasRenderingContext2D, layer: TemplateTimelin
 
   const textX = layer.align === "left" ? x + 24 : layer.align === "right" ? x + width - 24 : x + width / 2;
   const startY = y + Math.max(fontSize, (height - (lines.length - 1) * lineHeight) / 2);
+  const shouldDrawPlaceholder = layer.type === "captions" && isAutoCaptionPlaceholder(layer);
+
+  if (shouldDrawPlaceholder) {
+    const pillPadding = Math.max(22, fontSize * 0.42);
+    const pillHeight = Math.min(height, Math.max(fontSize * 1.9, lines.length * lineHeight + pillPadding));
+    const pillY = y + (height - pillHeight) / 2;
+
+    context.save();
+    context.globalAlpha *= 0.94;
+    context.fillStyle = "rgba(3, 7, 18, 0.62)";
+    roundedRect(context, x, pillY, width, pillHeight, Math.min(34, layer.borderRadius ?? 28));
+    context.fill();
+    context.strokeStyle = "rgba(255,255,255,0.18)";
+    context.lineWidth = 2;
+    context.stroke();
+    context.restore();
+  }
 
   for (const [index, line] of lines.entries()) {
     context.lineWidth = Math.max(4, fontSize * 0.08);
@@ -303,6 +321,34 @@ function drawTextLayer(context: CanvasRenderingContext2D, layer: TemplateTimelin
     context.strokeText(line, textX, startY + index * lineHeight, width * 0.92);
     context.fillText(line, textX, startY + index * lineHeight, width * 0.92);
   }
+}
+
+function resolveTemplateTextForRender(layer: TemplateTimelineLayer, time: number) {
+  const rawText = layer.content ?? layer.name ?? "";
+  const hasResolvedText = rawText.trim() && !rawText.includes("{{");
+  const baseText = hasResolvedText
+    ? rawText
+    : layer.type === "captions"
+      ? "[ captions appear here ]"
+      : rawText.replace(/\{\{(.*?)\}\}/g, (_, key: string) => key.trim());
+
+  if (layer.animationIn?.type !== "typewriter") return baseText;
+
+  const relativeTime = Math.max(0, time - layer.absoluteStart - (layer.animationIn.delay ?? 0));
+  const duration = Math.max(0.1, layer.animationIn.duration);
+  const progress = Math.max(0, Math.min(1, relativeTime / duration));
+  const chars = Array.from(baseText);
+  const visibleCount = Math.max(1, Math.ceil(chars.length * progress));
+  const cursor = progress < 1 ? "▌" : "";
+
+  return `${chars.slice(0, visibleCount).join("")}${cursor}`;
+}
+
+function isAutoCaptionPlaceholder(layer: TemplateTimelineLayer) {
+  const layerRecord = layer as TemplateTimelineLayer & { source?: string };
+  const text = layer.content ?? "";
+
+  return layer.type === "captions" && (layerRecord.source === "auto" || !text.trim() || text.includes("{{"));
 }
 
 function drawWaveform(context: CanvasRenderingContext2D, layer: TemplateTimelineLayer, time: number) {

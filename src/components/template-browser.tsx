@@ -76,6 +76,16 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
   "Before / After":         { label: "قبل وبعد",         icon: ArrowRight,     accent: "#7ef2bc", gradFrom: "rgba(126,242,188,0.18)" },
   "YouTube Shorts":         { label: "يوتيوب شورتس",    icon: Film,           accent: "#ff647c", gradFrom: "rgba(255,100,124,0.18)" },
   "Clinics":                { label: "عيادات",           icon: BadgeCheck,     accent: "#2dd4bf", gradFrom: "rgba(45,212,191,0.18)"  },
+  "مناسبات":                { label: "مناسبات",          icon: Star,           accent: "#d4af37", gradFrom: "rgba(212,175,55,0.18)"  },
+  "Business":               { label: "أعمال",             icon: Database,       accent: "#60a5fa", gradFrom: "rgba(96,165,250,0.18)" },
+  "Education":              { label: "تعليم",             icon: BookOpen,       accent: "#10b981", gradFrom: "rgba(16,185,129,0.18)" },
+  "E-commerce":             { label: "تجارة",             icon: ShoppingBag,    accent: "#ef4444", gradFrom: "rgba(239,68,68,0.18)" },
+  "Reviews":                { label: "مراجعات",           icon: Star,           accent: "#f59e0b", gradFrom: "rgba(245,158,11,0.18)" },
+  "Sports & Fitness":       { label: "رياضة",             icon: Zap,            accent: "#ef4444", gradFrom: "rgba(239,68,68,0.18)" },
+  "Inspirational":          { label: "إلهام",             icon: Sparkles,       accent: "#a78bfa", gradFrom: "rgba(167,139,250,0.18)" },
+  "Storytelling":           { label: "قصص",               icon: MessageSquareQuote, accent: "#8b5cf6", gradFrom: "rgba(139,92,246,0.18)" },
+  "Fashion & Lifestyle":    { label: "موضة",              icon: Crown,          accent: "#d4af37", gradFrom: "rgba(212,175,55,0.18)" },
+  "Caption Styles":         { label: "كابشن",             icon: Code2,          accent: "#8ef7c2", gradFrom: "rgba(142,247,194,0.18)" },
 };
 
 function getCategoryMeta(category: string): CategoryMeta {
@@ -96,6 +106,15 @@ const FEATURED_IDS = new Set([
   "capcut-news-alert",
   "ugc-testimonial",
   "tiktok-hook-sprint",
+  "course-launch",
+  "luxury-brand-reveal",
+  "podcast-short",
+  "ramadan-greeting",
+  "startup-pitch",
+  "flash-sale",
+  "captions-neon-pop",
+  "cinematic-quote",
+  "story-arc",
 ]);
 
 /* Scene palette — rotates through per-scene */
