@@ -93,6 +93,7 @@ export type TemplateLayer = {
   angle?: number;
   borderColor?: string;
   borderRadius?: number;
+  padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
   fontFamily?: string;

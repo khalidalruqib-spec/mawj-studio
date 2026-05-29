@@ -299,10 +299,12 @@ function drawTextLayer(
   const fontSize = layer.fontSize ?? 48;
   const fontWeight = normalizeTemplateFontWeight(layer.fontWeight);
   const fontFamily = resolveLayerFontFamily({ layer, presetId, canvas: true });
+  const padding = layer.padding ?? width * 0.04;
 
   context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
   const rawText = resolveTemplateTextForRender(layer, time);
-  const lines = wrapText(context, rawText, width * 0.92, fontSize);
+  const maxTextWidth = Math.max(fontSize * 2, width - padding * 2);
+  const lines = wrapText(context, rawText, maxTextWidth, fontSize);
   const lineHeight = fontSize * (layer.lineHeight ?? 1.22);
 
   context.textAlign = layer.align ?? "center";
@@ -310,7 +312,7 @@ function drawTextLayer(
   context.direction = layer.direction === "ltr" ? "ltr" : "rtl";
   context.fillStyle = layer.color ?? "#ffffff";
 
-  const textX = layer.align === "left" ? x + 24 : layer.align === "right" ? x + width - 24 : x + width / 2;
+  const textX = layer.align === "left" ? x + padding : layer.align === "right" ? x + width - padding : x + width / 2;
   const startY = y + Math.max(fontSize, (height - (lines.length - 1) * lineHeight) / 2);
   const shouldDrawPlaceholder = layer.type === "captions" && isAutoCaptionPlaceholder(layer);
 
@@ -350,9 +352,9 @@ function drawTextLayer(
     if (strokeWidth > 0) {
       context.lineWidth = strokeWidth;
       context.strokeStyle = layer.textStrokeColor ?? "rgba(0,0,0,0.42)";
-      context.strokeText(line, textX, startY + index * lineHeight, width * 0.92);
+      context.strokeText(line, textX, startY + index * lineHeight, maxTextWidth);
     }
-    context.fillText(line, textX, startY + index * lineHeight, width * 0.92);
+    context.fillText(line, textX, startY + index * lineHeight, maxTextWidth);
     context.restore();
   }
 }

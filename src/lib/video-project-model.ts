@@ -146,6 +146,7 @@ export interface LayerStyle {
   textShadowOffsetY?: number;
   backgroundColor?: string;
   borderRadius?: number;
+  padding?: number;
   borderColor?: string;
   borderWidth?: number;
   shadow?: string;
@@ -220,6 +221,7 @@ export const layerStyleSchema = z.object({
   textShadowOffsetY: z.number().optional(),
   backgroundColor: z.string().optional(),
   borderRadius: z.number().min(0).optional(),
+  padding: z.number().min(0).optional(),
   borderColor: z.string().optional(),
   borderWidth: z.number().min(0).optional(),
   shadow: z.string().optional(),

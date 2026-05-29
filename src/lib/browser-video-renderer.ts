@@ -64,6 +64,7 @@ export type BrowserTimelineLayer = {
   direction?: "ltr" | "rtl" | "auto";
   backgroundColor?: string;
   borderRadius?: number;
+  padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
   animationIn?: TemplateAnimation;
@@ -551,11 +552,12 @@ function drawTimelineTextLayer(
   context.direction = layer.direction === "ltr" ? "ltr" : "rtl";
   context.fillStyle = layer.textColor ?? layer.color ?? "#ffffff";
 
-  const maxWidth = width * 0.9;
+  const padding = layer.padding === undefined ? width * 0.05 : Math.max(0, layer.padding * scale);
+  const maxWidth = Math.max(fontSize * 2, width - padding * 2);
   const lines = wrapText(context, text, maxWidth, 3, fontSize);
   const lineHeight = fontSize * (layer.lineHeight ?? 1.2);
   const startY = y + height / 2 - ((lines.length - 1) * lineHeight) / 2;
-  const textX = layer.align === "left" ? x + width * 0.06 : layer.align === "right" ? x + width * 0.94 : x + width / 2;
+  const textX = layer.align === "left" ? x + padding : layer.align === "right" ? x + width - padding : x + width / 2;
   const strokeWidth = getRenderTextStrokeWidth(layer, fontSize, scale);
 
   context.save();

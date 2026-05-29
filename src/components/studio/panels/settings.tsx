@@ -29,6 +29,7 @@ const TEXT_STYLE_PRESETS: Array<{
       textShadowOffsetY: 0,
       backgroundColor: "transparent",
       borderRadius: 0,
+      padding: 8,
       align: "center",
       direction: "auto",
     },
@@ -51,6 +52,7 @@ const TEXT_STYLE_PRESETS: Array<{
       textShadowOffsetY: 10,
       backgroundColor: "transparent",
       borderRadius: 0,
+      padding: 16,
       align: "center",
       direction: "auto",
     },
@@ -71,6 +73,7 @@ const TEXT_STYLE_PRESETS: Array<{
       textShadowOffsetY: 0,
       backgroundColor: "#ffffff",
       borderRadius: 28,
+      padding: 36,
       align: "center",
       direction: "auto",
     },
@@ -92,6 +95,7 @@ const TEXT_STYLE_PRESETS: Array<{
       textShadowOffsetY: 12,
       backgroundColor: "#8ef7c2",
       borderRadius: 60,
+      padding: 42,
       align: "center",
       direction: "auto",
     },
@@ -437,6 +441,12 @@ export function LayerInspector({
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
+            <NumberField
+              label="Padding"
+              value={layer.padding ?? 16}
+              disabled={locked}
+              onChange={(padding) => onChange({ padding: clampInspectorNumber(padding, 0, 160) })}
+            />
             <Field label="Font weight">
               <select
                 value={layer.fontWeight ?? "bold"}
