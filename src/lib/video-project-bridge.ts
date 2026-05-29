@@ -53,6 +53,8 @@ export type EditorTimelineLayerInput = {
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
+  locked?: boolean;
+  hidden?: boolean;
 };
 
 export type EditorTimelineTrackInput = {
@@ -315,6 +317,8 @@ export function editorLayerPatchToVideoLayerPatch(
     width: patch.width,
     height: patch.height,
     opacity: patch.opacity,
+    locked: patch.locked,
+    hidden: patch.hidden,
     start: patch.start,
     duration: patch.duration,
     style: Object.keys(cleanStyle).length ? cleanStyle : undefined,
@@ -397,8 +401,8 @@ function editorTrackToVideoTrack(
         start: layer.start,
         duration: Math.max(0.1, layer.duration),
         zIndex: matchingLayer?.zIndex ?? itemIndex,
-        locked: false,
-        hidden: false,
+        locked: layer.locked ?? matchingLayer?.locked ?? false,
+        hidden: layer.hidden ?? matchingLayer?.hidden ?? false,
       });
     }),
   };
@@ -491,8 +495,8 @@ function editorTimelineLayerToVideoLayer(
     start: layer.start,
     duration: Math.max(0.1, layer.duration),
     editable: previous?.editable ?? true,
-    locked: previous?.locked ?? false,
-    hidden: previous?.hidden ?? false,
+    locked: layer.locked ?? previous?.locked ?? false,
+    hidden: layer.hidden ?? previous?.hidden ?? false,
     style: {
       ...previous?.style,
       fontFamily: layer.fontFamily ?? previous?.style?.fontFamily ?? defaultFontForDirection(layer.direction ?? "auto"),

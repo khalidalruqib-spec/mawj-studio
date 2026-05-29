@@ -112,6 +112,8 @@ export type TimelineLayer = {
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
+  locked?: boolean;
+  hidden?: boolean;
 };
 
 export type TimelineTrack = {

@@ -272,6 +272,7 @@ function TimelinePreviewOverlay({
       event.preventDefault();
       event.stopPropagation();
       onSelectLayer(layer.id);
+      if (layer.locked) return;
       event.currentTarget.setPointerCapture(event.pointerId);
       const bounds = event.currentTarget.parentElement?.getBoundingClientRect();
       setInteractionState({
@@ -298,6 +299,7 @@ function TimelinePreviewOverlay({
       event.preventDefault();
       event.stopPropagation();
       onSelectLayer(layer.id);
+      if (layer.locked) return;
       event.currentTarget.setPointerCapture(event.pointerId);
       const bounds = event.currentTarget.parentElement?.parentElement?.getBoundingClientRect();
       setInteractionState({
@@ -346,6 +348,7 @@ function TimelinePreviewOverlay({
   );
   const startTextEdit = useCallback(
     (layer: TimelineLayer) => {
+      if (layer.locked) return;
       if (layer.type !== "text" && layer.type !== "caption") return;
       onSelectLayer(layer.id);
       setEditingText({
@@ -438,6 +441,7 @@ function TimelinePreviewLayer({
   onCancelTextEdit: () => void;
 }) {
   const box = getTimelineLayerBox(layer, dimensions, interactionFrame);
+  const locked = Boolean(layer.locked);
   const baseClass =
     "absolute touch-none overflow-hidden transition outline-offset-2 " +
     (selected ? "outline outline-2 outline-[var(--brand)]" : "outline outline-1 outline-transparent hover:outline-white/45");
@@ -457,11 +461,11 @@ function TimelinePreviewLayer({
         aria-label={`Select ${layer.name}`}
         onClick={onSelect}
         {...pointerHandlers}
-        className={`${baseClass} cursor-pointer border-0 p-0`}
+        className={`${baseClass} ${locked ? "cursor-not-allowed" : "cursor-pointer"} border-0 p-0`}
         style={box}
       >
         <img src={layer.src} alt={layer.name} className="h-full w-full object-cover" />
-        <ResizeHandles selected={selected} onResizePointerDown={onResizePointerDown} />
+        <ResizeHandles selected={selected && !locked} onResizePointerDown={onResizePointerDown} />
       </button>
     );
   }
@@ -473,7 +477,7 @@ function TimelinePreviewLayer({
         aria-label={`Select ${layer.name}`}
         onClick={onSelect}
         {...pointerHandlers}
-        className={`${baseClass} cursor-pointer border-0 p-0`}
+        className={`${baseClass} ${locked ? "cursor-not-allowed" : "cursor-pointer"} border-0 p-0`}
         style={{
           ...box,
           backgroundColor: layer.backgroundColor ?? layer.color,
@@ -481,7 +485,7 @@ function TimelinePreviewLayer({
           opacity: layer.opacity ?? 1,
         }}
       >
-        <ResizeHandles selected={selected} onResizePointerDown={onResizePointerDown} />
+        <ResizeHandles selected={selected && !locked} onResizePointerDown={onResizePointerDown} />
       </button>
     );
   }
@@ -539,15 +543,16 @@ function TimelinePreviewLayer({
       onDoubleClick={(event) => {
         event.preventDefault();
         event.stopPropagation();
+        if (locked) return;
         onStartTextEdit();
       }}
       {...pointerHandlers}
-      className={`${baseClass} grid cursor-pointer place-items-center border-0 px-2 text-center font-black leading-tight`}
+      className={`${baseClass} grid ${locked ? "cursor-not-allowed" : "cursor-pointer"} place-items-center border-0 px-2 text-center font-black leading-tight`}
       dir={layer.direction ?? "auto"}
       style={textLayerStyle}
     >
       {text}
-      <ResizeHandles selected={selected} onResizePointerDown={onResizePointerDown} />
+      <ResizeHandles selected={selected && !locked} onResizePointerDown={onResizePointerDown} />
     </button>
   );
 }
@@ -576,6 +581,7 @@ function ResizeHandles({
 }
 
 function isRenderablePreviewLayer(layer: TimelineLayer, currentTime: number) {
+  if (layer.hidden) return false;
   if (currentTime < layer.start || currentTime > layer.start + layer.duration) return false;
   if (layer.type === "image") return Boolean(layer.src);
   if (layer.type === "shape") return true;

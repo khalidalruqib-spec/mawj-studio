@@ -56,6 +56,7 @@ export type BrowserTimelineLayer = {
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
+  hidden?: boolean;
 };
 
 export async function renderEditedVideo({
@@ -279,6 +280,7 @@ function getPlanCuts(plan: EditPlan | null, realDuration: number): FFmpegCut[] {
 
 function getRenderableTimelineLayers(layers: BrowserTimelineLayer[]) {
   return layers.filter((layer) => {
+    if (layer.hidden) return false;
     if (layer.duration <= 0) return false;
     if (layer.type === "image") return Boolean(layer.src);
     if (layer.type === "shape") return true;

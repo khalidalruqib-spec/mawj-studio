@@ -102,6 +102,8 @@ export type TemplateLayer = {
   highlightColor?: string;
   style?: string;
   editable?: boolean;
+  locked?: boolean;
+  hidden?: boolean;
   safeMargin?: boolean;
   animationIn?: TemplateAnimation;
   animationOut?: TemplateAnimation;

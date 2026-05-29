@@ -10,10 +10,13 @@ import {
   Copy,
   Crop,
   Download,
+  Eye,
+  EyeOff,
   FolderOpen,
   Layers3,
   LayoutTemplate,
   Loader2,
+  Lock,
   Plus,
   Redo2,
   Save,
@@ -22,6 +25,7 @@ import {
   Trash2,
   Type,
   Undo2,
+  Unlock,
   UploadCloud,
   WandSparkles,
 } from "lucide-react";
@@ -470,10 +474,20 @@ export function ProfessionalVideoStudio() {
 
   function updateSelectedLayer(patch: Partial<TimelineLayer>) {
     if (!selectedLayer) return;
+    if (selectedLayer.locked && !isLayerStatePatch(patch)) {
+      setProjectStatus(`${selectedLayer.name} is locked`);
+      return;
+    }
     updateTimelineLayer(selectedLayer.id, patch);
   }
 
   function updateTimelineLayer(layerId: string, patch: Partial<TimelineLayer>) {
+    const existingLayer = timelineTracks.flatMap((track) => track.layers).find((layer) => layer.id === layerId);
+    if (existingLayer?.locked && !isLayerStatePatch(patch)) {
+      setProjectStatus(`${existingLayer.name} is locked`);
+      return;
+    }
+
     const templatePatch = toTemplateTimelinePatch(patch);
 
     commitTimeline((tracks) =>
@@ -786,6 +800,9 @@ export function ProfessionalVideoStudio() {
       const editorLayers = new Map(
         nextTracks.flatMap((track) => track.layers.map((layer) => [layer.id, layer] as const)),
       );
+      const editorLayerOrder = new Map(
+        nextTracks.flatMap((track) => track.layers.map((layer, index) => [layer.id, index] as const)),
+      );
       const syncedLayerIds = new Set<string>();
       let syncedTimeline = project.timeline.map((track) => ({
         ...track,
@@ -802,7 +819,8 @@ export function ProfessionalVideoStudio() {
               ...patch,
               absoluteStart: editorLayer.start,
             };
-          }),
+          })
+          .sort((left, right) => (editorLayerOrder.get(left.id) ?? 0) - (editorLayerOrder.get(right.id) ?? 0)),
       }));
 
       const addedLayers = nextTracks.flatMap((track) =>
@@ -1382,6 +1400,11 @@ export function ProfessionalVideoStudio() {
   }
 
   function splitSelectedLayer() {
+    if (selectedLayer?.locked) {
+      setProjectStatus(`${selectedLayer.name} is locked`);
+      return;
+    }
+
     commitTimeline((tracks) =>
       tracks.map((track) => ({
         ...track,
@@ -1405,6 +1428,11 @@ export function ProfessionalVideoStudio() {
 
   function trimSelectedLayer() {
     if (!selectedLayer) return;
+    if (selectedLayer.locked) {
+      setProjectStatus(`${selectedLayer.name} is locked`);
+      return;
+    }
+
     commitTimeline((tracks) =>
       tracks.map((track) => ({
         ...track,
@@ -1422,6 +1450,10 @@ export function ProfessionalVideoStudio() {
       if (templateProject) {
         clearActiveTemplateProject();
       }
+      return;
+    }
+    if (selectedLayer.locked) {
+      setProjectStatus(`${selectedLayer.name} is locked`);
       return;
     }
 
@@ -1511,6 +1543,10 @@ export function ProfessionalVideoStudio() {
       setProjectStatus("Select a text, image, shape, or caption layer to duplicate");
       return;
     }
+    if (selectedLayer.locked) {
+      setProjectStatus(`${selectedLayer.name} is locked`);
+      return;
+    }
 
     const duplicate = duplicateTimelineLayer(selectedLayer, aspectRatio);
     const nextTracks = timelineTracks.map((track) => {
@@ -1536,6 +1572,10 @@ export function ProfessionalVideoStudio() {
   function reorderSelectedLayer(direction: "forward" | "backward" | "front" | "back") {
     if (!selectedLayer) {
       setProjectStatus("Select a layer to change its order");
+      return;
+    }
+    if (selectedLayer.locked) {
+      setProjectStatus(`${selectedLayer.name} is locked`);
       return;
     }
 
@@ -1578,7 +1618,7 @@ export function ProfessionalVideoStudio() {
   }
 
   function nudgeSelectedLayer(deltaX: number, deltaY: number) {
-    if (!selectedLayer || !isPositionableEditorLayer(selectedLayer)) return;
+    if (!selectedLayer || !isPositionableEditorLayer(selectedLayer) || selectedLayer.locked) return;
 
     const dimensions = getTemplateDimensions(aspectRatio);
     const width = selectedLayer.width ?? dimensions.width;
@@ -1587,6 +1627,26 @@ export function ProfessionalVideoStudio() {
     const nextY = clampNumber((selectedLayer.y ?? 0) + deltaY, 0, Math.max(0, dimensions.height - height));
 
     updateTimelineLayer(selectedLayer.id, { x: nextX, y: nextY });
+  }
+
+  function toggleSelectedLayerLocked() {
+    if (!selectedLayer) {
+      setProjectStatus("Select a layer to lock or unlock");
+      return;
+    }
+
+    updateTimelineLayer(selectedLayer.id, { locked: !selectedLayer.locked });
+    setProjectStatus(`${selectedLayer.name} ${selectedLayer.locked ? "unlocked" : "locked"}`);
+  }
+
+  function toggleSelectedLayerHidden() {
+    if (!selectedLayer) {
+      setProjectStatus("Select a layer to show or hide");
+      return;
+    }
+
+    updateTimelineLayer(selectedLayer.id, { hidden: !selectedLayer.hidden });
+    setProjectStatus(`${selectedLayer.name} ${selectedLayer.hidden ? "shown" : "hidden"}`);
   }
 
   function markTranscriptDeleted(segmentId: string) {
@@ -2416,34 +2476,46 @@ export function ProfessionalVideoStudio() {
                   <div className="flex flex-wrap items-center gap-2">
                     <ToolbarButton label="Undo" icon={Undo2} onClick={undoTimeline} disabled={!timelineUndo.length} />
                     <ToolbarButton label="Redo" icon={Redo2} onClick={redoTimeline} disabled={!timelineRedo.length} />
-                    <ToolbarButton label="Trim" icon={Scissors} onClick={trimSelectedLayer} />
-                    <ToolbarButton label="Split" icon={Crop} onClick={splitSelectedLayer} />
+                    <ToolbarButton label="Trim" icon={Scissors} onClick={trimSelectedLayer} disabled={!selectedLayer || selectedLayer.locked} />
+                    <ToolbarButton label="Split" icon={Crop} onClick={splitSelectedLayer} disabled={!selectedLayer || selectedLayer.locked} />
                     <ToolbarButton label="Merge" icon={Layers3} onClick={mergeVideoLayers} />
                     <ToolbarButton label="Text" icon={Type} onClick={addTextLayer} />
                     <ToolbarButton
                       label="Duplicate"
                       icon={Copy}
                       onClick={duplicateSelectedLayer}
-                      disabled={!isDuplicableEditorLayer(selectedLayer)}
+                      disabled={!isDuplicableEditorLayer(selectedLayer) || selectedLayer?.locked}
+                    />
+                    <ToolbarButton
+                      label={selectedLayer?.hidden ? "Show" : "Hide"}
+                      icon={selectedLayer?.hidden ? Eye : EyeOff}
+                      onClick={toggleSelectedLayerHidden}
+                      disabled={!selectedLayer}
+                    />
+                    <ToolbarButton
+                      label={selectedLayer?.locked ? "Unlock" : "Lock"}
+                      icon={selectedLayer?.locked ? Unlock : Lock}
+                      onClick={toggleSelectedLayerLocked}
+                      disabled={!selectedLayer}
                     />
                     <ToolbarButton
                       label="Back"
                       icon={ArrowDown}
                       onClick={() => reorderSelectedLayer("backward")}
-                      disabled={!canSendLayerBackward}
+                      disabled={!canSendLayerBackward || selectedLayer?.locked}
                     />
                     <ToolbarButton
                       label="Forward"
                       icon={ArrowUp}
                       onClick={() => reorderSelectedLayer("forward")}
-                      disabled={!canBringLayerForward}
+                      disabled={!canBringLayerForward || selectedLayer?.locked}
                     />
                     <ToolbarButton label="Update" icon={Save} onClick={saveProjectSnapshot} />
                     <ToolbarButton
                       label={selectedLayer ? "Delete" : "Clear"}
                       icon={Trash2}
                       onClick={deleteSelectedLayer}
-                      disabled={!selectedLayer && !templateProject}
+                      disabled={Boolean(selectedLayer?.locked) || (!selectedLayer && !templateProject)}
                       tone="danger"
                     />
                     <ToolbarButton
@@ -3274,6 +3346,11 @@ function isEditableKeyboardTarget(target: EventTarget | null) {
     tagName === "textarea" ||
     tagName === "select"
   );
+}
+
+function isLayerStatePatch(patch: Partial<TimelineLayer>) {
+  const keys = Object.keys(patch);
+  return keys.length > 0 && keys.every((key) => key === "locked" || key === "hidden");
 }
 
 function createTimelineForAssets(assets: MediaAsset[], primaryVideoAssetId: string): TimelineTrack[] {
@@ -4222,6 +4299,8 @@ function editorLayerToTemplateTimelineLayer(
     backgroundColor: layer.backgroundColor,
     borderRadius: layer.borderRadius,
     opacity: layer.opacity,
+    locked: layer.locked,
+    hidden: layer.hidden,
     fontFamily: layer.fontFamily,
     fontSize: layer.fontSize,
     fontWeight: layer.fontWeight,
@@ -4329,6 +4408,8 @@ function templateTimelineToEditorTracks(templateTracks: TemplateTimelineTrack[])
       backgroundColor: layer.backgroundColor,
       borderRadius: layer.borderRadius,
       opacity: layer.opacity,
+      locked: layer.locked,
+      hidden: layer.hidden,
     })),
   }));
 }
@@ -4353,6 +4434,8 @@ function toTemplateTimelinePatch(patch: Partial<TimelineLayer>): Partial<Templat
     direction: patch.direction,
     borderRadius: patch.borderRadius,
     opacity: patch.opacity,
+    locked: patch.locked,
+    hidden: patch.hidden,
   };
 
   return Object.fromEntries(

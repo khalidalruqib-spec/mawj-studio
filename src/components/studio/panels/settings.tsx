@@ -1,4 +1,4 @@
-import { Layers3, SlidersHorizontal, Trash2, UploadCloud } from "lucide-react";
+import { Eye, EyeOff, Layers3, Lock, SlidersHorizontal, Trash2, Unlock, UploadCloud } from "lucide-react";
 import { FORMAT_PRESETS, PLATFORM_LABELS, VIDEO_STYLES, type AspectRatio, type LanguageMode, type Platform, type VideoStyle, type VideoStyleId } from "@/lib/video-styles";
 import { TEMPLATE_FONT_PRESETS } from "@/lib/template-typography";
 import { GOAL_LABELS } from "../foundation";
@@ -115,31 +115,70 @@ export function LayerInspector({
       </section>
     );
   }
+  const locked = Boolean(layer.locked);
 
   return (
     <section className="panel p-4">
       <PanelHeading icon={Layers3} title="Layer inspector" />
       <Field label="Layer name">
-        <input value={layer.name} onChange={(event) => onChange({ name: event.target.value })} className="control-input" />
+        <input
+          value={layer.name}
+          disabled={locked}
+          onChange={(event) => onChange({ name: event.target.value })}
+          className="control-input disabled:cursor-not-allowed disabled:opacity-50"
+        />
       </Field>
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => onChange({ locked: !layer.locked })}
+          className={`flex min-h-10 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-black transition ${
+            layer.locked
+              ? "border-amber-300/40 bg-amber-500/15 text-amber-200"
+              : "border-[var(--line)] bg-[var(--panel-soft)] text-[var(--muted)] hover:border-[var(--brand)]"
+          }`}
+        >
+          {layer.locked ? <Lock className="h-4 w-4" aria-hidden="true" /> : <Unlock className="h-4 w-4" aria-hidden="true" />}
+          {layer.locked ? "Locked" : "Unlocked"}
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange({ hidden: !layer.hidden })}
+          className={`flex min-h-10 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-black transition ${
+            layer.hidden
+              ? "border-sky-300/40 bg-sky-500/15 text-sky-100"
+              : "border-[var(--line)] bg-[var(--panel-soft)] text-[var(--muted)] hover:border-[var(--brand)]"
+          }`}
+        >
+          {layer.hidden ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+          {layer.hidden ? "Hidden" : "Visible"}
+        </button>
+      </div>
+      {locked ? (
+        <p className="mb-3 rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-xs font-bold leading-5 text-amber-100">
+          This layer is locked. Unlock it to edit position, timing, media, or text.
+        </p>
+      ) : null}
       {layer.type === "text" || layer.type === "caption" ? (
         <Field label="Text content">
           <textarea
             value={layer.content ?? layer.name}
+            disabled={locked}
             onChange={(event) => onChange({ content: event.target.value, name: event.target.value.slice(0, 42) || layer.name })}
             dir="auto"
-            className="min-h-24 w-full resize-none rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3 text-sm font-bold leading-6 outline-none focus:border-[var(--brand)]"
+            className="min-h-24 w-full resize-none rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3 text-sm font-bold leading-6 outline-none focus:border-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-50"
           />
         </Field>
       ) : null}
       {layer.type === "image" || layer.type === "video" ? (
         <Field label="Replace media">
-          <label className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--line-strong)] bg-[var(--panel-soft)] p-3 text-center transition hover:border-[var(--brand)]">
+          <label className={`flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--line-strong)] bg-[var(--panel-soft)] p-3 text-center transition ${locked ? "cursor-not-allowed opacity-50" : "hover:border-[var(--brand)]"}`}>
             <UploadCloud className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
             <span className="text-xs font-black">{layer.src ? "Media attached" : "Upload replacement"}</span>
             <input
               type="file"
               accept={layer.type === "image" ? "image/*" : "video/*"}
+              disabled={locked}
               className="sr-only"
               onChange={(event) => {
                 const file = event.target.files?.[0];
@@ -150,20 +189,21 @@ export function LayerInspector({
         </Field>
       ) : null}
       <div className="grid grid-cols-2 gap-2">
-        <NumberField label="Start" value={layer.start} onChange={(start) => onChange({ start })} />
-        <NumberField label="Duration" value={layer.duration} onChange={(duration) => onChange({ duration })} />
-        <NumberField label="X" value={layer.x ?? 0} onChange={(x) => onChange({ x })} />
-        <NumberField label="Y" value={layer.y ?? 0} onChange={(y) => onChange({ y })} />
-        <NumberField label="Width" value={layer.width ?? 0} onChange={(width) => onChange({ width })} />
-        <NumberField label="Height" value={layer.height ?? 0} onChange={(height) => onChange({ height })} />
+        <NumberField label="Start" value={layer.start} disabled={locked} onChange={(start) => onChange({ start })} />
+        <NumberField label="Duration" value={layer.duration} disabled={locked} onChange={(duration) => onChange({ duration })} />
+        <NumberField label="X" value={layer.x ?? 0} disabled={locked} onChange={(x) => onChange({ x })} />
+        <NumberField label="Y" value={layer.y ?? 0} disabled={locked} onChange={(y) => onChange({ y })} />
+        <NumberField label="Width" value={layer.width ?? 0} disabled={locked} onChange={(width) => onChange({ width })} />
+        <NumberField label="Height" value={layer.height ?? 0} disabled={locked} onChange={(height) => onChange({ height })} />
       </div>
       {layer.type === "text" || layer.type === "caption" ? (
         <div className="space-y-3">
           <Field label="Font family">
             <select
               value={resolveInspectorFontValue(layer)}
+              disabled={locked}
               onChange={(event) => onChange({ fontFamily: event.target.value })}
-              className="control-select"
+              className="control-select disabled:cursor-not-allowed disabled:opacity-50"
             >
               {TEMPLATE_FONT_PRESETS.map((preset) => (
                 <option key={preset.id} value={preset.cssStack}>
@@ -190,12 +230,13 @@ export function LayerInspector({
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <NumberField label="Font size" value={layer.fontSize ?? 48} onChange={(fontSize) => onChange({ fontSize })} />
+            <NumberField label="Font size" value={layer.fontSize ?? 48} disabled={locked} onChange={(fontSize) => onChange({ fontSize })} />
             <Field label="Font weight">
               <select
                 value={layer.fontWeight ?? "bold"}
+                disabled={locked}
                 onChange={(event) => onChange({ fontWeight: event.target.value })}
-                className="control-select"
+                className="control-select disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="normal">Normal</option>
                 <option value="600">Semi Bold</option>
@@ -211,8 +252,9 @@ export function LayerInspector({
                   <button
                     key={align}
                     type="button"
+                    disabled={locked}
                     onClick={() => onChange({ align })}
-                    className={`min-h-10 rounded-md border px-2 text-xs font-black transition ${
+                    className={`min-h-10 rounded-md border px-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       (layer.align ?? "center") === align
                         ? "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]"
                         : "border-[var(--line)] bg-[var(--panel-soft)] text-[var(--muted)]"
@@ -226,8 +268,9 @@ export function LayerInspector({
             <Field label="Direction">
               <select
                 value={layer.direction ?? "auto"}
+                disabled={locked}
                 onChange={(event) => onChange({ direction: event.target.value as TimelineLayer["direction"] })}
-                className="control-select"
+                className="control-select disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="auto">Auto</option>
                 <option value="rtl">RTL Arabic</option>
@@ -239,8 +282,9 @@ export function LayerInspector({
             <input
               type="color"
               value={layer.textColor ?? layer.color}
+              disabled={locked}
               onChange={(event) => onChange({ textColor: event.target.value, color: event.target.value })}
-              className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1"
+              className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </Field>
         </div>
@@ -249,15 +293,17 @@ export function LayerInspector({
           <input
             type="color"
             value={normalizeHexColor(layer.color)}
+            disabled={locked}
             onChange={(event) => onChange({ color: event.target.value })}
-            className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1"
+            className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </Field>
       )}
       <button
         type="button"
         onClick={onDelete}
-        className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm font-black text-red-100 transition hover:border-red-300"
+        disabled={locked}
+        className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm font-black text-red-100 transition hover:border-red-300 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Trash2 className="h-4 w-4" aria-hidden="true" />
         Delete selected layer
@@ -279,10 +325,12 @@ function normalizeInspectorFontWeight(weight?: string) {
 export function NumberField({
   label,
   value,
+  disabled = false,
   onChange,
 }: {
   label: string;
   value: number;
+  disabled?: boolean;
   onChange: (value: number) => void;
 }) {
   return (
@@ -290,8 +338,9 @@ export function NumberField({
       <input
         type="number"
         value={Number.isFinite(value) ? value : 0}
+        disabled={disabled}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="control-input"
+        className="control-input disabled:cursor-not-allowed disabled:opacity-50"
       />
     </Field>
   );

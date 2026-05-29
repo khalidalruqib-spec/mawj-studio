@@ -6,6 +6,8 @@ export type TimelineCanvasLayer = {
   duration: number;
   color: string;
   muted?: boolean;
+  locked?: boolean;
+  hidden?: boolean;
 };
 
 export type TimelineCanvasTrack = {
@@ -224,7 +226,7 @@ function drawClip(
   gradient.addColorStop(1, shadeColor(color, -18));
 
   context.save();
-  context.globalAlpha = layer.muted ? 0.45 : 1;
+  context.globalAlpha = layer.hidden ? 0.28 : layer.muted ? 0.45 : 1;
   roundRect(context, zone.x, zone.y, zone.width, zone.height, 7);
   context.fillStyle = gradient;
   context.fill();
@@ -247,7 +249,8 @@ function drawClip(
     context.font = '850 11px "Geist", "Inter", system-ui, sans-serif';
     context.textBaseline = "middle";
     context.textAlign = "left";
-    context.fillText(trimText(context, layer.name, zone.width - 18), zone.x + 9, zone.y + zone.height / 2);
+    const statusPrefix = `${layer.locked ? "LOCK " : ""}${layer.hidden ? "HIDE " : ""}`;
+    context.fillText(trimText(context, `${statusPrefix}${layer.name}`, zone.width - 18), zone.x + 9, zone.y + zone.height / 2);
   }
 
   context.restore();

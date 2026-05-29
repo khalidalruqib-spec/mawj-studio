@@ -504,6 +504,7 @@ function drawMissingMedia(
 }
 
 function isLayerActive(layer: TemplateTimelineLayer, time: number) {
+  if (layer.hidden) return false;
   return time >= layer.absoluteStart && time <= layer.absoluteStart + layer.duration;
 }
 
