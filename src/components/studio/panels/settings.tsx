@@ -5,6 +5,94 @@ import { GOAL_LABELS } from "../foundation";
 import type { Goal, TimelineLayer } from "../foundation";
 import { EmptyMini, Field, PanelHeading } from "../ui";
 
+const TEXT_STYLE_PRESETS: Array<{
+  id: string;
+  label: string;
+  detail: string;
+  patch: Partial<TimelineLayer>;
+}> = [
+  {
+    id: "tiktok-caption",
+    label: "كابشن تيك توك",
+    detail: "أبيض ثقيل بحد أسود",
+    patch: {
+      fontSize: 72,
+      fontWeight: "900",
+      textColor: "#ffffff",
+      color: "#ffffff",
+      textStrokeColor: "#000000",
+      textStrokeWidth: 10,
+      textShadowBlur: 0,
+      textShadowOffsetX: 0,
+      textShadowOffsetY: 0,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      align: "center",
+      direction: "auto",
+    },
+  },
+  {
+    id: "luxury-title",
+    label: "عنوان فاخر",
+    detail: "ذهبي مع ظل سينمائي",
+    patch: {
+      fontSize: 68,
+      fontWeight: "900",
+      textColor: "#f8e7b0",
+      color: "#f8e7b0",
+      textStrokeColor: "#050608",
+      textStrokeWidth: 3,
+      textShadowColor: "#000000",
+      textShadowBlur: 22,
+      textShadowOffsetX: 0,
+      textShadowOffsetY: 10,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      align: "center",
+      direction: "auto",
+    },
+  },
+  {
+    id: "clean-lower-third",
+    label: "شريط نظيف",
+    detail: "صندوق أبيض للشرح",
+    patch: {
+      fontSize: 44,
+      fontWeight: "600",
+      textColor: "#111827",
+      color: "#111827",
+      textStrokeWidth: 0,
+      textShadowBlur: 0,
+      textShadowOffsetX: 0,
+      textShadowOffsetY: 0,
+      backgroundColor: "#ffffff",
+      borderRadius: 28,
+      align: "center",
+      direction: "auto",
+    },
+  },
+  {
+    id: "cta-pill",
+    label: "زر دعوة",
+    detail: "CTA واضح وقابل للقراءة",
+    patch: {
+      fontSize: 50,
+      fontWeight: "900",
+      textColor: "#050608",
+      color: "#050608",
+      textStrokeWidth: 0,
+      textShadowColor: "#000000",
+      textShadowBlur: 18,
+      textShadowOffsetX: 0,
+      textShadowOffsetY: 12,
+      backgroundColor: "#8ef7c2",
+      borderRadius: 60,
+      align: "center",
+      direction: "auto",
+    },
+  },
+];
+
 export function ProjectSettingsPanel({
   brandName,
   styleId,
@@ -262,6 +350,26 @@ export function LayerInspector({
               Live typography sample
             </p>
           </div>
+          <Field label="Text presets">
+            <div className="grid grid-cols-2 gap-2">
+              {TEXT_STYLE_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  disabled={locked}
+                  onClick={() => onChange(preset.patch)}
+                  className="min-h-16 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-2 text-right transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="block text-xs font-black text-white" dir="auto">
+                    {preset.label}
+                  </span>
+                  <span className="mt-1 block text-[10px] font-bold leading-4 text-[var(--muted)]" dir="auto">
+                    {preset.detail}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </Field>
           <div className="grid grid-cols-2 gap-2">
             <NumberField label="Font size" value={layer.fontSize ?? 48} disabled={locked} onChange={(fontSize) => onChange({ fontSize })} />
             <Field label="Font weight">
