@@ -111,6 +111,57 @@ export async function extractAudioMp3WithFFmpeg(
   return fileDataToBlob(data, "audio/mpeg");
 }
 
+export async function convertVideoToGifWithFFmpeg(
+  source: Blob,
+  sourceName: string,
+  {
+    durationSeconds = 8,
+    fps = 12,
+    width = 480,
+  }: {
+    durationSeconds?: number;
+    fps?: number;
+    width?: number;
+  } = {},
+  onProgress?: (p: number) => void,
+): Promise<Blob> {
+  if (!source.size) {
+    throw new Error("لا يوجد ملف فيديو صالح لتصدير GIF.");
+  }
+
+  const ffmpeg = await getFFmpeg();
+  const inputName = getFFmpegInputName(source, sourceName);
+  const outputName = "mawj-preview.gif";
+  const safeDuration = Math.max(1, Math.min(12, durationSeconds));
+  const safeFps = Math.max(8, Math.min(15, Math.round(fps)));
+  const safeWidth = Math.max(240, Math.min(720, Math.round(width)));
+
+  onProgress?.(5);
+  await ffmpeg.writeFile(inputName, await fetchFile(source));
+
+  ffmpeg.on("progress", ({ progress }) => {
+    const normalized = Number.isFinite(progress) ? progress : 0;
+    onProgress?.(Math.min(95, Math.max(8, Math.round(normalized * 90))));
+  });
+
+  await ffmpeg.exec([
+    "-y",
+    "-i",
+    inputName,
+    "-t",
+    String(safeDuration),
+    "-filter_complex",
+    `fps=${safeFps},scale=${safeWidth}:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=96[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5`,
+    "-loop",
+    "0",
+    outputName,
+  ]);
+
+  const data = await ffmpeg.readFile(outputName);
+  onProgress?.(100);
+  return fileDataToBlob(data, "image/gif");
+}
+
 async function getFFmpeg() {
   if (!ffmpegPromise) {
     ffmpegPromise = loadFFmpeg();

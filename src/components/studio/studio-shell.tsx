@@ -35,7 +35,7 @@ import {
   type BrowserRenderProgress,
   type BrowserRenderResult,
 } from "@/lib/browser-video-renderer";
-import { extractAudioMp3WithFFmpeg } from "@/lib/ffmpeg-renderer";
+import { convertVideoToGifWithFFmpeg, extractAudioMp3WithFFmpeg } from "@/lib/ffmpeg-renderer";
 import {
   renderTemplateProject,
   renderTemplateProjectThumbnail,
@@ -2494,8 +2494,9 @@ export function ProfessionalVideoStudio() {
   }
 
   async function exportMp3() {
-    const sourceBlob = renderResult?.blob ?? studioFile?.file ?? null;
-    const sourceName = renderResult?.fileName ?? studioFile?.file.name ?? "mawj-video.mp4";
+    const source = getDerivedExportSource(renderResult, studioFile, "audio");
+    const sourceBlob = source?.blob ?? null;
+    const sourceName = source?.fileName ?? "mawj-video.mp4";
     const outputSeconds = Math.max(
       1,
       renderResult?.durationSeconds ?? studioFile?.durationSeconds ?? templateProject?.duration ?? totalTimelineSeconds,
@@ -2539,6 +2540,67 @@ export function ProfessionalVideoStudio() {
       setActivePanel("exports");
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Could not extract MP3 audio.");
+    } finally {
+      setIsRendering(false);
+    }
+  }
+
+  async function exportGif() {
+    const source = getDerivedExportSource(renderResult, studioFile, "video");
+    const sourceBlob = source?.blob ?? null;
+    const sourceName = source?.fileName ?? "mawj-video.mp4";
+    const outputSeconds = Math.max(
+      1,
+      Math.min(8, renderResult?.durationSeconds ?? studioFile?.durationSeconds ?? templateProject?.duration ?? totalTimelineSeconds),
+    );
+
+    if (!sourceBlob) {
+      setError("ارفع فيديو أو صدّر ملف فيديو أولاً قبل إنشاء GIF.");
+      return;
+    }
+
+    setIsRendering(true);
+    setError("");
+    setProjectStatus("Creating GIF preview...");
+    clearRenderedOutput();
+    setRenderProgress({
+      percent: 0,
+      label: "Preparing GIF export",
+      elapsedSeconds: 0,
+      outputSeconds,
+    });
+
+    try {
+      const blob = await convertVideoToGifWithFFmpeg(
+        sourceBlob,
+        sourceName,
+        {
+          durationSeconds: outputSeconds,
+          fps: 12,
+          width: aspectRatio === "16:9" ? 640 : 480,
+        },
+        (percent) => {
+          setRenderProgress({
+            percent,
+            label: "Rendering GIF preview",
+            elapsedSeconds: Math.round((percent / 100) * outputSeconds),
+            outputSeconds,
+          });
+        },
+      );
+      const url = URL.createObjectURL(blob);
+      setRenderResult({
+        blob,
+        url,
+        fileName: `${withoutFileExtension(sourceName)}-preview.gif`,
+        mimeType: "image/gif",
+        durationSeconds: Math.round(outputSeconds),
+        resolution: aspectRatio === "16:9" ? "GIF · 640px wide" : "GIF · 480px wide",
+      });
+      setProjectStatus("GIF preview export ready");
+      setActivePanel("exports");
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not create GIF preview.");
     } finally {
       setIsRendering(false);
     }
@@ -3481,6 +3543,7 @@ export function ProfessionalVideoStudio() {
           onDownloadSrt={downloadSrt}
           onExportThumbnail={exportThumbnail}
           onExportMp3={exportMp3}
+          onExportGif={exportGif}
         />
       );
     }
@@ -4713,6 +4776,33 @@ function revokeObjectUrl(url?: string) {
   if (url?.startsWith("blob:")) {
     URL.revokeObjectURL(url);
   }
+}
+
+function getDerivedExportSource(
+  renderResult: BrowserRenderResult | null,
+  studioFile: StudioFile | null,
+  mode: "audio" | "video",
+) {
+  const canUseRenderResult =
+    renderResult &&
+    !renderResult.mimeType.startsWith("image/") &&
+    (mode === "audio" || !renderResult.mimeType.startsWith("audio/"));
+
+  if (canUseRenderResult) {
+    return {
+      blob: renderResult.blob,
+      fileName: renderResult.fileName,
+    };
+  }
+
+  if (studioFile) {
+    return {
+      blob: studioFile.file,
+      fileName: studioFile.file.name,
+    };
+  }
+
+  return null;
 }
 
 function uniqueMediaAssetsById(assets: MediaAsset[]) {

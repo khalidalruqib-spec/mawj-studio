@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Download, Loader2, MonitorUp } from "lucide-react";
 import type { BrowserRenderProgress, BrowserRenderResult } from "@/lib/browser-video-renderer";
 import type { AspectRatio } from "@/lib/video-styles";
@@ -10,7 +11,7 @@ const EXPORT_FORMATS = [
   { id: "SRT", disabled: false },
   { id: "Thumbnail", disabled: false },
   { id: "MP3", disabled: false },
-  { id: "GIF", disabled: true },
+  { id: "GIF", disabled: false },
 ] as const;
 
 export function ExportsPanel({
@@ -26,6 +27,7 @@ export function ExportsPanel({
   onDownloadSrt,
   onExportThumbnail,
   onExportMp3,
+  onExportGif,
 }: {
   tier: string;
   format: string;
@@ -39,6 +41,7 @@ export function ExportsPanel({
   onDownloadSrt: () => void;
   onExportThumbnail: () => void;
   onExportMp3: () => void;
+  onExportGif: () => void;
 }) {
   const selectedFormat = EXPORT_FORMATS.find((item) => item.id === format);
   const isUnsupported = Boolean(selectedFormat?.disabled);
@@ -49,6 +52,8 @@ export function ExportsPanel({
         ? "Download Thumbnail"
         : format === "MP3"
           ? "Export MP3"
+          : format === "GIF"
+            ? "Export GIF"
         : isUnsupported
           ? `${format} قريبًا`
           : `Export ${format}`;
@@ -66,6 +71,11 @@ export function ExportsPanel({
 
     if (format === "MP3") {
       onExportMp3();
+      return;
+    }
+
+    if (format === "GIF") {
+      onExportGif();
       return;
     }
 
@@ -139,6 +149,17 @@ export function ExportsPanel({
         <div className="rounded-lg border border-[var(--brand)] bg-[var(--brand-soft)] p-3">
           {renderResult.mimeType.startsWith("audio/") ? (
             <audio src={renderResult.url} controls className="mb-3 w-full" />
+          ) : renderResult.mimeType.startsWith("image/") ? (
+            <Image
+              src={renderResult.url}
+              alt="Export preview"
+              width={aspectRatio === "9:16" ? 360 : 640}
+              height={aspectRatio === "9:16" ? 640 : aspectRatio === "1:1" ? 640 : 360}
+              unoptimized
+              className={`mx-auto mb-3 max-h-[420px] w-full rounded-lg bg-black object-contain ${
+                aspectRatio === "9:16" ? "aspect-[9/16] max-w-[236px]" : aspectRatio === "1:1" ? "aspect-square" : "aspect-video"
+              }`}
+            />
           ) : (
             <video
               src={renderResult.url}
