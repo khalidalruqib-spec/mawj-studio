@@ -2,6 +2,7 @@ import { Bot, Download, Loader2, WandSparkles } from "lucide-react";
 import { CREATOR_STARTERS } from "../foundation";
 import type { AssistantMessage, ClipSuggestion } from "../foundation";
 import { PanelHeading } from "../ui";
+import { formatDuration } from "../utils";
 
 export function AssistantPanel({
   command,
@@ -20,11 +21,6 @@ export function AssistantPanel({
   onRunCommand: (commandOverride?: string) => void;
   onExportClip: (clip: ClipSuggestion) => void;
 }) {
-  const thirtySecondClip =
-    clipSuggestions.find((clip) => Math.round(clip.duration) === 30) ??
-    clipSuggestions.find((clip) => clip.label.includes("30")) ??
-    null;
-
   return (
     <section className="panel p-4">
       <PanelHeading icon={Bot} title="AI assistant" />
@@ -62,16 +58,38 @@ export function AssistantPanel({
           </button>
         ))}
       </div>
-      {thirtySecondClip ? (
-        <button
-          type="button"
-          onClick={() => onExportClip(thirtySecondClip)}
-          disabled={isRunning}
-          className="btn-brand mb-3 w-full justify-center"
-        >
-          <Download className="h-4 w-4" aria-hidden="true" />
-          Export 30s Clip
-        </button>
+      {clipSuggestions.length ? (
+        <div className="mb-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[var(--muted)]">Ready clips</p>
+            <span className="status-pill active">{clipSuggestions.length} cuts</span>
+          </div>
+          <div className="space-y-2">
+            {clipSuggestions.map((clip) => (
+              <div
+                key={clip.id}
+                className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black text-[var(--text)]">{clip.label}</p>
+                  <p className="text-xs font-bold text-[var(--muted)]">
+                    {formatDuration(clip.start)}-{formatDuration(clip.end)} · {Math.round(clip.duration)}s
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onExportClip(clip)}
+                  disabled={isRunning}
+                  className="toolbar-btn h-9 min-w-0 px-3 text-xs"
+                  aria-label={`Export ${clip.label}`}
+                >
+                  <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                  Export
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : null}
       <div className="max-h-64 space-y-2 overflow-auto pr-1">
         {isRunning ? (

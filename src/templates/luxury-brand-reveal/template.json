@@ -1,7 +1,28 @@
 {
   "language": "mixed",
-  "animations": ["fadeIn","fadeOut","slideUp","slideDown","slideLeft","slideRight","zoomIn","zoomOut","pop","bounce","typewriter","blurReveal","rotateIn"],
-  "transitions": ["cut","fade","slide","zoom","wipe","blur"],
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
   "id": "luxury-brand-reveal",
   "name": "Luxury Brand Reveal",
   "category": "Personal Branding",
@@ -10,18 +31,88 @@
   "height": 1920,
   "duration": 30,
   "description": "An elegant 4-scene luxury brand reveal template with gold accents, product showcase, spec details, and a refined outro. Perfect for premium products and high-end personal brands.",
-  "safeMargins": { "top": 160, "bottom": 260, "left": 70, "right": 70 },
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
   "requiredInputs": [
-    { "key": "brandName",    "label": "Brand Name",         "type": "text",    "default": "Maison Al Nour",      "placeholder": "اسم العلامة التجارية",  "required": true },
-    { "key": "tagline",      "label": "Tagline",            "type": "text",    "default": "تميّز بلا حدود",       "placeholder": "الشعار أو العبارة الرئيسية", "required": true },
-    { "key": "productTitle", "label": "Product Title",      "type": "text",    "default": "العطر الملكي",         "placeholder": "اسم المنتج",           "required": true },
-    { "key": "spec1",        "label": "Spec 1 (e.g. material)", "type": "text","default": "عود أصيل من كمبوديا",  "placeholder": "مواصفة ١",             "required": true },
-    { "key": "spec2",        "label": "Spec 2 (e.g. origin)",   "type": "text","default": "إصدار محدود ٢٠٢٦",    "placeholder": "مواصفة ٢",             "required": true },
-    { "key": "spec3",        "label": "Spec 3 (e.g. edition)",  "type": "text","default": "يدوي الصنع بالكامل",  "placeholder": "مواصفة ٣",             "required": true },
-    { "key": "image",        "label": "Product Image",      "type": "image",                                                                         "required": true },
-    { "key": "logo",         "label": "Brand Logo",         "type": "image",                                                                         "required": false },
-    { "key": "website",      "label": "Website / Link",     "type": "text",    "default": "www.maisonnour.com",   "placeholder": "الموقع الإلكتروني",    "required": false },
-    { "key": "accentColor",  "label": "Accent Color",       "type": "color",   "default": "#d4af37",                                                  "required": false }
+    {
+      "key": "brandName",
+      "label": "Brand Name",
+      "type": "text",
+      "default": "Maison Al Nour",
+      "placeholder": "اسم العلامة التجارية",
+      "required": true
+    },
+    {
+      "key": "tagline",
+      "label": "Tagline",
+      "type": "text",
+      "default": "تميّز بلا حدود",
+      "placeholder": "الشعار أو العبارة الرئيسية",
+      "required": true
+    },
+    {
+      "key": "productTitle",
+      "label": "Product Title",
+      "type": "text",
+      "default": "العطر الملكي",
+      "placeholder": "اسم المنتج",
+      "required": true
+    },
+    {
+      "key": "spec1",
+      "label": "Spec 1 (e.g. material)",
+      "type": "text",
+      "default": "عود أصيل من كمبوديا",
+      "placeholder": "مواصفة ١",
+      "required": true
+    },
+    {
+      "key": "spec2",
+      "label": "Spec 2 (e.g. origin)",
+      "type": "text",
+      "default": "إصدار محدود ٢٠٢٦",
+      "placeholder": "مواصفة ٢",
+      "required": true
+    },
+    {
+      "key": "spec3",
+      "label": "Spec 3 (e.g. edition)",
+      "type": "text",
+      "default": "يدوي الصنع بالكامل",
+      "placeholder": "مواصفة ٣",
+      "required": true
+    },
+    {
+      "key": "image",
+      "label": "Product Image",
+      "type": "image",
+      "required": true
+    },
+    {
+      "key": "logo",
+      "label": "Brand Logo",
+      "type": "image",
+      "required": false
+    },
+    {
+      "key": "website",
+      "label": "Website / Link",
+      "type": "text",
+      "default": "www.maisonnour.com",
+      "placeholder": "الموقع الإلكتروني",
+      "required": false
+    },
+    {
+      "key": "accentColor",
+      "label": "Accent Color",
+      "type": "color",
+      "default": "#d4af37",
+      "required": false
+    }
   ],
   "scenes": [
     {
@@ -29,8 +120,14 @@
       "name": "Atmosphere",
       "start": 0,
       "duration": 7,
-      "background": { "type": "color", "value": "#0a0808" },
-      "transition": { "type": "fade", "duration": 0.6 },
+      "background": {
+        "type": "color",
+        "value": "#0a0808"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.6
+      },
       "layers": [
         {
           "id": "atm-glow",
@@ -71,7 +168,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.7 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.7
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "atm-deco-line",
@@ -99,7 +210,21 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.8 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.8
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "atm-bottom-line",
@@ -120,8 +245,14 @@
       "name": "Product Reveal",
       "start": 7,
       "duration": 9,
-      "background": { "type": "color", "value": "#0d0a08" },
-      "transition": { "type": "fade", "duration": 0.5 },
+      "background": {
+        "type": "color",
+        "value": "#0d0a08"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
       "layers": [
         {
           "id": "prod-image",
@@ -133,7 +264,10 @@
           "height": 1920,
           "fit": "cover",
           "opacity": 0.9,
-          "animationIn": { "type": "zoomIn", "duration": 0.7 }
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.7
+          }
         },
         {
           "id": "prod-overlay",
@@ -174,7 +308,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.55 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.55
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "prod-brand-small",
@@ -190,7 +338,21 @@
           "align": "right",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.6 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.6
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -199,8 +361,14 @@
       "name": "Details",
       "start": 16,
       "duration": 8,
-      "background": { "type": "color", "value": "#0a0808" },
-      "transition": { "type": "wipe", "duration": 0.45 },
+      "background": {
+        "type": "color",
+        "value": "#0a0808"
+      },
+      "transition": {
+        "type": "wipe",
+        "duration": 0.45
+      },
       "layers": [
         {
           "id": "det-header",
@@ -216,7 +384,21 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "det-deco",
@@ -256,7 +438,21 @@
           "align": "center",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "slideLeft", "duration": 0.4 }
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "det-spec2-bg",
@@ -284,7 +480,21 @@
           "align": "center",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "slideLeft", "duration": 0.5 }
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "det-spec3-bg",
@@ -312,7 +522,21 @@
           "align": "center",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "slideLeft", "duration": 0.6 }
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.6
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "det-tagline",
@@ -329,7 +553,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "blurReveal", "duration": 0.6 }
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.6
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -338,8 +576,14 @@
       "name": "Outro",
       "start": 24,
       "duration": 6,
-      "background": { "type": "color", "value": "#070505" },
-      "transition": { "type": "fade", "duration": 0.6 },
+      "background": {
+        "type": "color",
+        "value": "#070505"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.6
+      },
       "layers": [
         {
           "id": "outro-glow-bg",
@@ -362,7 +606,10 @@
           "width": 400,
           "height": 200,
           "fit": "contain",
-          "animationIn": { "type": "zoomIn", "duration": 0.6 }
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.6
+          }
         },
         {
           "id": "outro-brand-name",
@@ -379,7 +626,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "outro-tagline",
@@ -395,7 +656,21 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.6 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.6
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "outro-deco-line",
@@ -424,11 +699,32 @@
           "direction": "ltr",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.7 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.7
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     }
   ],
-  "audio": { "music": null, "volume": 1 },
-  "export": { "format": "mp4", "fps": 30, "quality": "1080p" }
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
 }

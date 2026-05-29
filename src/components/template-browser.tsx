@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+/* eslint-disable @next/next/no-img-element */
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { BRAND } from "@/lib/brand";
@@ -14,8 +16,10 @@ import {
   Check,
   Clock3,
   Code2,
+  Copy,
   Crown,
   Database,
+  Download,
   Eye,
   FileVideo2,
   Film,
@@ -30,6 +34,7 @@ import {
   Sparkles,
   Star,
   Tags,
+  Trash2,
   Upload,
   UploadCloud,
   Users,
@@ -47,6 +52,15 @@ import {
   type VideoTemplate,
   type VideoTemplateInput,
 } from "@/lib/video-template-engine";
+import {
+  createCustomTemplateCopy,
+  deleteCustomVideoTemplate,
+  isCustomVideoTemplate,
+  listCustomVideoTemplates,
+  storeCustomVideoTemplate,
+} from "@/lib/custom-video-template-store";
+import { getTemplateGeneratorBrandPayload } from "@/lib/brand-kit-store";
+import { generateLocalVideoTemplate } from "@/lib/local-template-generator";
 
 /* ─────────────────────────────────────────────────────────────────────
    Category metadata — colour, icon, Arabic label
@@ -77,6 +91,7 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
   "Before / After":         { label: "قبل وبعد",         icon: ArrowRight,     accent: "#7ef2bc", gradFrom: "rgba(126,242,188,0.18)" },
   "YouTube Shorts":         { label: "يوتيوب شورتس",    icon: Film,           accent: "#ff647c", gradFrom: "rgba(255,100,124,0.18)" },
   "Clinics":                { label: "عيادات",           icon: BadgeCheck,     accent: "#2dd4bf", gradFrom: "rgba(45,212,191,0.18)"  },
+  "Custom Templates":       { label: "قوالبي",           icon: Layers3,        accent: "#7ef2bc", gradFrom: "rgba(126,242,188,0.18)" },
 };
 
 function getCategoryMeta(category: string): CategoryMeta {
@@ -103,7 +118,7 @@ const FEATURED_IDS = new Set([
   "market-podcast-launch",
 ]);
 
-type TemplatePackFilter = "all" | "market" | "featured" | "favorites" | "classic";
+type TemplatePackFilter = "all" | "market" | "custom" | "featured" | "favorites" | "classic";
 type TemplateSortOption = "recommended" | "newest" | "duration-asc" | "duration-desc" | "editable-desc";
 type AspectRatioFilter = "All" | VideoTemplate["aspectRatio"];
 const FAVORITE_TEMPLATES_STORAGE_KEY = "mawj-favorite-template-ids";
@@ -155,6 +170,7 @@ function templatePackLabel(value: TemplatePackFilter) {
   const labels: Record<TemplatePackFilter, string> = {
     all: "كل الحزم",
     market: "Market Pack",
+    custom: "قوالبي",
     featured: "مميز",
     favorites: "المفضلة",
     classic: "كلاسيك",
@@ -170,10 +186,15 @@ function sortTemplates(templates: VideoTemplate[], sortBy: TemplateSortOption) {
       return countEditableLayers(right) - countEditableLayers(left) || right.scenes.length - left.scenes.length || left.name.localeCompare(right.name);
     }
     if (sortBy === "newest") {
-      return Number(isMarketTemplate(right)) - Number(isMarketTemplate(left)) || left.name.localeCompare(right.name);
+      return (
+        Number(isCustomVideoTemplate(right)) - Number(isCustomVideoTemplate(left)) ||
+        Number(isMarketTemplate(right)) - Number(isMarketTemplate(left)) ||
+        left.name.localeCompare(right.name)
+      );
     }
 
     return (
+      Number(isCustomVideoTemplate(right)) - Number(isCustomVideoTemplate(left)) ||
       Number(FEATURED_IDS.has(right.id)) - Number(FEATURED_IDS.has(left.id)) ||
       Number(isMarketTemplate(right)) - Number(isMarketTemplate(left)) ||
       countMotionTypes(right) - countMotionTypes(left) ||
@@ -199,6 +220,10 @@ function storeFavoriteTemplateIds(ids: Set<string>) {
   window.localStorage.setItem(FAVORITE_TEMPLATES_STORAGE_KEY, JSON.stringify(Array.from(ids)));
 }
 
+function slugifyFileName(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]+/g, "-").replace(/^-+|-+$/g, "") || "mawj-template";
+}
+
 /* ─────────────────────────────────────────────────────────────────────
    Main component
 ───────────────────────────────────────────────────────────────────── */
@@ -214,75 +239,91 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
   const [previewTemplate, setPreviewTemplate] = useState<VideoTemplate | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<VideoTemplate | null>(null);
   const [inputValues, setInputValues] = useState<TemplateUserInputs>({});
+  const [customTemplates, setCustomTemplates] = useState<VideoTemplate[]>(listCustomVideoTemplates);
+  const [templateNotice, setTemplateNotice] = useState<string | null>(null);
+  const [generatorPrompt, setGeneratorPrompt] = useState("");
+  const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
+
+  const availableTemplates = useMemo(() => {
+    const seenIds = new Set<string>();
+    return [...customTemplates, ...templates].filter((template) => {
+      if (seenIds.has(template.id)) return false;
+      seenIds.add(template.id);
+      return true;
+    });
+  }, [customTemplates, templates]);
 
   const filteredTemplates = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const matches = templates.filter((t) => {
+    const matches = availableTemplates.filter((t) => {
       const matchCat = category === "All" || t.category === category;
       const matchQ = !q || [t.name, t.description, t.category].some((v) => v.toLowerCase().includes(q));
       const matchAspect = aspectRatio === "All" || t.aspectRatio === aspectRatio;
       const matchPack =
         templatePack === "all" ||
         (templatePack === "market" && isMarketTemplate(t)) ||
+        (templatePack === "custom" && isCustomVideoTemplate(t)) ||
         (templatePack === "featured" && FEATURED_IDS.has(t.id)) ||
         (templatePack === "favorites" && favoriteTemplateIds.has(t.id)) ||
-        (templatePack === "classic" && !isMarketTemplate(t));
+        (templatePack === "classic" && !isMarketTemplate(t) && !isCustomVideoTemplate(t));
       return matchCat && matchQ && matchAspect && matchPack;
     });
 
     return sortTemplates(matches, sortBy);
-  }, [aspectRatio, category, favoriteTemplateIds, query, sortBy, templatePack, templates]);
+  }, [aspectRatio, availableTemplates, category, favoriteTemplateIds, query, sortBy, templatePack]);
 
   const categoryOptions = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const t of templates) counts.set(t.category, (counts.get(t.category) ?? 0) + 1);
+    for (const t of availableTemplates) counts.set(t.category, (counts.get(t.category) ?? 0) + 1);
     const known = Object.keys(CATEGORY_META).filter((k) => k !== "All" && counts.has(k));
     const extra = Array.from(counts.keys()).filter((k) => !CATEGORY_META[k]);
     return [
-      { value: "All", label: "الكل", count: templates.length },
+      { value: "All", label: "الكل", count: availableTemplates.length },
       ...known.map((v) => ({ value: v, label: getCategoryMeta(v).label, count: counts.get(v) ?? 0 })),
       ...extra.map((v) => ({ value: v, label: v, count: counts.get(v) ?? 0 })),
     ];
-  }, [templates]);
+  }, [availableTemplates]);
 
   const aspectRatioOptions = useMemo(() => {
     const counts = new Map<VideoTemplate["aspectRatio"], number>();
-    templates.forEach((template) => counts.set(template.aspectRatio, (counts.get(template.aspectRatio) ?? 0) + 1));
+    availableTemplates.forEach((template) => counts.set(template.aspectRatio, (counts.get(template.aspectRatio) ?? 0) + 1));
     const order: VideoTemplate["aspectRatio"][] = ["9:16", "16:9", "1:1", "4:5"];
     return [
-      { value: "All" as const, label: "كل المقاسات", count: templates.length },
+      { value: "All" as const, label: "كل المقاسات", count: availableTemplates.length },
       ...order
         .filter((value) => counts.has(value))
         .map((value) => ({ value, label: value, count: counts.get(value) ?? 0 })),
     ];
-  }, [templates]);
+  }, [availableTemplates]);
 
   const packOptions = useMemo(
     () => [
-      { value: "all" as const, count: templates.length },
-      { value: "market" as const, count: templates.filter(isMarketTemplate).length },
-      { value: "featured" as const, count: templates.filter((template) => FEATURED_IDS.has(template.id)).length },
+      { value: "all" as const, count: availableTemplates.length },
+      { value: "market" as const, count: availableTemplates.filter(isMarketTemplate).length },
+      { value: "custom" as const, count: availableTemplates.filter(isCustomVideoTemplate).length },
+      { value: "featured" as const, count: availableTemplates.filter((template) => FEATURED_IDS.has(template.id)).length },
       { value: "favorites" as const, count: favoriteTemplateIds.size },
-      { value: "classic" as const, count: templates.filter((template) => !isMarketTemplate(template)).length },
+      { value: "classic" as const, count: availableTemplates.filter((template) => !isMarketTemplate(template) && !isCustomVideoTemplate(template)).length },
     ],
-    [favoriteTemplateIds.size, templates],
+    [availableTemplates, favoriteTemplateIds.size],
   );
 
   const hasActiveFilters = query || category !== "All" || aspectRatio !== "All" || templatePack !== "all" || sortBy !== "recommended";
 
   const marketplaceStats = useMemo(() => {
-    const sceneCount = templates.reduce((n, t) => n + t.scenes.length, 0);
-    const layerCount = templates.reduce((n, t) => n + countTemplateLayers(t), 0);
-    const inputCount = templates.reduce((n, t) => n + t.requiredInputs.length, 0);
-    const catCount   = new Set(templates.map((t) => t.category)).size;
+    const sceneCount = availableTemplates.reduce((n, t) => n + t.scenes.length, 0);
+    const layerCount = availableTemplates.reduce((n, t) => n + countTemplateLayers(t), 0);
+    const inputCount = availableTemplates.reduce((n, t) => n + t.requiredInputs.length, 0);
+    const catCount   = new Set(availableTemplates.map((t) => t.category)).size;
     return [
-      { label: "قالب جاهز",          value: templates.length, icon: Code2 },
+      { label: "قالب جاهز",          value: availableTemplates.length, icon: Code2 },
       { label: "فئة محتوى",          value: catCount,         icon: Tags },
       { label: "مشهد قابل للتعديل",  value: sceneCount,       icon: Film },
       { label: "طبقة ديناميكية",     value: layerCount,       icon: Layers3 },
       { label: "مدخل مخصص",          value: inputCount,       icon: Database },
     ];
-  }, [templates]);
+  }, [availableTemplates]);
 
   function openTemplateForm(template: VideoTemplate) {
     setSelectedTemplate(template);
@@ -314,6 +355,104 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
       storeFavoriteTemplateIds(next);
       return next;
     });
+  }
+
+  function deleteCustomTemplate(templateId: string) {
+    setCustomTemplates(deleteCustomVideoTemplate(templateId));
+    setFavoriteTemplateIds((current) => {
+      if (!current.has(templateId)) return current;
+      const next = new Set(current);
+      next.delete(templateId);
+      storeFavoriteTemplateIds(next);
+      return next;
+    });
+    if (selectedTemplate?.id === templateId) closeTemplateForm();
+    if (previewTemplate?.id === templateId) setPreviewTemplate(null);
+  }
+
+  function downloadTemplateJson(template: VideoTemplate) {
+    const blob = new Blob([JSON.stringify(template, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${slugifyFileName(template.name)}.template.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function duplicateTemplate(template: VideoTemplate) {
+    try {
+      const duplicate = createCustomTemplateCopy(template, "duplicate");
+      setCustomTemplates(storeCustomVideoTemplate(duplicate));
+      setTemplatePack("custom");
+      setTemplateNotice(`تم نسخ "${template.name}" إلى قوالبي.`);
+    } catch {
+      setTemplateNotice("تعذر نسخ هذا القالب. بنية القالب غير صالحة.");
+    }
+  }
+
+  async function importTemplateJson(file?: File) {
+    if (!file) return;
+
+    try {
+      const imported = createCustomTemplateCopy(JSON.parse(await file.text()) as VideoTemplate, "import");
+      setCustomTemplates(storeCustomVideoTemplate(imported));
+      setTemplatePack("custom");
+      setTemplateNotice(`تم استيراد "${imported.name}" إلى قوالبي.`);
+    } catch {
+      setTemplateNotice("ملف JSON غير صالح. استورد ملف template.json من Mawj Studio.");
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  }
+
+  async function generateTemplateFromPrompt() {
+    const prompt = generatorPrompt.trim();
+
+    if (!prompt) {
+      setTemplateNotice("اكتب وصفًا قصيرًا للقالب أولاً.");
+      return;
+    }
+
+    setIsGeneratingTemplate(true);
+    const brand = getTemplateGeneratorBrandPayload();
+
+    try {
+      const response = await fetch("/api/template-generator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, brand }),
+      });
+      const data = (await response.json()) as {
+        template?: VideoTemplate;
+        mode?: "openai" | "local" | "local-fallback";
+        error?: string;
+      };
+      const generatedTemplate = data.template ?? generateLocalVideoTemplate(prompt, brand);
+      const brandSuffix = brand?.brandName ? ` بهوية ${brand.brandName}` : "";
+
+      setCustomTemplates(storeCustomVideoTemplate(generatedTemplate));
+      setTemplatePack("custom");
+      setCategory("All");
+      setQuery("");
+      setPreviewTemplate(generatedTemplate);
+      setTemplateNotice(
+        data.mode === "openai"
+          ? `تم توليد "${generatedTemplate.name}"${brandSuffix} بالذكاء الاصطناعي وإضافته إلى قوالبي.`
+          : `تم توليد "${generatedTemplate.name}"${brandSuffix} محليًا وإضافته إلى قوالبي.`,
+      );
+    } catch {
+      const generatedTemplate = generateLocalVideoTemplate(prompt, brand);
+      setCustomTemplates(storeCustomVideoTemplate(generatedTemplate));
+      setTemplatePack("custom");
+      setCategory("All");
+      setQuery("");
+      setPreviewTemplate(generatedTemplate);
+      const brandSuffix = brand?.brandName ? ` بهوية ${brand.brandName}` : "";
+      setTemplateNotice(`تعذر الاتصال بالمولد الذكي، فأنشأنا "${generatedTemplate.name}"${brandSuffix} محليًا.`);
+    } finally {
+      setIsGeneratingTemplate(false);
+    }
   }
 
   function useTemplate() {
@@ -377,6 +516,44 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
                       {i < arr.length - 1 && <span className="text-[var(--line-strong)]">›</span>}
                     </span>
                   ))}
+                </div>
+                <div className="mt-5 flex flex-wrap items-center gap-2">
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept="application/json,.json"
+                    className="sr-only"
+                    onChange={(event) => void importTemplateJson(event.target.files?.[0])}
+                  />
+                  <button type="button" onClick={() => importInputRef.current?.click()} className="btn-brand">
+                    <UploadCloud className="h-4 w-4" aria-hidden="true" />
+                    Import template JSON
+                  </button>
+                  <div className="flex min-w-[min(520px,100%)] flex-1 flex-col gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-soft)] p-2 sm:flex-row">
+                    <input
+                      value={generatorPrompt}
+                      onChange={(event) => setGeneratorPrompt(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") void generateTemplateFromPrompt();
+                      }}
+                      placeholder="مثال: قالب إعلان عطر فاخر أسود وذهبي للتيك توك"
+                      className="min-h-11 flex-1 rounded-lg border border-transparent bg-black/20 px-3 text-sm font-bold outline-none transition focus:border-[var(--brand)]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void generateTemplateFromPrompt()}
+                      disabled={isGeneratingTemplate}
+                      className="btn-ghost shrink-0 disabled:opacity-50"
+                    >
+                      <Sparkles className="h-4 w-4" aria-hidden="true" />
+                      {isGeneratingTemplate ? "Generating..." : "Generate"}
+                    </button>
+                  </div>
+                  {templateNotice ? (
+                    <span className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-xs font-black text-[var(--brand)]">
+                      {templateNotice}
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
@@ -539,6 +716,9 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
               onToggleFavorite={() => toggleFavoriteTemplate(template.id)}
               onPreview={() => setPreviewTemplate(template)}
               onUse={() => openTemplateForm(template)}
+              onDuplicate={() => duplicateTemplate(template)}
+              onDownloadJson={() => downloadTemplateJson(template)}
+              onDelete={isCustomVideoTemplate(template) ? () => deleteCustomTemplate(template.id) : undefined}
             />
           ))}
         </div>
@@ -584,28 +764,36 @@ function TemplateCard({
   onToggleFavorite,
   onPreview,
   onUse,
+  onDuplicate,
+  onDownloadJson,
+  onDelete,
 }: {
   template: VideoTemplate;
   isFavorite: boolean;
   onToggleFavorite: () => void;
   onPreview: () => void;
   onUse: () => void;
+  onDuplicate: () => void;
+  onDownloadJson: () => void;
+  onDelete?: () => void;
 }) {
   const meta = getCategoryMeta(template.category);
   const Icon = meta.icon;
   const isFeatured = FEATURED_IDS.has(template.id);
   const isMarket = isMarketTemplate(template);
+  const isCustom = isCustomVideoTemplate(template);
   const layerCount = countTemplateLayers(template);
   const editableCount = countEditableLayers(template);
   const captionCount = countLayersByType(template, "captions");
   const motionCount = countMotionTypes(template);
+  const { ref: previewRef, shouldRender } = useLazyTemplatePreview();
 
   return (
     <article className="group panel overflow-hidden transition-all duration-200 hover:border-[var(--line-strong)] hover:shadow-[var(--shadow-lg)]">
 
       {/* Preview frame */}
-      <div className="relative overflow-hidden bg-black">
-        <TemplateMotionPreview template={template} compact />
+      <div ref={previewRef} className="relative overflow-hidden bg-black">
+        {shouldRender ? <TemplateMotionPreview template={template} compact /> : <TemplatePreviewSkeleton template={template} />}
 
         {/* Gradient overlay on hover */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
@@ -637,6 +825,12 @@ function TemplateCard({
               <span className="flex items-center gap-1 rounded-lg bg-[var(--brand)]/90 px-2 py-1 text-[10px] font-black text-black backdrop-blur-sm">
                 <Tags className="h-3 w-3" aria-hidden="true" />
                 Market
+              </span>
+            )}
+            {isCustom && (
+              <span className="flex items-center gap-1 rounded-lg bg-[var(--brand)]/90 px-2 py-1 text-[10px] font-black text-black backdrop-blur-sm">
+                <Layers3 className="h-3 w-3" aria-hidden="true" />
+                قوالبي
               </span>
             )}
             {isFeatured && (
@@ -741,9 +935,81 @@ function TemplateCard({
             استخدام
           </button>
         </div>
+        <button type="button" onClick={onDuplicate} className="btn-ghost mt-2 w-full text-sm">
+          <Copy className="h-4 w-4" aria-hidden="true" />
+          Duplicate to قوالبي
+        </button>
+        {isCustom ? (
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button type="button" onClick={onDownloadJson} className="btn-ghost text-sm">
+              <Download className="h-4 w-4" aria-hidden="true" />
+              JSON
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-2 text-sm font-black text-red-200 transition hover:bg-red-500/18"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              حذف
+            </button>
+          </div>
+        ) : null}
       </div>
     </article>
   );
+}
+
+function TemplatePreviewSkeleton({ template }: { template: VideoTemplate }) {
+  const meta = getCategoryMeta(template.category);
+
+  return (
+    <div
+      className={`relative overflow-hidden bg-black ${
+        template.aspectRatio === "16:9" ? "aspect-video w-full" : "aspect-[4/5] w-full"
+      }`}
+    >
+      <div
+        className="absolute inset-0"
+        style={{ background: `linear-gradient(145deg, ${meta.gradFrom}, rgba(255,255,255,0.04), rgba(0,0,0,0.72))` }}
+      />
+      <div className="absolute inset-[12%] rounded-xl border border-white/10 bg-white/[0.04]" />
+      <div className="absolute bottom-4 left-4 right-4">
+        <div className="h-2 w-2/3 rounded-full bg-white/20" />
+        <div className="mt-2 h-2 w-1/2 rounded-full bg-white/10" />
+      </div>
+    </div>
+  );
+}
+
+function useLazyTemplatePreview() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  useEffect(() => {
+    if (shouldRender) return;
+    const node = ref.current;
+    if (!node) return;
+
+    if (!("IntersectionObserver" in window)) {
+      requestAnimationFrame(() => setShouldRender(true));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setShouldRender(true);
+        observer.disconnect();
+      },
+      { rootMargin: "640px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shouldRender]);
+
+  return { ref, shouldRender };
 }
 
 function SceneStat({ label, value }: { label: string; value: number }) {
@@ -972,7 +1238,10 @@ function TemplateFormModal({
 
         {/* Preview sidebar */}
         <div className="space-y-3">
-          <TemplateMotionPreview template={{ ...template, ...renderTemplatePreview(template) }} />
+          <TemplateMotionPreview
+            template={{ ...template, ...renderTemplatePreview(template) }}
+            inputOverrides={values}
+          />
 
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-soft)] p-3">
             <p className="mb-2 text-xs font-black" style={{ color: meta.accent }}>ماذا يحصل بعد الإنشاء؟</p>
@@ -1043,26 +1312,52 @@ function DynamicInput({
   }
 
   if (input.type === "image" || input.type === "video" || input.type === "audio") {
+    const mediaLabel = value
+      ? value.startsWith("blob:")
+        ? "مرفق من جهازك"
+        : "مرفق تجريبي قابل للاستبدال"
+      : input.type === "image"
+        ? "ارفع صورة"
+        : input.type === "video"
+          ? "ارفع فيديو"
+          : "ارفع صوت";
+
     return (
       <label className="block cursor-pointer">
         <InputLabel input={input} />
-        <span className="drop-zone flex min-h-20 flex-col items-center justify-center gap-2 text-center">
-          {value ? (
-            <>
-              <BadgeCheck className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
-              <span className="text-xs font-black text-[var(--brand)]">مرفق</span>
-            </>
-          ) : (
-            <>
-              {input.type === "image"
-                ? <Upload className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
-                : <UploadCloud className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
-              }
-              <span className="text-xs font-black">
-                {input.type === "image" ? "ارفع صورة" : input.type === "video" ? "ارفع فيديو" : "ارفع صوت"}
-              </span>
-            </>
-          )}
+        <span className="drop-zone relative flex min-h-24 flex-col items-center justify-center gap-2 overflow-hidden text-center">
+          {input.type === "image" && value ? (
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 bg-cover bg-center opacity-80"
+              style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.30), rgba(0,0,0,0.55)), url("${value}")` }}
+            />
+          ) : null}
+          {input.type === "video" && value ? (
+            <video
+              src={value}
+              className="absolute inset-0 h-full w-full object-cover opacity-80"
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-hidden="true"
+            />
+          ) : null}
+          <span className="relative z-10 flex flex-col items-center gap-2">
+            {value ? (
+              <BadgeCheck className="h-5 w-5 text-[var(--brand)] drop-shadow" aria-hidden="true" />
+            ) : (
+              input.type === "image" ? (
+                <Upload className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
+              ) : (
+                <UploadCloud className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
+              )
+            )}
+            <span className="rounded-md bg-black/55 px-2 py-1 text-xs font-black text-white shadow backdrop-blur">
+              {mediaLabel}
+            </span>
+          </span>
           <input
             type="file"
             accept={input.type === "image" ? "image/*" : input.type === "video" ? "video/*" : "audio/*"}
@@ -1125,14 +1420,16 @@ function InputLabel({ input }: { input: VideoTemplateInput }) {
 
 function TemplateMotionPreview({
   template,
+  inputOverrides,
   compact = false,
 }: {
   template: VideoTemplate;
+  inputOverrides?: TemplateUserInputs;
   compact?: boolean;
 }) {
   const [sceneIndex, setSceneIndex] = useState(0);
   const scene = template.scenes[sceneIndex] ?? template.scenes[0];
-  const previewInputs = useMemo(() => buildTemplateInputs(template, {}), [template]);
+  const previewInputs = useMemo(() => buildTemplateInputs(template, inputOverrides ?? {}), [inputOverrides, template]);
 
   useEffect(() => {
     if (template.scenes.length <= 1) return;

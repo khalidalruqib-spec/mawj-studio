@@ -6,9 +6,11 @@ import { PanelHeading } from "../ui";
 export function TemplatesPanel({
   activeTemplateId,
   onApply,
+  onSaveCurrent,
 }: {
   activeTemplateId: string | null;
   onApply: (templateId: string) => void;
+  onSaveCurrent: () => void;
 }) {
   return (
     <section className="panel p-4">
@@ -18,6 +20,9 @@ export function TemplatesPanel({
           Applies to timeline
         </span>
       </div>
+      <button type="button" onClick={onSaveCurrent} className="btn-brand mb-4 w-full">
+        Save current project as template
+      </button>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {TEMPLATE_PRESETS.map((template) => {
           const Icon = template.icon;

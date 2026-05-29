@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import {
   Captions,
   Cloud,
@@ -35,7 +35,11 @@ import {
   type BrowserRenderProgress,
   type BrowserRenderResult,
 } from "@/lib/browser-video-renderer";
-import { renderTemplateProject } from "@/lib/browser-template-renderer";
+import { convertVideoToGifWithFFmpeg, extractAudioMp3WithFFmpeg } from "@/lib/ffmpeg-renderer";
+import {
+  renderTemplateProject,
+  renderTemplateProjectThumbnail,
+} from "@/lib/browser-template-renderer";
 import {
   prepareMediaForTranscription,
   type PreparedTranscriptionFile,
@@ -45,9 +49,12 @@ import {
   hasSupabaseBrowserEnv,
 } from "@/lib/supabase/client";
 import {
+  deleteExportRecord,
   deleteMediaRecord,
   getLatestProjectSnapshot,
+  listExportRecords,
   listMediaRecords,
+  storeExportRecord,
   storeMediaFile,
   type StoredMediaRecord,
 } from "@/lib/media-db";
@@ -66,10 +73,15 @@ import {
   type AdTone,
   type AdVariant,
 } from "@/lib/ad-maker";
+import { storeCustomVideoTemplate } from "@/lib/custom-video-template-store";
 import type {
+  TemplateLayer,
   TemplateProject,
   TemplateScene,
+  TemplateTimelineLayer,
   TemplateTimelineTrack,
+  VideoTemplate,
+  VideoTemplateInput,
 } from "@/lib/video-template-engine";
 import { convertScenesToTimeline } from "@/lib/video-template-engine";
 import {
@@ -82,6 +94,7 @@ import {
 } from "@/lib/video-project-bridge";
 import type { VideoProject } from "@/lib/video-project-model";
 import { useVideoProjectStore } from "@/lib/video-project-store";
+import { VIDEO_FONT_STACKS } from "@/lib/video-typography";
 import {
   resolveLocalAICommand,
   type AICommandAction,
@@ -131,19 +144,28 @@ import { AdMakerPanel } from "@/components/studio/panels/ad-maker";
 import { BrandKitPanel } from "@/components/studio/panels/brand";
 import { DashboardPanel } from "@/components/studio/panels/projects";
 import { CollaborationPanel } from "@/components/studio/panels/collaboration";
-import { ExportsPanel } from "@/components/studio/panels/exports";
+import { ExportsPanel, type ExportHistoryItem } from "@/components/studio/panels/exports";
 import { LayerInspector, ProjectSettingsPanel, type LayerAlignmentAction } from "@/components/studio/panels/settings";
 import { AssistantPanel } from "@/components/studio/panels/assistant";
 import { StockMediaPanel } from "@/components/studio/panels/stock";
 import { useProjectPersistence } from "@/components/studio/hooks/use-project-persistence";
 import { useTemplateDraftLoader } from "@/components/studio/hooks/use-template-draft-loader";
+import {
+  DEFAULT_BRAND_KIT,
+  getStoredBrandIdentity,
+  normalizeBrandColor,
+  normalizeBrandKit,
+  persistStoredBrandIdentity,
+} from "@/lib/brand-kit-store";
 
+const DEFAULT_IMAGE_CLIP_DURATION_SECONDS = 6;
 
 export function ProfessionalVideoStudio() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const imageLayerInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const restoredMediaOnceRef = useRef(false);
+  const restoredBrandIdentityRef = useRef(false);
   const keyboardActionsRef = useRef<{
     canDelete: boolean;
     canNudge: boolean;
@@ -179,6 +201,7 @@ export function ProfessionalVideoStudio() {
   const [activeProject, setActiveProject] = useState<StudioProject | null>(null);
   const [recentProjects, setRecentProjects] = useState<StudioProject[]>([]);
   const [timelineTracks, setTimelineTracks] = useState<TimelineTrack[]>(() => createDefaultTimeline());
+  const timelineTracksRef = useRef<TimelineTrack[]>(timelineTracks);
   const [selectedLayerId, setSelectedLayerId] = useState("clip-main");
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
@@ -188,15 +211,7 @@ export function ProfessionalVideoStudio() {
   const [captionTemplate, setCaptionTemplate] = useState(CAPTION_TEMPLATES[0]);
   const [backgroundMode, setBackgroundMode] = useState(BACKGROUND_OPTIONS[1]);
   const [activeAudioTools, setActiveAudioTools] = useState<Record<string, boolean>>({});
-  const [brandKit, setBrandKit] = useState<BrandKitState>({
-    logoName: "mawj-logo.svg",
-    primaryColor: "#8ef7c2",
-    secondaryColor: "#a78bfa",
-    font: "IBM Plex Sans Arabic",
-    captionStyle: "Saudi Viral Bold",
-    intro: "2s animated logo",
-    outro: "Follow / CTA screen",
-  });
+  const [brandKit, setBrandKit] = useState<BrandKitState>(DEFAULT_BRAND_KIT);
   const [adProductName, setAdProductName] = useState("Premium Saudi coffee");
   const [adTone, setAdTone] = useState<AdTone>("luxury");
   const [adOutput, setAdOutput] = useState("");
@@ -224,8 +239,15 @@ export function ProfessionalVideoStudio() {
   const [previewTime, setPreviewTime] = useState(0);
   const [renderProgress, setRenderProgress] = useState<BrowserRenderProgress | null>(null);
   const [renderResult, setRenderResult] = useState<BrowserRenderResult | null>(null);
+  const [exportHistory, setExportHistory] = useState<ExportHistoryItem[]>([]);
+  const exportHistoryUrlsRef = useRef<string[]>([]);
   const [error, setError] = useState("");
   const [projectStatus, setProjectStatus] = useState("Autosave ready");
+  const openTemplatesPage = useCallback((event?: MouseEvent<HTMLAnchorElement>) => {
+    event?.preventDefault();
+    setProjectStatus("Opening template library");
+    window.location.assign("/templates");
+  }, []);
   const engineProject = useVideoProjectStore((state) => state.currentProject);
   const setEngineProject = useVideoProjectStore((state) => state.setCurrentProject);
   const selectEngineLayer = useVideoProjectStore((state) => state.selectLayer);
@@ -252,6 +274,13 @@ export function ProfessionalVideoStudio() {
     if (!query) return transcript;
     return transcript.filter((segment) => segment.text.toLowerCase().includes(query));
   }, [transcript, transcriptSearch]);
+
+  const localStorageBytes = useMemo(
+    () =>
+      mediaAssets.reduce((total, asset) => total + asset.size, 0) +
+      exportHistory.reduce((total, item) => total + item.size, 0),
+    [exportHistory, mediaAssets],
+  );
 
   const totalTimelineSeconds = useMemo(
     () =>
@@ -332,6 +361,22 @@ export function ProfessionalVideoStudio() {
     syncEditorTimelineFromEngineProject(engineProject);
   }, [engineProject]);
 
+  useEffect(() => {
+    timelineTracksRef.current = timelineTracks;
+  }, [timelineTracks]);
+
+  useEffect(() => {
+    const stored = getStoredBrandIdentity();
+    if (stored?.brandName) setBrandName(stored.brandName);
+    if (stored?.brandKit) setBrandKit(stored.brandKit);
+    restoredBrandIdentityRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!restoredBrandIdentityRef.current) return;
+    persistStoredBrandIdentity({ brandName, brandKit });
+  }, [brandKit, brandName]);
+
   const restorePersistedMedia = useCallback(async (isCancelled: () => boolean) => {
     const records = await listMediaRecords();
     if (isCancelled() || !records.length) return;
@@ -367,8 +412,56 @@ export function ProfessionalVideoStudio() {
       setTimelineTracks(createTimelineForAssets(restoredAssets, firstVideoAsset.id));
     }
 
+    const restoredImageAssets = restoredAssets.filter((asset) => asset.kind === "image");
+    if (!studioFile && !firstVideoAsset && !templateProject && restoredImageAssets.length) {
+      const durationSeconds = getImageStoryboardDuration(restoredImageAssets.length);
+      const restoredPlan = createImageStoryboardPlan({
+        assets: restoredImageAssets,
+        durationSeconds,
+        platform,
+        aspectRatio,
+        styleId,
+        brandName,
+        goal,
+      });
+      const restoredProject = createImageStoryboardTemplateProject({
+        assets: restoredImageAssets,
+        plan: restoredPlan,
+        brandName,
+        aspectRatio,
+        styleName: activeStyle.arabicName,
+        goal,
+      });
+      const restoredTracks = templateTimelineToEditorTracks(restoredProject.timeline);
+      const firstEditableLayer =
+        restoredTracks.flatMap((track) => track.layers).find((layer) => layer.type === "image") ??
+        restoredTracks.flatMap((track) => track.layers)[0] ??
+        null;
+
+      setTemplateProject(restoredProject);
+      setEngineProject(createVideoProjectFromTemplateProject(restoredProject), { resetHistory: true });
+      setTimelineTracks(restoredTracks);
+      setSelectedLayerId(firstEditableLayer?.id ?? "");
+      selectEngineLayer(firstEditableLayer?.id ?? null);
+      setCaptions(planToCaptions(restoredPlan));
+      setPlan(restoredPlan);
+      setPreviewTime(0);
+      setActivePanel("editor");
+    }
+
     setProjectStatus(`${records.length} media assets restored from browser storage`);
-  }, [aspectRatio, setEngineProject, studioFile]);
+  }, [
+    activeStyle.arabicName,
+    aspectRatio,
+    brandName,
+    goal,
+    platform,
+    selectEngineLayer,
+    setEngineProject,
+    studioFile,
+    styleId,
+    templateProject,
+  ]);
 
   const autosaveSnapshot = useMemo<Record<string, unknown>>(
     () => ({
@@ -421,15 +514,67 @@ export function ProfessionalVideoStudio() {
     }
   }, []);
 
+  const loadExportHistory = useCallback(async () => {
+    try {
+      const records = await listExportRecords();
+      const nextHistory = records.slice(0, 12).map((record) => ({
+        ...record,
+        url: URL.createObjectURL(record.blob),
+      }));
+
+      exportHistoryUrlsRef.current.forEach(revokeObjectUrl);
+      exportHistoryUrlsRef.current = nextHistory.map((record) => record.url);
+      setExportHistory(nextHistory);
+    } catch {
+      exportHistoryUrlsRef.current.forEach(revokeObjectUrl);
+      exportHistoryUrlsRef.current = [];
+      setExportHistory([]);
+    }
+  }, []);
+
   useEffect(() => {
     if (activePanel === "dashboard") {
       void loadProjects();
     }
-  }, [activePanel, loadProjects]);
+    if (activePanel === "exports" || activePanel === "dashboard") {
+      void loadExportHistory();
+    }
+  }, [activePanel, loadExportHistory, loadProjects]);
+
+  useEffect(() => () => {
+    exportHistoryUrlsRef.current.forEach(revokeObjectUrl);
+    exportHistoryUrlsRef.current = [];
+  }, []);
 
   function clearRenderedOutput() {
-    setRenderResult(null);
+    setRenderResult((currentResult) => {
+      revokeObjectUrl(currentResult?.url);
+      return null;
+    });
     setRenderProgress(null);
+  }
+
+  function persistExportResult(result: BrowserRenderResult, projectName = brandName || BRAND.displayName) {
+    void storeExportRecord({
+      id: createLayerId("export"),
+      fileName: result.fileName,
+      mimeType: result.mimeType,
+      blob: result.blob,
+      size: result.blob.size,
+      durationSeconds: result.durationSeconds,
+      resolution: result.resolution,
+      projectName,
+      createdAt: Date.now(),
+    })
+      .then(loadExportHistory)
+      .catch(() => undefined);
+  }
+
+  function deleteExportHistoryItem(id: string) {
+    void deleteExportRecord(id)
+      .then(loadExportHistory)
+      .then(() => setProjectStatus("Export removed from local history"))
+      .catch(() => setError("Could not delete this local export."));
   }
 
   function syncEditorTimelineFromEngineProject(project: VideoProject) {
@@ -440,11 +585,12 @@ export function ProfessionalVideoStudio() {
       "";
 
     setTimelineTracks(nextTracks);
+    timelineTracksRef.current = nextTracks;
     setSelectedLayerId(nextSelectedLayerId);
   }
 
   function commitTimeline(nextTracks: TimelineTrack[] | ((current: TimelineTrack[]) => TimelineTrack[])) {
-    const resolvedTracks = typeof nextTracks === "function" ? nextTracks(timelineTracks) : nextTracks;
+    const resolvedTracks = typeof nextTracks === "function" ? nextTracks(timelineTracksRef.current) : nextTracks;
     const currentEngineProject = useVideoProjectStore.getState().currentProject;
     const syncedProject = createVideoProjectFromEditorTimeline({
       baseProject: currentEngineProject,
@@ -458,6 +604,7 @@ export function ProfessionalVideoStudio() {
     });
 
     setTimelineTracks(resolvedTracks);
+    timelineTracksRef.current = resolvedTracks;
     useVideoProjectStore.getState().setCurrentProject(syncedProject);
     clearRenderedOutput();
     setProjectStatus("Autosaved timeline changes");
@@ -606,6 +753,7 @@ export function ProfessionalVideoStudio() {
     setEngineProject(createVideoProjectFromTemplateProject(project), { resetHistory: true });
     selectEngineLayer(firstEditableLayer?.id ?? null);
     setTimelineTracks(tracks);
+    timelineTracksRef.current = tracks;
     setSelectedLayerId(firstEditableLayer?.id ?? "clip-main");
     setCaptions(options?.captions ?? templateProjectToCaptions(project));
     setPlan(options?.plan ?? templateProjectToEditPlan(project));
@@ -635,6 +783,77 @@ export function ProfessionalVideoStudio() {
     ].slice(0, 12));
   }, [selectEngineLayer, setEngineProject]);
 
+  function openImageStoryboardProject(imageAssets: MediaAsset[], status?: string) {
+    const storyboardAssets = imageAssets.filter((asset) => asset.kind === "image");
+    if (!storyboardAssets.length) return;
+
+    const durationSeconds = getImageStoryboardDuration(storyboardAssets.length);
+    const storyboardPlan = createImageStoryboardPlan({
+      assets: storyboardAssets,
+      durationSeconds,
+      platform,
+      aspectRatio,
+      styleId,
+      brandName,
+      goal,
+    });
+    const storyboardProject = createImageStoryboardTemplateProject({
+      assets: storyboardAssets,
+      plan: storyboardPlan,
+      brandName,
+      aspectRatio,
+      styleName: activeStyle.arabicName,
+      goal,
+    });
+
+    applyTemplateProject(storyboardProject, {
+      plan: storyboardPlan,
+      captions: planToCaptions(storyboardPlan),
+      status: status ?? `${storyboardAssets.length} image${storyboardAssets.length > 1 ? "s" : ""} opened as an editable video`,
+      message: `جهزت الصور كمشروع فيديو قابل للتعديل مدته ${durationSeconds} ثانية. كل صورة أصبحت مشهد مستقل وتقدر تحركها وتغير توقيتها وتصدرها.`,
+    });
+    setActiveProject(null);
+    setPreviewTime(0);
+    setIsPlaying(false);
+  }
+
+  function resetStudioProject() {
+    const assetsToRemove = mediaAssets;
+
+    videoRef.current?.pause();
+    revokeObjectUrl(studioFile?.url);
+    assetsToRemove.forEach((asset) => revokeObjectUrl(asset.url));
+    void Promise.all(assetsToRemove.map((asset) => deleteMediaRecord(asset.id))).catch(() => undefined);
+
+    const nextTracks = createDefaultTimeline();
+    const blankProject = createBlankVideoProject({ name: brandName || BRAND.displayName, aspectRatio });
+
+    setStudioFile(null);
+    setMediaAssets([]);
+    setActiveProject(null);
+    setTemplateProject(null);
+    setActiveTemplateId(null);
+    setPlan(null);
+    setTranscript([]);
+    setTranscriptSearch("");
+    setCaptions([]);
+    setClipSuggestions([]);
+    setAssistantEngineState(null);
+    setTranscriptionMode(null);
+    setTranscriptionNotice("");
+    setError("");
+    setIsPlaying(false);
+    setPreviewTime(0);
+    setTimelineTracks(nextTracks);
+    timelineTracksRef.current = nextTracks;
+    setSelectedLayerId("clip-main");
+    setEngineProject(blankProject, { resetHistory: true });
+    selectEngineLayer("clip-main");
+    clearRenderedOutput();
+    setActivePanel("editor");
+    setProjectStatus("New empty project ready");
+  }
+
   useTemplateDraftLoader({
     onLoad: applyTemplateProject,
     onError: () => setProjectStatus("Could not load template project"),
@@ -644,16 +863,13 @@ export function ProfessionalVideoStudio() {
     if (!files?.length) return;
 
     const filesArray = Array.from(files);
-    const incomingAssets: MediaAsset[] = filesArray.map((file) => ({
-      id: crypto.randomUUID(),
-      name: file.name,
-      file,
-      url: URL.createObjectURL(file),
-      kind: getAssetKind(file),
-      size: file.size,
-    }));
+    setProjectStatus("Optimizing uploaded media for the editor...");
+    const preparedFiles = await Promise.all(filesArray.map(prepareStudioFileForUpload));
+    const incomingAssets: MediaAsset[] = preparedFiles.map(createMediaAssetFromFile);
 
     const firstVideoAsset = incomingAssets.find((asset) => asset.kind === "video") ?? null;
+    const incomingImageAssets = incomingAssets.filter((asset) => asset.kind === "image");
+    const allAssets = [...incomingAssets, ...mediaAssets];
     setMediaAssets((assets) => [...incomingAssets, ...assets]);
     void persistUploadedMedia(incomingAssets, firstVideoAsset?.id ?? null);
 
@@ -666,7 +882,7 @@ export function ProfessionalVideoStudio() {
         createVideoProjectFromMediaAssets({
           name: firstVideoAsset.name,
           aspectRatio,
-          assets: [...incomingAssets, ...mediaAssets].map(mediaAssetToBridgeAsset),
+          assets: allAssets.map(mediaAssetToBridgeAsset),
           primaryVideoAssetId: firstVideoAsset.id,
           durationSeconds: initialDuration,
         }),
@@ -680,6 +896,20 @@ export function ProfessionalVideoStudio() {
           ? `${incomingAssets.length} media files loaded into the timeline`
           : "Source video loaded",
       );
+    }
+
+    if (
+      !firstVideoAsset &&
+      incomingImageAssets.length &&
+      !studioFile &&
+      (!templateProject || templateProject.templateId === "image-storyboard-generated")
+    ) {
+      openImageStoryboardProject(
+        allAssets.filter((asset) => asset.kind === "image"),
+        `${incomingImageAssets.length} image${incomingImageAssets.length > 1 ? "s" : ""} loaded into an editable video storyboard`,
+      );
+      setError("");
+      return;
     }
 
     commitTimeline((tracks) =>
@@ -749,8 +979,40 @@ export function ProfessionalVideoStudio() {
     commitTimeline((tracks) => syncPrimaryVideoDuration(tracks, studioFile.file.name, roundedDuration));
   }
 
+  useEffect(() => {
+    if (!isPlaying || studioFile || !templateProject) return;
+
+    const intervalId = window.setInterval(() => {
+      setPreviewTime((currentTime) => {
+        const nextTime = Math.min(templateProject.duration, roundTimelineSeconds(currentTime + 0.1));
+        setEnginePlayhead(nextTime);
+
+        if (nextTime >= templateProject.duration) {
+          setIsPlaying(false);
+        }
+
+        return nextTime;
+      });
+    }, 100);
+
+    return () => window.clearInterval(intervalId);
+  }, [isPlaying, setEnginePlayhead, studioFile, templateProject]);
+
   function addMediaAssetToTimeline(asset: MediaAsset) {
     if (asset.kind === "image") {
+      if (!studioFile && (!templateProject || templateProject.templateId === "image-storyboard-generated")) {
+        const nextImageAssets = uniqueMediaAssetsById([asset, ...mediaAssets]).filter(
+          (item) => item.kind === "image",
+        );
+
+        openImageStoryboardProject(
+          nextImageAssets,
+          `${asset.name} opened in an editable image video storyboard`,
+        );
+        setError("");
+        return;
+      }
+
       const imageLayer = createEditableImageLayer({
         asset,
         aspectRatio,
@@ -762,8 +1024,69 @@ export function ProfessionalVideoStudio() {
       return;
     }
 
+    if (asset.kind === "video" && !studioFile && !templateProject) {
+      selectVideoAssetAsSource(asset, uniqueMediaAssetsById([asset, ...mediaAssets]));
+      setError("");
+      return;
+    }
+
     commitTimeline((tracks) => addAssetsToTimeline(tracks, [asset]));
     setProjectStatus(`${asset.name} added to timeline`);
+  }
+
+  async function addExternalMediaAssetToTimeline(asset: MediaAsset) {
+    const preparedAsset = await materializeExternalMediaAsset(asset);
+    upsertMediaAsset(preparedAsset);
+    if (preparedAsset.file.size > 0) {
+      void persistUploadedMedia(
+        [preparedAsset],
+        preparedAsset.kind === "video" && !studioFile && !templateProject ? preparedAsset.id : null,
+      );
+    }
+    addMediaAssetToTimeline(preparedAsset);
+  }
+
+  async function saveExternalMediaAsset(asset: MediaAsset) {
+    const preparedAsset = await materializeExternalMediaAsset(asset);
+    upsertMediaAsset(preparedAsset);
+    if (preparedAsset.file.size > 0) void persistUploadedMedia([preparedAsset], null);
+    setProjectStatus(`${preparedAsset.name} saved to media bin`);
+  }
+
+  function upsertMediaAsset(asset: MediaAsset) {
+    setMediaAssets((assets) => [asset, ...assets.filter((item) => item.id !== asset.id)]);
+  }
+
+  async function materializeExternalMediaAsset(asset: MediaAsset) {
+    const existingAsset = mediaAssets.find((item) => item.id === asset.id);
+    if (existingAsset && (existingAsset.file.size > 0 || existingAsset.url.startsWith("blob:"))) {
+      return existingAsset;
+    }
+
+    if (asset.file.size > 0 || asset.url.startsWith("blob:")) return asset;
+
+    setProjectStatus(`Downloading stock ${asset.kind} for local editing...`);
+
+    try {
+      const response = await fetch(asset.url);
+      if (!response.ok) throw new Error("Stock media download failed.");
+
+      const blob = await response.blob();
+      if (!blob.size) throw new Error("Stock media download was empty.");
+
+      const mimeType = blob.type || asset.file.type || getDefaultMimeType(asset.kind);
+      const file = new File([blob], asset.name, { type: mimeType });
+
+      return {
+        ...asset,
+        file,
+        url: URL.createObjectURL(blob),
+        size: blob.size,
+      };
+    } catch {
+      setProjectStatus(`Using streamed ${asset.kind}. Local download was unavailable.`);
+      return asset;
+    }
   }
 
   async function addImageLayerFromFiles(files?: FileList | File[]) {
@@ -773,14 +1096,9 @@ export function ProfessionalVideoStudio() {
       return;
     }
 
-    const incomingAssets: MediaAsset[] = imageFiles.map((file) => ({
-      id: crypto.randomUUID(),
-      name: file.name,
-      file,
-      url: URL.createObjectURL(file),
-      kind: "image",
-      size: file.size,
-    }));
+    setProjectStatus("Optimizing image layers for fast preview...");
+    const preparedFiles = await Promise.all(imageFiles.map(prepareStudioFileForUpload));
+    const incomingAssets: MediaAsset[] = preparedFiles.map(createMediaAssetFromFile);
     const imageLayers = incomingAssets.map((asset, index) =>
       createEditableImageLayer({
         asset,
@@ -791,6 +1109,17 @@ export function ProfessionalVideoStudio() {
 
     setMediaAssets((assets) => [...incomingAssets, ...assets]);
     void persistUploadedMedia(incomingAssets, null);
+
+    if (!studioFile && (!templateProject || templateProject.templateId === "image-storyboard-generated")) {
+      openImageStoryboardProject(
+        uniqueMediaAssetsById([...incomingAssets, ...mediaAssets]).filter((asset) => asset.kind === "image"),
+        `${incomingAssets.length} image${incomingAssets.length > 1 ? "s" : ""} opened in an editable video storyboard`,
+      );
+      setActivePanel("editor");
+      setError("");
+      return;
+    }
+
     appendEditableLayersToProject(imageLayers, imageLayers.at(-1)?.id ?? imageLayers[0]?.id);
     setActivePanel("editor");
     setError("");
@@ -917,13 +1246,14 @@ export function ProfessionalVideoStudio() {
     revokeObjectUrl(asset.url);
     setMediaAssets((assets) => assets.filter((item) => item.id !== asset.id));
     void deleteMediaRecord(asset.id).catch(() => undefined);
+    syncTemplateProjectTimeline(nextTracks);
     commitTimeline(nextTracks);
     setSelectedLayerId(nextLayer?.id ?? "");
     selectEngineLayer(nextLayer?.id ?? null);
     setProjectStatus(`${asset.name} deleted from media and timeline`);
   }
 
-  function selectVideoAssetAsSource(asset: MediaAsset) {
+  function selectVideoAssetAsSource(asset: MediaAsset, availableAssets: MediaAsset[] = mediaAssets) {
     if (asset.kind !== "video") return;
     const durationSeconds = Math.round(asset.durationSeconds ?? 60);
     setStudioFile({ file: asset.file, url: asset.url, durationSeconds });
@@ -933,7 +1263,7 @@ export function ProfessionalVideoStudio() {
       createVideoProjectFromMediaAssets({
         name: asset.name,
         aspectRatio,
-        assets: mediaAssets.map(mediaAssetToBridgeAsset),
+        assets: uniqueMediaAssetsById([asset, ...availableAssets]).map(mediaAssetToBridgeAsset),
         primaryVideoAssetId: asset.id,
         durationSeconds,
       }),
@@ -1203,14 +1533,18 @@ export function ProfessionalVideoStudio() {
         captions: nextCaptions,
         status: `Generated ${imageAssets.length} images into an editable video storyboard`,
         message: `Image video generated: ${imageAssets.length} uploaded images became ${storyboardProject.scenes.length} scenes with editable text, image layers, captions, and export-ready timing.`,
-      });
-      setActiveProject(null);
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Unexpected image video generation error.");
-    } finally {
-      setIsGenerating(false);
-    }
-  }
+	      });
+	      setActiveProject(null);
+	    } catch {
+	      openImageStoryboardProject(
+	        imageAssets,
+	        "Generated a local image storyboard because the AI planner was unavailable",
+	      );
+	      setError("");
+	    } finally {
+	      setIsGenerating(false);
+	    }
+	  }
 
   async function ensureProjectUploaded() {
     if (!studioFile) throw new Error("Upload a source video first, or use Generate to turn images into a storyboard.");
@@ -1287,6 +1621,18 @@ export function ProfessionalVideoStudio() {
   }
 
   async function togglePlayback() {
+    if (!studioFile && templateProject) {
+      setIsPlaying((playing) => {
+        const shouldPlay = !playing;
+        if (shouldPlay && previewTime >= templateProject.duration) {
+          setPreviewTime(0);
+          setEnginePlayhead(0);
+        }
+        return shouldPlay;
+      });
+      return;
+    }
+
     const video = videoRef.current;
     if (!video) return;
 
@@ -1319,7 +1665,7 @@ export function ProfessionalVideoStudio() {
     if (templateProject) {
       setIsRendering(true);
       setError("");
-      setRenderResult(null);
+      clearRenderedOutput();
       setRenderProgress({
         percent: 0,
         label: "Preparing template render",
@@ -1334,6 +1680,7 @@ export function ProfessionalVideoStudio() {
           onProgress: setRenderProgress,
         });
         setRenderResult(result);
+        persistExportResult(result, templateProject.name);
         setProjectStatus(`${templateProject.name} template export ready`);
         setActivePanel("exports");
       } catch (caughtError) {
@@ -1366,7 +1713,7 @@ export function ProfessionalVideoStudio() {
 
     setIsRendering(true);
     setError("");
-    setRenderResult(null);
+    clearRenderedOutput();
     setRenderProgress({
       percent: 0,
       label: "Preparing render",
@@ -1389,6 +1736,7 @@ export function ProfessionalVideoStudio() {
         onProgress: setRenderProgress,
       });
       setRenderResult(result);
+      persistExportResult(result, renderPlan.title);
       setProjectStatus(`${exportTier} ${exportFormat} export ready`);
       setActivePanel("exports");
     } catch (caughtError) {
@@ -1413,7 +1761,7 @@ export function ProfessionalVideoStudio() {
 
     setIsRendering(true);
     setError("");
-    setRenderResult(null);
+    clearRenderedOutput();
     setRenderProgress({
       percent: 0,
       label: `Preparing ${clip.label}`,
@@ -1436,6 +1784,7 @@ export function ProfessionalVideoStudio() {
         onProgress: setRenderProgress,
       });
       setRenderResult(result);
+      persistExportResult(result, `${clip.label} · ${brandName || BRAND.displayName}`);
       setProjectStatus(`${clip.label} export ready`);
       setActivePanel("exports");
     } catch (caughtError) {
@@ -1764,30 +2113,75 @@ export function ProfessionalVideoStudio() {
 
   function markTranscriptDeleted(segmentId: string) {
     const segment = transcript.find((item) => item.id === segmentId);
-    setTranscript((items) =>
-      items.map((item) => (item.id === segmentId ? { ...item, deleted: !item.deleted } : item)),
-    );
     if (!segment) return;
 
+    const nextTranscript = transcript.map((item) =>
+      item.id === segmentId ? { ...item, deleted: !item.deleted } : item,
+    );
+    const keptSegments = getKeptTranscriptSegments(nextTranscript);
+
+    if (!keptSegments.length) {
+      setProjectStatus("لا يمكن حذف كل مقاطع الترانسكربت");
+      setAssistantMessages((messages) =>
+        [
+          createAssistantMessage(
+            "assistant",
+            "ما أقدر أحذف كل الجمل؛ لازم يبقى مقطع واحد على الأقل حتى نقدر نصدّر فيديو فعلي.",
+          ),
+          ...messages,
+        ].slice(0, 12),
+      );
+      return;
+    }
+
+    const deletedSegments = getDeletedTranscriptSegments(nextTranscript);
+    const hasCuts = deletedSegments.length > 0;
+    const targetDuration = studioFile?.durationSeconds ?? totalTimelineSeconds;
+    const nextPlan = hasCuts
+      ? createTranscriptCutPlan({
+          transcript: nextTranscript,
+          deletedSegments,
+          style: activeStyle,
+          aspectRatio,
+          brandName,
+          durationSeconds: targetDuration,
+        })
+      : null;
+    const nextCaptions = hasCuts
+      ? createOutputCaptionsFromTranscript(nextTranscript)
+      : transcriptToCaptions(keptSegments);
+
+    setTranscript(nextTranscript);
+    setCaptions(nextCaptions);
+    setPlan((currentPlan) => nextPlan ?? (currentPlan?.id.startsWith("transcript-cut-") ? null : currentPlan));
     commitTimeline((tracks) =>
-      tracks.map((track) =>
-        track.kind === "effects"
-          ? {
-              ...track,
-              layers: [
-                ...track.layers,
-                {
-                  id: crypto.randomUUID(),
-                  type: "effect",
-                  name: `Text cut ${formatDuration(segment.start)}`,
-                  start: segment.start,
-                  duration: Math.max(0.5, segment.end - segment.start),
-                  color: "#fb7185",
-                },
-              ],
-            }
-          : track,
+      ensureCaptionLayer(
+        syncTranscriptCutMarkers(tracks, deletedSegments),
+        nextCaptions,
+        nextPlan?.targetDurationSeconds ?? targetDuration,
+        getActiveCaptionStylePatch(),
       ),
+    );
+    clearRenderedOutput();
+    setProjectStatus(
+      hasCuts
+        ? `تم تجهيز ${deletedSegments.length} قصّة نصية للتصدير`
+        : "تم إلغاء قص الترانسكربت واستعادة الكابشن",
+    );
+    setAssistantMessages((messages) =>
+      [
+        createAssistantMessage(
+          "assistant",
+          hasCuts
+            ? `تم تجهيز قص فعلي من الترانسكربت. التصدير القادم سيحافظ على ${keptSegments.length} مقطع ويقص:\n${deletedSegments
+                .slice(0, 6)
+                .map((item) => `• ${formatDuration(item.start)}–${formatDuration(item.end)}`)
+                .join("\n")}`
+            : "رجّعت كل مقاطع الترانسكربت. التصدير القادم سيستخدم الفيديو بدون قص نصي.",
+          hasCuts ? [{ type: "REMOVE_SILENCE", label: `${deletedSegments.length} transcript cuts` }] : undefined,
+        ),
+        ...messages,
+      ].slice(0, 12),
     );
   }
 
@@ -1850,27 +2244,36 @@ export function ProfessionalVideoStudio() {
       deleted: true,
     }));
 
-    setTranscript((segments) =>
-      [...segments.filter((segment) => !segment.id.startsWith("silence-gap-")), ...silenceSegments]
-        .sort((a, b) => a.start - b.start),
-    );
-    setPlan(
-      createSilenceRemovalPlan({
-        transcript: sorted,
-        gaps,
-        style: activeStyle,
-        aspectRatio,
-        brandName,
-      }),
-    );
+    const nextTranscript = [
+      ...transcript.filter((segment) => !segment.id.startsWith("silence-gap-")),
+      ...silenceSegments,
+    ].sort((a, b) => a.start - b.start);
+    const nextPlan = createSilenceRemovalPlan({
+      transcript: sorted,
+      gaps,
+      style: activeStyle,
+      aspectRatio,
+      brandName,
+    });
+    const nextCaptions = createOutputCaptionsFromTranscript(nextTranscript);
+
+    setTranscript(nextTranscript);
+    setPlan(nextPlan);
+    setCaptions(nextCaptions);
 
     commitTimeline((tracks) =>
-      tracks.map((track) =>
-        track.kind === "effects"
-          ? { ...track, layers: [...track.layers, ...silenceMarkers] }
-        : track,
+      ensureCaptionLayer(
+        tracks.map((track) =>
+          track.kind === "effects"
+            ? { ...track, layers: [...track.layers.filter((layer) => !layer.name.startsWith("Silence ")), ...silenceMarkers] }
+            : track,
+        ),
+        nextCaptions,
+        nextPlan.targetDurationSeconds,
+        getActiveCaptionStylePatch(),
       ),
     );
+    clearRenderedOutput();
     setProjectStatus(`تم تحديد ${gaps.length} فترة صمت للحذف`);
     setAssistantMessages((messages) =>
       [
@@ -1886,48 +2289,42 @@ export function ProfessionalVideoStudio() {
     );
   }
 
-  function addEffectLayer(name: string, color: string, duration = Math.min(totalTimelineSeconds, 30)) {
-    const effectLayer: TimelineLayer = {
-      id: crypto.randomUUID(),
-      type: "effect",
-      name,
-      start: 0,
-      duration: Math.max(1, duration),
-      color,
-    };
-
-    commitTimeline((tracks) => {
-      let added = false;
-      const nextTracks = tracks.map((track) => {
-        if (track.kind !== "effects") return track;
-        added = true;
-        return {
-          ...track,
-          layers: [...track.layers, effectLayer],
-        };
-      });
-
-      if (added) return nextTracks;
-
-      return [
-        ...nextTracks,
-        {
-          id: "track-effects",
-          name: "AI Effects",
-          kind: "effects",
-          layers: [effectLayer],
-        },
-      ];
-    });
-  }
-
   function applyBackgroundReplacement(mode = backgroundMode) {
     setBackgroundMode(mode);
-    addEffectLayer(`Background replacement · ${mode}`, "#36d399");
-    setProjectStatus(`${mode} background effect applied to timeline`);
+    const backgroundLayer = createBackgroundReplacementLayer({
+      mode,
+      aspectRatio,
+      duration: Math.max(1, totalTimelineSeconds),
+      brandColor: brandKit.primaryColor,
+    });
+
+    commitTimeline((tracks) =>
+      tracks.map((track) =>
+        track.kind === "effects"
+          ? {
+              ...track,
+              layers: [
+                backgroundLayer,
+                ...track.layers.filter((layer) => !layer.id.startsWith("background-replacement-")),
+              ],
+            }
+          : track,
+      ),
+    );
+    setSelectedLayerId(backgroundLayer.id);
+    selectEngineLayer(backgroundLayer.id);
+    setProjectStatus(`${mode} background applied to preview, timeline, and export`);
   }
 
   function applyAudioEnhancementChain() {
+    const enabledTools = [
+      "Noise reduction",
+      "Voice enhancement",
+      "Echo reduction",
+      "Auto volume leveling",
+    ];
+    const duration = Math.max(1, totalTimelineSeconds);
+
     setActiveAudioTools((tools) => ({
       ...tools,
       "Noise reduction": true,
@@ -1935,8 +2332,33 @@ export function ProfessionalVideoStudio() {
       "Echo reduction": true,
       "Auto volume leveling": true,
     }));
-    addEffectLayer("Audio cleanup chain · noise/echo/leveling", "#7dd3fc");
-    setProjectStatus("Audio enhancement chain applied to timeline");
+
+    const audioLayer: TimelineLayer = {
+      id: "audio-enhancement-chain",
+      type: "effect",
+      name: `Audio cleanup chain · ${enabledTools.join(" + ")}`,
+      content: enabledTools.join(", "),
+      start: 0,
+      duration,
+      color: "#7dd3fc",
+    };
+
+    commitTimeline((tracks) =>
+      tracks.map((track) =>
+        track.kind === "effects"
+          ? {
+              ...track,
+              layers: [
+                ...track.layers.filter((layer) => layer.id !== audioLayer.id),
+                audioLayer,
+              ],
+            }
+          : track,
+      ),
+    );
+    setSelectedLayerId(audioLayer.id);
+    selectEngineLayer(audioLayer.id);
+    setProjectStatus("Audio enhancement chain will be applied during export");
   }
 
   function generateCaptionsFromTranscript() {
@@ -1971,6 +2393,46 @@ export function ProfessionalVideoStudio() {
       ),
     );
     setProjectStatus(`${nextTemplate} caption style applied`);
+  }
+
+  function applyBrandKitToTimeline() {
+    const normalizedBrandKit = normalizeBrandKit(brandKit);
+    const brandLabel = brandName.trim() || BRAND.displayName;
+    const nextCaptionTemplate = normalizedBrandKit.captionStyle.trim() || captionTemplate;
+    const captionStylePatch = getCaptionStylePatch(nextCaptionTemplate, aspectRatio, normalizedBrandKit.primaryColor);
+    const durationSeconds = Math.max(1, totalTimelineSeconds, studioFile?.durationSeconds ?? 0, templateProject?.duration ?? 0);
+    const brandBugLayer = createBrandBugTimelineLayer({
+      brandName: brandLabel,
+      brandKit: normalizedBrandKit,
+      aspectRatio,
+      durationSeconds,
+    });
+
+    setBrandKit(normalizedBrandKit);
+    setCaptionTemplate(nextCaptionTemplate);
+    commitTimeline((tracks) => applyBrandKitToEditorTracks(tracks, normalizedBrandKit, brandBugLayer, captionStylePatch));
+    setTemplateProject((project) =>
+      project
+        ? applyBrandKitToTemplateProject({
+            project,
+            brandName: brandLabel,
+            brandKit: normalizedBrandKit,
+            captionStylePatch,
+          })
+        : project,
+    );
+    setSelectedLayerId(brandBugLayer.id);
+    selectEngineLayer(brandBugLayer.id);
+    setAssistantMessages((messages) =>
+      [
+        createAssistantMessage(
+          "assistant",
+          `تم تطبيق هوية ${brandLabel}: الألوان والكابشن وطبقة البراند أصبحت عناصر قابلة للتعديل داخل التايملاين.`,
+        ),
+        ...messages,
+      ].slice(0, 12),
+    );
+    setProjectStatus("Brand kit applied to editable timeline");
   }
 
   function getActiveCaptionStylePatch() {
@@ -2120,7 +2582,193 @@ export function ProfessionalVideoStudio() {
           `${index + 1}\n${secondsToSrt(caption.start)} --> ${secondsToSrt(caption.end)}\n${caption.text}\n`,
       )
       .join("\n");
-    downloadTextFile("mawj-captions.srt", srt, "text/plain;charset=utf-8");
+    const blob = new Blob([srt], { type: "text/plain;charset=utf-8" });
+    const durationSeconds = Math.max(1, Math.round(Math.max(0, ...captions.map((caption) => caption.end))));
+    const result: BrowserRenderResult = {
+      blob,
+      url: URL.createObjectURL(blob),
+      fileName: "mawj-captions.srt",
+      mimeType: "text/plain;charset=utf-8",
+      durationSeconds,
+      resolution: "SRT subtitles",
+      textPreview: srt.slice(0, 4000),
+    };
+
+    setRenderResult(result);
+    persistExportResult(result, `${brandName || BRAND.displayName} captions`);
+    setProjectStatus("SRT captions export ready");
+    setActivePanel("exports");
+  }
+
+  async function exportThumbnail() {
+    if (!studioFile && !templateProject) {
+      setError("افتح فيديو أو قالب قبل تصدير الصورة المصغرة.");
+      return;
+    }
+
+    setError("");
+    setProjectStatus("Preparing thumbnail...");
+
+    try {
+      if (templateProject) {
+        const thumbnail = await renderTemplateProjectThumbnail({
+          project: templateProject,
+          time: previewTime,
+        });
+        const result: BrowserRenderResult = {
+          blob: thumbnail.blob,
+          url: thumbnail.url,
+          fileName: thumbnail.fileName,
+          mimeType: "image/png",
+          durationSeconds: 1,
+          resolution: thumbnail.resolution,
+        };
+        setRenderResult(result);
+        persistExportResult(result, `${templateProject.name} thumbnail`);
+        setProjectStatus(`Thumbnail exported: ${thumbnail.resolution}`);
+        setActivePanel("exports");
+        return;
+      }
+
+      if (!studioFile) return;
+
+      const blob = await createSourceVideoThumbnail({
+        sourceUrl: studioFile.url,
+        time: previewTime,
+        aspectRatio,
+      });
+      const result: BrowserRenderResult = {
+        blob,
+        url: URL.createObjectURL(blob),
+        fileName: `${withoutFileExtension(studioFile.file.name)}-thumbnail.png`,
+        mimeType: "image/png",
+        durationSeconds: 1,
+        resolution: getThumbnailResolutionLabel(aspectRatio),
+      };
+      setRenderResult(result);
+      persistExportResult(result, `${brandName || BRAND.displayName} thumbnail`);
+      setProjectStatus("Thumbnail exported from current preview frame");
+      setActivePanel("exports");
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not export thumbnail.");
+    }
+  }
+
+  async function exportMp3() {
+    const source = getDerivedExportSource(renderResult, studioFile, "audio");
+    const sourceBlob = source?.blob ?? null;
+    const sourceName = source?.fileName ?? "mawj-video.mp4";
+    const outputSeconds = Math.max(
+      1,
+      renderResult?.durationSeconds ?? studioFile?.durationSeconds ?? templateProject?.duration ?? totalTimelineSeconds,
+    );
+
+    if (!sourceBlob) {
+      setError("ارفع فيديو أو صدّر ملف فيديو أولاً قبل استخراج MP3.");
+      return;
+    }
+
+    setIsRendering(true);
+    setError("");
+    setProjectStatus("Extracting MP3 audio...");
+    clearRenderedOutput();
+    setRenderProgress({
+      percent: 0,
+      label: "Preparing MP3 export",
+      elapsedSeconds: 0,
+      outputSeconds,
+    });
+
+    try {
+      const blob = await extractAudioMp3WithFFmpeg(sourceBlob, sourceName, (percent) => {
+        setRenderProgress({
+          percent,
+          label: "Extracting MP3 audio",
+          elapsedSeconds: Math.round((percent / 100) * outputSeconds),
+          outputSeconds,
+        });
+      });
+      const url = URL.createObjectURL(blob);
+      const result: BrowserRenderResult = {
+        blob,
+        url,
+        fileName: `${withoutFileExtension(sourceName)}-audio.mp3`,
+        mimeType: "audio/mpeg",
+        durationSeconds: Math.round(outputSeconds),
+        resolution: "MP3 · 192 kbps",
+      };
+      setRenderResult(result);
+      persistExportResult(result, `${brandName || BRAND.displayName} audio`);
+      setProjectStatus("MP3 audio export ready");
+      setActivePanel("exports");
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not extract MP3 audio.");
+    } finally {
+      setIsRendering(false);
+    }
+  }
+
+  async function exportGif() {
+    const source = getDerivedExportSource(renderResult, studioFile, "video");
+    const sourceBlob = source?.blob ?? null;
+    const sourceName = source?.fileName ?? "mawj-video.mp4";
+    const outputSeconds = Math.max(
+      1,
+      Math.min(8, renderResult?.durationSeconds ?? studioFile?.durationSeconds ?? templateProject?.duration ?? totalTimelineSeconds),
+    );
+
+    if (!sourceBlob) {
+      setError("ارفع فيديو أو صدّر ملف فيديو أولاً قبل إنشاء GIF.");
+      return;
+    }
+
+    setIsRendering(true);
+    setError("");
+    setProjectStatus("Creating GIF preview...");
+    clearRenderedOutput();
+    setRenderProgress({
+      percent: 0,
+      label: "Preparing GIF export",
+      elapsedSeconds: 0,
+      outputSeconds,
+    });
+
+    try {
+      const blob = await convertVideoToGifWithFFmpeg(
+        sourceBlob,
+        sourceName,
+        {
+          durationSeconds: outputSeconds,
+          fps: 12,
+          width: aspectRatio === "16:9" ? 640 : 480,
+        },
+        (percent) => {
+          setRenderProgress({
+            percent,
+            label: "Rendering GIF preview",
+            elapsedSeconds: Math.round((percent / 100) * outputSeconds),
+            outputSeconds,
+          });
+        },
+      );
+      const url = URL.createObjectURL(blob);
+      const result: BrowserRenderResult = {
+        blob,
+        url,
+        fileName: `${withoutFileExtension(sourceName)}-preview.gif`,
+        mimeType: "image/gif",
+        durationSeconds: Math.round(outputSeconds),
+        resolution: aspectRatio === "16:9" ? "GIF · 640px wide" : "GIF · 480px wide",
+      };
+      setRenderResult(result);
+      persistExportResult(result, `${brandName || BRAND.displayName} GIF`);
+      setProjectStatus("GIF preview export ready");
+      setActivePanel("exports");
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not create GIF preview.");
+    } finally {
+      setIsRendering(false);
+    }
   }
 
   async function importSrtFile(file: File) {
@@ -2211,8 +2859,8 @@ export function ProfessionalVideoStudio() {
   }
 
   async function refreshProjectList() {
-    await loadProjects();
-    setProjectStatus("Project list refreshed");
+    await Promise.all([loadProjects(), loadExportHistory()]);
+    setProjectStatus("Dashboard refreshed");
   }
 
   async function updateProjectRecord(projectId: string) {
@@ -2309,6 +2957,29 @@ export function ProfessionalVideoStudio() {
       ),
       ...messages,
     ].slice(0, 12));
+  }
+
+  function saveCurrentProjectAsCustomTemplate() {
+    const customTemplate = createCustomTemplateFromTimeline({
+      tracks: timelineTracksRef.current,
+      brandName,
+      brandKit,
+      aspectRatio,
+      durationSeconds: Math.max(1, studioFile?.durationSeconds ?? 0, templateProject?.duration ?? 0, totalTimelineSeconds),
+    });
+
+    storeCustomVideoTemplate(customTemplate);
+    setActiveTemplateId(customTemplate.id);
+    setProjectStatus(`${customTemplate.name} saved to your custom templates`);
+    setAssistantMessages((messages) =>
+      [
+        createAssistantMessage(
+          "assistant",
+          `تم حفظ المشروع كقالب مخصص: ${customTemplate.name}. افتح /templates واختر فلتر "قوالبي" لاستخدامه كـ Template Engine قابل للتعديل.`,
+        ),
+        ...messages,
+      ].slice(0, 12),
+    );
   }
 
   async function generateAdVersion() {
@@ -2526,13 +3197,13 @@ export function ProfessionalVideoStudio() {
       }
 
       if (action.type === "IMPROVE_AUDIO") {
+        applyAudioEnhancementChain();
         setActivePanel("audio");
-        setProjectStatus("ميزة تحسين الصوت تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro.");
         setAssistantMessages((messages) =>
           [
             createAssistantMessage(
               "assistant",
-              "ميزة تحسين الصوت تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro. فتحت لك لوحة الصوت للتحكم اليدوي الحالي.",
+              "فعّلت سلسلة تحسين الصوت داخل المشروع: Noise reduction + Voice enhancement + Echo reduction + Auto volume leveling. مرحلة المعالجة العميقة على الخادم ستأتي لاحقًا، لكن التايملاين الآن يحمل إعدادات الصوت بوضوح.",
               [action],
             ),
             ...messages,
@@ -2541,13 +3212,13 @@ export function ProfessionalVideoStudio() {
       }
 
       if (action.type === "REMOVE_BACKGROUND") {
+        applyBackgroundReplacement("Blur original video");
         setActivePanel("background");
-        setProjectStatus("ميزة إزالة الخلفية تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro.");
         setAssistantMessages((messages) =>
           [
             createAssistantMessage(
               "assistant",
-              "ميزة إزالة الخلفية من الفيديو تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro. فتحت لك لوحة الخلفية للتجهيز اليدوي.",
+              "طبقت خلفية Blur original video على المعاينة والتصدير. الإزالة الدقيقة للشخص بخادم AI ستأتي لاحقًا، لكن الخلفية الآن تأثير فعلي وليس زر صوري.",
               [action],
             ),
             ...messages,
@@ -2594,10 +3265,24 @@ export function ProfessionalVideoStudio() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href="/templates" className="btn-ghost hidden sm:inline-flex">
+            <a
+              href="/templates"
+              onClick={openTemplatesPage}
+              className="btn-ghost hidden sm:inline-flex"
+              aria-label="Open templates page"
+            >
               <LayoutTemplate className="h-4 w-4" aria-hidden="true" />
               <span>Templates</span>
-            </Link>
+            </a>
+            <button
+              type="button"
+              onClick={resetStudioProject}
+              className="icon-button"
+              aria-label="New empty project"
+              title="New empty project"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+            </button>
             <button type="button" onClick={saveProjectSnapshot} className="icon-button" aria-label="Save project">
               <Save className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -2645,17 +3330,19 @@ export function ProfessionalVideoStudio() {
                 const active = activePanel === panel.id;
                 if (panel.id === "templates") {
                   return (
-                    <Link
+                    <a
                       key={panel.id}
                       href="/templates"
-                      className="nav-btn"
+                      onClick={openTemplatesPage}
+                      className="nav-btn w-full"
+                      aria-label="Open templates page"
                     >
                       <Icon className="nav-btn-icon h-4 w-4 shrink-0" aria-hidden="true" />
                       <span className="min-w-0">
                         <span className="block truncate text-xs font-black">{panel.label}</span>
                         <span className="block truncate text-[11px] font-semibold opacity-75">Open library</span>
                       </span>
-                    </Link>
+                    </a>
                   );
                 }
                 return (
@@ -2689,7 +3376,10 @@ export function ProfessionalVideoStudio() {
               multiple
               accept="video/*,audio/*,image/*"
               className="sr-only"
-              onChange={(event) => handleFiles(event.target.files ?? undefined)}
+              onChange={(event) => {
+                void handleFiles(event.target.files ?? undefined);
+                event.currentTarget.value = "";
+              }}
             />
             <input
               ref={imageLayerInputRef}
@@ -2716,16 +3406,17 @@ export function ProfessionalVideoStudio() {
               <span className="text-sm font-black">Drag media here</span>
               <span className="text-xs font-semibold text-[var(--muted)]">Video · Audio · Images</span>
             </button>
-            <div className="space-y-2">
-              {mediaAssets.slice(0, 8).map((asset) => (
+            <div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">
+              {mediaAssets.map((asset) => (
                 <div key={asset.id} className="rounded-lg border border-[var(--line)] bg-black/20 p-2">
                   <div className="mb-2 flex items-center gap-2">
-                    <AssetIcon kind={asset.kind} />
+                    <MediaAssetPreview asset={asset} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-black">{asset.name}</p>
                       <p className="text-[11px] font-semibold text-[var(--muted)]">
                         {asset.kind} · {formatBytes(asset.size)}
                         {asset.durationSeconds ? ` · ${formatDuration(asset.durationSeconds)}` : ""}
+                        {asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : ""}
                         {asset.persisted ? " · saved" : ""}
                       </p>
                     </div>
@@ -2752,7 +3443,11 @@ export function ProfessionalVideoStudio() {
                         onClick={() => addMediaAssetToTimeline(asset)}
                         className="toolbar-btn justify-center text-[11px]"
                       >
-                        Layer
+                        {asset.kind === "image" &&
+                        !studioFile &&
+                        (!templateProject || templateProject.templateId === "image-storyboard-generated")
+                          ? "Open video"
+                          : "Layer"}
                       </button>
                     )}
                     {(asset.kind === "video" || asset.kind === "audio") ? (
@@ -2794,13 +3489,20 @@ export function ProfessionalVideoStudio() {
           {activePanel === "dashboard" ? (
             <DashboardPanel
               projects={recentProjects}
+              mediaCount={mediaAssets.length}
+              exportCount={exportHistory.length}
+              storageBytes={localStorageBytes}
               projectStatus={projectStatus}
               onRefresh={refreshProjectList}
               onUpdate={updateProjectRecord}
               onDelete={deleteProjectRecord}
             />
           ) : activePanel === "templates" ? (
-            <TemplatesPanel activeTemplateId={activeTemplateId} onApply={applyTemplatePreset} />
+            <TemplatesPanel
+              activeTemplateId={activeTemplateId}
+              onApply={applyTemplatePreset}
+              onSaveCurrent={saveCurrentProjectAsCustomTemplate}
+            />
           ) : activePanel === "collaboration" ? (
             <CollaborationPanel />
           ) : (
@@ -3016,26 +3718,22 @@ export function ProfessionalVideoStudio() {
     }
 
     if (activePanel === "brand") {
-      return <BrandKitPanel brandKit={brandKit} onChange={setBrandKit} brandName={brandName} onBrandNameChange={setBrandName} />;
+      return (
+        <BrandKitPanel
+          brandKit={brandKit}
+          onChange={setBrandKit}
+          brandName={brandName}
+          onBrandNameChange={setBrandName}
+          onApply={applyBrandKitToTimeline}
+        />
+      );
     }
 
     if (activePanel === "stock") {
       return (
         <StockMediaPanel
-          onAddToTimeline={(asset) => {
-            setMediaAssets((prev) => {
-              const exists = prev.some((a) => a.id === asset.id);
-              return exists ? prev : [asset, ...prev];
-            });
-            addMediaAssetToTimeline(asset);
-          }}
-          onAddToMediaBin={(asset) => {
-            setMediaAssets((prev) => {
-              const exists = prev.some((a) => a.id === asset.id);
-              return exists ? prev : [asset, ...prev];
-            });
-            setProjectStatus(`${asset.name} added to media bin`);
-          }}
+          onAddToTimeline={(asset) => void addExternalMediaAssetToTimeline(asset)}
+          onAddToMediaBin={(asset) => void saveExternalMediaAsset(asset)}
         />
       );
     }
@@ -3047,12 +3745,18 @@ export function ProfessionalVideoStudio() {
           format={exportFormat}
           renderResult={renderResult}
           renderProgress={renderProgress}
+          exportHistory={exportHistory}
           isRendering={isRendering}
           aspectRatio={aspectRatio}
           onTierChange={setExportTier}
           onFormatChange={setExportFormat}
           onRender={renderVideo}
           onDownloadSrt={downloadSrt}
+          onExportThumbnail={exportThumbnail}
+          onExportMp3={exportMp3}
+          onExportGif={exportGif}
+          onRefreshHistory={() => void loadExportHistory()}
+          onDeleteHistoryItem={deleteExportHistoryItem}
         />
       );
     }
@@ -3102,7 +3806,13 @@ export function ProfessionalVideoStudio() {
       commitTimeline((tracks) =>
         tracks.map((track) =>
           track.kind === "effects"
-            ? { ...track, layers: [...track.layers, ...clips] }
+            ? {
+                ...track,
+                layers: [
+                  ...track.layers.filter((layer) => !layer.id.startsWith("clip-")),
+                  ...clips,
+                ],
+              }
             : track,
         ),
       );
@@ -3116,7 +3826,7 @@ export function ProfessionalVideoStudio() {
             "assistant",
             `تم تحديد ${suggestions.length} مقاطع:\n${suggestions
               .map((clip) => `• ${formatDuration(clip.start)}-${formatDuration(clip.end)} ثانية (${clip.label})`)
-              .join("\n")}\n\nتقدر تصدر نسخة 30s من زر Export 30s Clip في لوحة المساعد.`,
+              .join("\n")}\n\nتقدر تصدر أي نسخة مباشرة من أزرار Ready clips في لوحة المساعد.`,
             [{ type: "EXTRACT_CLIPS", label: "3 clip ranges prepared" }],
           ),
           ...messages,
@@ -3382,8 +4092,637 @@ export function ProfessionalVideoStudio() {
   }
 }
 
+function createCustomTemplateFromTimeline({
+  tracks,
+  brandName,
+  brandKit,
+  aspectRatio,
+  durationSeconds,
+}: {
+  tracks: TimelineTrack[];
+  brandName: string;
+  brandKit: BrandKitState;
+  aspectRatio: AspectRatio;
+  durationSeconds: number;
+}): VideoTemplate {
+  const normalizedBrandKit = normalizeBrandKit(brandKit);
+  const dimensions = getTemplateDimensions(aspectRatio);
+  const safeMargins = getStoryboardSafeMargins(aspectRatio);
+  const templateName = `${brandName.trim() || BRAND.displayName} Custom Template`;
+  const requiredInputs: VideoTemplateInput[] = [
+    {
+      key: "brandName",
+      label: "Brand Name",
+      type: "text",
+      default: brandName.trim() || BRAND.displayName,
+    },
+    {
+      key: "brandColor",
+      label: "Brand Color",
+      type: "color",
+      default: normalizedBrandKit.primaryColor,
+    },
+    {
+      key: "accentColor",
+      label: "Accent Color",
+      type: "color",
+      default: normalizedBrandKit.secondaryColor,
+    },
+  ];
+  const layers = timelineTracksToCustomTemplateLayers(tracks, requiredInputs);
+  const duration = Math.max(6, Math.min(120, Math.round(durationSeconds || 18)));
+
+  return {
+    id: `custom-${slugifyTemplateId(templateName)}-${Date.now()}`,
+    name: templateName,
+    category: "Custom Templates",
+    aspectRatio,
+    width: dimensions.width,
+    height: dimensions.height,
+    duration,
+    description: `Saved from Mawj Studio timeline with ${layers.length} editable layer${layers.length === 1 ? "" : "s"}.`,
+    language: "mixed",
+    requiredInputs,
+    scenes: [
+      {
+        id: "custom-scene-1",
+        name: "Saved editable scene",
+        start: 0,
+        duration,
+        background: {
+          type: "gradient",
+          from: "{{brandColor}}",
+          to: "{{accentColor}}",
+        },
+        layers,
+        transition: {
+          type: "fade",
+          duration: 0.35,
+        },
+      },
+    ],
+    animations: ["fadeIn", "slideUp", "zoomIn", "pop"],
+    transitions: ["cut", "fade"],
+    audio: {
+      music: null,
+      volume: 1,
+    },
+    export: {
+      format: "mp4",
+      fps: 30,
+      quality: "1080p",
+    },
+    safeMargins,
+    thumbnailUrl: "",
+    previewUrl: "",
+  };
+}
+
+function timelineTracksToCustomTemplateLayers(
+  tracks: TimelineTrack[],
+  requiredInputs: VideoTemplateInput[],
+): TemplateLayer[] {
+  const counters = { text: 0, media: 0 };
+  return tracks
+    .flatMap((track) => track.layers)
+    .filter((layer) => layer.duration > 0)
+    .filter((layer) => layer.type !== "effect" && layer.type !== "audio")
+    .sort((left, right) => left.start - right.start || layerZOrder(left.type) - layerZOrder(right.type))
+    .slice(0, 24)
+    .map((layer) => timelineLayerToCustomTemplateLayer(layer, counters, requiredInputs))
+    .filter((layer): layer is TemplateLayer => Boolean(layer));
+}
+
+function timelineLayerToCustomTemplateLayer(
+  layer: TimelineLayer,
+  counters: { text: number; media: number },
+  requiredInputs: VideoTemplateInput[],
+): TemplateLayer | null {
+  const baseLayer = {
+    id: sanitizeTemplateLayerId(layer.id),
+    name: layer.name,
+    start: roundTimelineSeconds(Math.max(0, layer.start)),
+    duration: roundTimelineSeconds(Math.max(0.4, layer.duration)),
+    x: layer.x,
+    y: layer.y,
+    width: layer.width,
+    height: layer.height,
+    borderRadius: layer.borderRadius,
+    opacity: layer.opacity,
+    editable: true,
+  };
+
+  if (layer.type === "text" || layer.type === "caption") {
+    const isBrandLayer = layer.id === "brand-kit-bug";
+    const inputKey = isBrandLayer ? "brandName" : `${layer.type === "caption" ? "caption" : "text"}${++counters.text}`;
+    if (!isBrandLayer) {
+      requiredInputs.push({
+        key: inputKey,
+        label: layer.name || `Text ${counters.text}`,
+        type: "textarea",
+        default: layer.content || layer.name,
+      });
+    }
+
+    return {
+      ...baseLayer,
+      id: `${baseLayer.id || layer.type}-${inputKey}`,
+      type: layer.type === "caption" ? "captions" : "text",
+      content: `{{${inputKey}}}`,
+      color: layer.textColor ?? layer.color ?? "#ffffff",
+      backgroundColor: layer.type === "caption" ? "{{brandColor}}" : layer.backgroundColor,
+      fontFamily: layer.fontFamily,
+      fontSize: layer.fontSize,
+      fontWeight: layer.fontWeight,
+      lineHeight: layer.lineHeight,
+      letterSpacing: layer.letterSpacing,
+      textStrokeColor: layer.textStrokeColor,
+      textStrokeWidth: layer.textStrokeWidth,
+      shadowColor: layer.shadowColor,
+      shadowBlur: layer.shadowBlur,
+      shadowOffsetX: layer.shadowOffsetX,
+      shadowOffsetY: layer.shadowOffsetY,
+      backgroundPadding: layer.backgroundPadding,
+      textTransform: layer.textTransform,
+      align: "center",
+      direction: "auto",
+      animationIn: {
+        type: layer.type === "caption" ? "pop" : "slideUp",
+        duration: 0.45,
+      },
+    };
+  }
+
+  if (layer.type === "image" || layer.type === "video") {
+    const inputKey = `${layer.type}${++counters.media}`;
+    const defaultSource = layer.src && !layer.src.startsWith("blob:") && !layer.src.startsWith("data:") ? layer.src : undefined;
+    requiredInputs.push({
+      key: inputKey,
+      label: layer.name || `${layer.type} ${counters.media}`,
+      type: layer.type,
+      default: defaultSource,
+    });
+
+    return {
+      ...baseLayer,
+      type: layer.type,
+      src: `{{${inputKey}}}`,
+      fit: layer.fit ?? (layer.type === "video" ? "cover" : "contain"),
+      animationIn: {
+        type: layer.type === "video" ? "fadeIn" : "zoomIn",
+        duration: 0.55,
+      },
+    };
+  }
+
+  if (layer.type === "shape") {
+    return {
+      ...baseLayer,
+      type: "shape",
+      shape: "rect",
+      color: "{{accentColor}}",
+      backgroundColor: "{{accentColor}}",
+      animationIn: {
+        type: "pop",
+        duration: 0.4,
+      },
+    };
+  }
+
+  if (layer.type === "background") {
+    return {
+      ...baseLayer,
+      type: "background",
+      color: "{{brandColor}}",
+      backgroundColor: "{{brandColor}}",
+      gradientFrom: "{{brandColor}}",
+      gradientTo: "{{accentColor}}",
+    };
+  }
+
+  if (layer.type === "waveform") {
+    return {
+      ...baseLayer,
+      type: "waveform",
+      color: "{{accentColor}}",
+      backgroundColor: "rgba(255,255,255,0.08)",
+    };
+  }
+
+  return null;
+}
+
+function layerZOrder(type: TimelineLayer["type"]) {
+  const order: Record<TimelineLayer["type"], number> = {
+    background: 0,
+    video: 1,
+    image: 2,
+    shape: 3,
+    text: 4,
+    caption: 5,
+    waveform: 6,
+    audio: 7,
+    effect: 8,
+  };
+
+  return order[type] ?? 9;
+}
+
+function sanitizeTemplateLayerId(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "layer";
+}
+
+function slugifyTemplateId(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "mawj-template";
+}
+
+function applyBrandKitToEditorTracks(
+  tracks: TimelineTrack[],
+  brandKit: BrandKitState,
+  brandBugLayer: TimelineLayer,
+  captionStylePatch: Partial<TimelineLayer>,
+): TimelineTrack[] {
+  let hasOverlayTrack = false;
+
+  const nextTracks = tracks.map((track) => {
+    const styledLayers = track.layers
+      .filter((layer) => layer.id !== brandBugLayer.id)
+      .map((layer) => applyBrandKitToEditorLayer(layer, brandKit, captionStylePatch));
+
+    if (track.kind !== "overlay") {
+      return { ...track, layers: styledLayers };
+    }
+
+    hasOverlayTrack = true;
+    return {
+      ...track,
+      layers: [...styledLayers, brandBugLayer],
+    };
+  });
+
+  if (hasOverlayTrack) return nextTracks;
+
+  return [
+    ...nextTracks,
+    {
+      id: "track-brand-kit",
+      name: "Brand Kit",
+      kind: "overlay",
+      layers: [brandBugLayer],
+    },
+  ];
+}
+
+function applyBrandKitToEditorLayer(
+  layer: TimelineLayer,
+  brandKit: BrandKitState,
+  captionStylePatch: Partial<TimelineLayer>,
+): TimelineLayer {
+  if (layer.type === "caption") {
+    return {
+      ...layer,
+      ...captionStylePatch,
+      fontFamily: captionStylePatch.fontFamily ?? brandKit.font ?? layer.fontFamily ?? VIDEO_FONT_STACKS[0].value,
+      fontWeight: captionStylePatch.fontWeight ?? layer.fontWeight ?? "900",
+    };
+  }
+
+  if (layer.type === "text") {
+    return {
+      ...layer,
+      color: brandKit.primaryColor,
+      fontFamily: brandKit.font ?? layer.fontFamily ?? VIDEO_FONT_STACKS[0].value,
+      textColor: layer.textColor ?? brandKit.primaryColor,
+      backgroundColor: layer.backgroundColor ? brandKit.secondaryColor : layer.backgroundColor,
+      fontWeight: layer.fontWeight ?? "900",
+    };
+  }
+
+  if (layer.type === "shape") {
+    return {
+      ...layer,
+      color: brandKit.secondaryColor,
+      backgroundColor: brandKit.secondaryColor,
+    };
+  }
+
+  if (layer.type === "background" && layer.backgroundColor !== "blur-original") {
+    return {
+      ...layer,
+      color: brandKit.primaryColor,
+      backgroundColor: `linear-gradient(145deg, ${brandKit.primaryColor}, ${brandKit.secondaryColor})`,
+    };
+  }
+
+  return layer;
+}
+
+function createBrandBugTimelineLayer({
+  brandName,
+  brandKit,
+  aspectRatio,
+  durationSeconds,
+}: {
+  brandName: string;
+  brandKit: BrandKitState;
+  aspectRatio: AspectRatio;
+  durationSeconds: number;
+}): TimelineLayer {
+  const dimensions = getTemplateDimensions(aspectRatio);
+  const geometry = getBrandBugGeometry(dimensions.width, dimensions.height);
+
+  return {
+    id: "brand-kit-bug",
+    type: "text",
+    name: "Brand bug",
+    start: 0,
+    duration: durationSeconds,
+    color: brandKit.primaryColor,
+    textColor: getReadableTextColor(brandKit.primaryColor),
+    backgroundColor: brandKit.primaryColor,
+    content: brandName,
+    x: geometry.x,
+    y: geometry.y,
+    width: geometry.width,
+    height: geometry.height,
+    fontFamily: brandKit.font ?? VIDEO_FONT_STACKS[0].value,
+    fontSize: geometry.height > 95 ? 54 : 42,
+    fontWeight: "950",
+    lineHeight: 1.05,
+    textStrokeWidth: 0,
+    shadowColor: "rgba(0,0,0,0.24)",
+    shadowBlur: 10,
+    shadowOffsetY: 5,
+    backgroundPadding: 18,
+    borderRadius: Math.round(geometry.height / 2),
+    opacity: 0.94,
+  };
+}
+
+function applyBrandKitToTemplateProject({
+  project,
+  brandName,
+  brandKit,
+  captionStylePatch,
+}: {
+  project: TemplateProject;
+  brandName: string;
+  brandKit: BrandKitState;
+  captionStylePatch: Partial<TimelineLayer>;
+}): TemplateProject {
+  const brandBugLayer = createBrandBugTemplateLayer(project, brandName, brandKit);
+  let hasTextTrack = false;
+
+  const nextTimeline = project.timeline.map((track) => {
+    const styledLayers = track.layers
+      .filter((layer) => layer.id !== brandBugLayer.id)
+      .map((layer) => applyBrandKitToTemplateLayer(layer, brandKit, captionStylePatch));
+
+    if (track.kind !== "text") {
+      return { ...track, layers: styledLayers };
+    }
+
+    hasTextTrack = true;
+    return {
+      ...track,
+      layers: [...styledLayers, brandBugLayer],
+    };
+  });
+
+  return {
+    ...project,
+    timeline: hasTextTrack
+      ? nextTimeline
+      : [
+          ...nextTimeline,
+          {
+            id: "track-brand-kit",
+            name: "Brand Kit",
+            kind: "text",
+            layers: [brandBugLayer],
+          },
+        ],
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function applyBrandKitToTemplateLayer(
+  layer: TemplateTimelineLayer,
+  brandKit: BrandKitState,
+  captionStylePatch: Partial<TimelineLayer>,
+): TemplateTimelineLayer {
+  if (layer.type === "captions") {
+    return {
+      ...layer,
+      color: captionStylePatch.textColor ?? captionStylePatch.color ?? "#ffffff",
+      backgroundColor: captionStylePatch.backgroundColor,
+      fontFamily: captionStylePatch.fontFamily ?? brandKit.font ?? layer.fontFamily ?? VIDEO_FONT_STACKS[0].value,
+      fontSize: captionStylePatch.fontSize,
+      fontWeight: captionStylePatch.fontWeight,
+      lineHeight: captionStylePatch.lineHeight,
+      letterSpacing: captionStylePatch.letterSpacing,
+      textStrokeColor: captionStylePatch.textStrokeColor,
+      textStrokeWidth: captionStylePatch.textStrokeWidth,
+      shadowColor: captionStylePatch.shadowColor,
+      shadowBlur: captionStylePatch.shadowBlur,
+      shadowOffsetX: captionStylePatch.shadowOffsetX,
+      shadowOffsetY: captionStylePatch.shadowOffsetY,
+      backgroundPadding: captionStylePatch.backgroundPadding,
+      textTransform: captionStylePatch.textTransform,
+      borderRadius: captionStylePatch.borderRadius,
+      opacity: captionStylePatch.opacity,
+      highlightColor: brandKit.primaryColor,
+    };
+  }
+
+  if (layer.type === "text") {
+    return {
+      ...layer,
+      color: layer.color && layer.color !== "#ffffff" ? brandKit.primaryColor : layer.color,
+      fontFamily: brandKit.font,
+      fontWeight: layer.fontWeight ?? "900",
+    };
+  }
+
+  if (layer.type === "shape") {
+    return {
+      ...layer,
+      color: brandKit.secondaryColor,
+      backgroundColor: brandKit.secondaryColor,
+    };
+  }
+
+  if (layer.type === "background") {
+    return {
+      ...layer,
+      color: brandKit.primaryColor,
+      backgroundColor: brandKit.primaryColor,
+      gradientFrom: brandKit.primaryColor,
+      gradientTo: brandKit.secondaryColor,
+    };
+  }
+
+  return layer;
+}
+
+function createBrandBugTemplateLayer(
+  project: TemplateProject,
+  brandName: string,
+  brandKit: BrandKitState,
+): TemplateTimelineLayer {
+  const scene = project.scenes[0];
+  const geometry = getBrandBugGeometry(project.width, project.height);
+
+  return {
+    id: "brand-kit-bug",
+    type: "text",
+    sceneId: scene?.id ?? "scene-brand-kit",
+    sceneName: scene?.name ?? "Brand Kit",
+    absoluteStart: 0,
+    duration: Math.max(1, project.duration),
+    editable: true,
+    name: "Brand bug",
+    content: brandName,
+    x: geometry.x,
+    y: geometry.y,
+    width: geometry.width,
+    height: geometry.height,
+    color: brandKit.primaryColor,
+    backgroundColor: brandKit.primaryColor,
+    fontFamily: brandKit.font,
+    fontSize: geometry.height > 95 ? 54 : 42,
+    fontWeight: "950",
+    lineHeight: 1.05,
+    textStrokeWidth: 0,
+    shadowColor: "rgba(0,0,0,0.24)",
+    shadowBlur: 10,
+    shadowOffsetY: 5,
+    backgroundPadding: 18,
+    align: "center",
+    direction: "auto",
+    borderRadius: Math.round(geometry.height / 2),
+    opacity: 0.96,
+  };
+}
+
+function getBrandBugGeometry(width: number, height: number) {
+  const isVertical = height > width * 1.35;
+  const safe = isVertical
+    ? { top: 160, right: 70 }
+    : Math.abs(width - height) < 10
+      ? { top: 92, right: 76 }
+      : { top: 72, right: 96 };
+  const layerWidth = Math.round(isVertical ? Math.min(520, width * 0.48) : Math.min(420, width * 0.26));
+  const layerHeight = Math.round(isVertical ? 92 : 74);
+
+  return {
+    x: Math.max(0, width - safe.right - layerWidth),
+    y: safe.top,
+    width: layerWidth,
+    height: layerHeight,
+  };
+}
+
+function getReadableTextColor(hexColor: string) {
+  const normalized = normalizeBrandColor(hexColor, DEFAULT_BRAND_KIT.primaryColor).replace("#", "");
+  const red = parseInt(normalized.slice(0, 2), 16);
+  const green = parseInt(normalized.slice(2, 4), 16);
+  const blue = parseInt(normalized.slice(4, 6), 16);
+  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+
+  return luminance > 0.6 ? "#06120d" : "#ffffff";
+}
+
 function createDefaultTimeline(): TimelineTrack[] {
   return createTimelineForVideo("Source video", 36);
+}
+
+function createImageStoryboardPlan({
+  assets,
+  durationSeconds,
+  platform,
+  aspectRatio,
+  styleId,
+  brandName,
+  goal,
+}: {
+  assets: MediaAsset[];
+  durationSeconds: number;
+  platform: Platform;
+  aspectRatio: AspectRatio;
+  styleId: VideoStyleId;
+  brandName: string;
+  goal: Goal;
+}): EditPlan {
+  const brand = brandName.trim() || "Mawj Studio";
+  const title = assets.length === 1 ? `فيديو صورة · ${brand}` : `فيديو صور · ${brand}`;
+  const hook =
+    goal === "sales"
+      ? "حوّلنا الصور إلى إعلان قصير جاهز للنشر."
+      : goal === "education"
+        ? "حوّلنا الصور إلى شرح بصري سريع."
+        : "حوّلنا الصور إلى فيديو متحرك قابل للتعديل.";
+  const introEnd = Math.max(2, Math.min(4, Math.round(durationSeconds * 0.24)));
+  const showcaseEnd = Math.max(introEnd + 2, Math.round(durationSeconds * 0.72));
+  const ctaStart = Math.max(showcaseEnd, Math.round(durationSeconds * 0.78));
+
+  return {
+    id: `image-plan-${Date.now()}`,
+    title,
+    hook,
+    summary: `تم بناء مشروع فيديو من ${assets.length} صورة بمدة ${durationSeconds} ثانية، مع مشاهد مستقلة وحركات دخول وخروج وكابشن قابل للتعديل.`,
+    targetDurationSeconds: durationSeconds,
+    styleId,
+    confidence: 90,
+    renderSettings: {
+      aspectRatio,
+      resolution: aspectRatio === "16:9" ? "1920x1080" : aspectRatio === "1:1" ? "1080x1080" : "1080x1920",
+      fps: 30,
+      loudness: "No source audio",
+      safeMargins: aspectRatio === "9:16" ? "Top 160px / Bottom 260px" : "Standard safe zones",
+    },
+    timeline: [
+      {
+        id: "image-hook",
+        label: "Opening image hook",
+        start: 0,
+        end: introEnd,
+        action: "أول صورة تظهر بزوم ناعم وعنوان واضح داخل الهوامش الآمنة.",
+        intensity: "high",
+      },
+      {
+        id: "image-showcase",
+        label: "Image sequence",
+        start: introEnd,
+        end: showcaseEnd,
+        action: "كل صورة تتحول إلى مشهد مستقل مع حركة slide/zoom حتى لا يظهر الفيديو ثابتاً.",
+        intensity: "medium",
+      },
+      {
+        id: "image-cta",
+        label: "CTA closing",
+        start: ctaStart,
+        end: durationSeconds,
+        action: goal === "sales" ? "خاتمة بطلب واضح وسريع." : "خاتمة للحفظ أو المشاركة.",
+        intensity: goal === "sales" ? "high" : "medium",
+      },
+    ],
+    captions: [
+      { at: 0, text: hook, emphasis: ["فيديو", "جاهز"] },
+      { at: introEnd, text: assets.length > 1 ? "كل صورة صارت مشهد مستقل." : "الصورة صارت مشهد متحرك.", emphasis: ["مشهد"] },
+      { at: ctaStart, text: goal === "sales" ? "أضف السعر والدعوة للطلب الآن." : "عدّل النص وانشر النسخة المناسبة.", emphasis: ["عدّل", "انشر"] },
+    ],
+    aiTools: [
+      { name: "Image storyboard", status: "ready", detail: "تحويل الصور إلى مشاهد بزمن فعلي." },
+      { name: "Animated captions", status: "ready", detail: "كابشن قابل للتعديل فوق الصور." },
+      { name: "Export", status: "ready", detail: "تصدير MP4 من مشروع الصور." },
+    ],
+    exportVariants: [
+      { platform: PLATFORM_LABELS[platform], duration: `${durationSeconds}s`, caption: "نسخة فيديو من الصور." },
+      { platform: "MP4", duration: `${durationSeconds}s`, caption: "تصدير كامل مع النصوص والحركات." },
+      { platform: "Thumbnail", duration: "1 frame", caption: "غلاف من أول مشهد." },
+    ],
+  };
 }
 
 function createImageStoryboardTemplateProject({
@@ -3469,8 +4808,15 @@ function createImageStoryboardTemplateProject({
           y: Math.max(36, safe.top - 98),
           width: textWidth,
           height: 72,
+          fontFamily: VIDEO_FONT_STACKS[0].value,
           fontSize: aspectRatio === "16:9" ? 34 : 42,
           fontWeight: "800",
+          lineHeight: 1.12,
+          textStrokeColor: "rgba(0,0,0,0.45)",
+          textStrokeWidth: 2,
+          shadowColor: "rgba(0,0,0,0.38)",
+          shadowBlur: 12,
+          shadowOffsetY: 5,
           color: "#ffffff",
           align: "center",
           direction: "auto",
@@ -3487,8 +4833,15 @@ function createImageStoryboardTemplateProject({
           y: dimensions.height - safe.bottom - (aspectRatio === "16:9" ? 132 : 210),
           width: textWidth,
           height: aspectRatio === "16:9" ? 128 : 200,
+          fontFamily: VIDEO_FONT_STACKS[0].value,
           fontSize: aspectRatio === "16:9" ? 44 : 58,
           fontWeight: "900",
+          lineHeight: 1.12,
+          textStrokeColor: "rgba(0,0,0,0.78)",
+          textStrokeWidth: 6,
+          shadowColor: "rgba(0,0,0,0.35)",
+          shadowBlur: 12,
+          shadowOffsetY: 6,
           color: "#ffffff",
           highlightColor: "#8ef7c2",
           align: "center",
@@ -3509,8 +4862,15 @@ function createImageStoryboardTemplateProject({
                 y: dimensions.height - safe.bottom - (aspectRatio === "16:9" ? 34 : 72),
                 width: textWidth,
                 height: 72,
+                fontFamily: VIDEO_FONT_STACKS[1].value,
                 fontSize: aspectRatio === "16:9" ? 40 : 54,
                 fontWeight: "950",
+                lineHeight: 1.08,
+                textStrokeColor: "rgba(0,0,0,0.62)",
+                textStrokeWidth: 4,
+                shadowColor: "rgba(0,0,0,0.38)",
+                shadowBlur: 12,
+                shadowOffsetY: 6,
                 color: "#8ef7c2",
                 align: "center" as const,
                 direction: "auto" as const,
@@ -3807,8 +5167,16 @@ function createEditableTextLayer({
     textColor: "#ffffff",
     backgroundColor: "#000000",
     content: defaultText,
+    fontFamily: VIDEO_FONT_STACKS[0].value,
     fontSize: aspectRatio === "16:9" ? 52 : 68,
     fontWeight: "900",
+    lineHeight: 1.1,
+    textStrokeColor: "rgba(0,0,0,0.76)",
+    textStrokeWidth: 6,
+    shadowColor: "rgba(0,0,0,0.34)",
+    shadowBlur: 12,
+    shadowOffsetY: 6,
+    backgroundPadding: 20,
     borderRadius: 22,
     opacity: 0.96,
     ...geometry,
@@ -3897,8 +5265,15 @@ function createEditableCtaLayers({
       backgroundColor: "transparent",
       borderRadius: 0,
       opacity: 1,
+      fontFamily: VIDEO_FONT_STACKS[0].value,
       fontSize: aspectRatio === "16:9" ? 46 : 62,
       fontWeight: "900",
+      lineHeight: 1.1,
+      textStrokeColor: "rgba(0,0,0,0.76)",
+      textStrokeWidth: 6,
+      shadowColor: "rgba(0,0,0,0.36)",
+      shadowBlur: 12,
+      shadowOffsetY: 6,
       x,
       y: y + Math.round(height * 0.17),
       width,
@@ -4047,8 +5422,16 @@ function captionToTimelineLayer(caption: CaptionLine, index: number): TimelineLa
     textColor: "#ffffff",
     backgroundColor: "#000000",
     content: caption.text,
+    fontFamily: VIDEO_FONT_STACKS[0].value,
     fontSize: 58,
     fontWeight: "900",
+    lineHeight: 1.12,
+    textStrokeColor: "rgba(0,0,0,0.78)",
+    textStrokeWidth: 7,
+    shadowColor: "rgba(0,0,0,0.34)",
+    shadowBlur: 12,
+    shadowOffsetY: 6,
+    backgroundPadding: 0,
     borderRadius: 22,
     opacity: 1,
   };
@@ -4068,8 +5451,15 @@ function getCaptionStylePatch(
       color: "#f8fafc",
       textColor: "#f8fafc",
       backgroundColor: "rgba(15, 23, 42, 0.62)",
+      fontFamily: VIDEO_FONT_STACKS[3].value,
       fontSize: isWide ? 38 : 48,
       fontWeight: "700",
+      lineHeight: 1.18,
+      textStrokeWidth: 0,
+      shadowColor: "rgba(0,0,0,0.42)",
+      shadowBlur: 16,
+      shadowOffsetY: 8,
+      backgroundPadding: 22,
       borderRadius: 14,
       opacity: 0.9,
     };
@@ -4080,8 +5470,16 @@ function getCaptionStylePatch(
       color: "#ffffff",
       textColor: "#ffffff",
       backgroundColor: "rgba(15, 23, 42, 0.82)",
+      fontFamily: VIDEO_FONT_STACKS[2].value,
       fontSize: isWide ? 42 : 54,
       fontWeight: "800",
+      lineHeight: 1.14,
+      textStrokeColor: "rgba(0,0,0,0.35)",
+      textStrokeWidth: 2,
+      shadowColor: "rgba(0,0,0,0.4)",
+      shadowBlur: 14,
+      shadowOffsetY: 7,
+      backgroundPadding: 24,
       borderRadius: 20,
       opacity: 0.96,
     };
@@ -4092,8 +5490,16 @@ function getCaptionStylePatch(
       color: "#facc15",
       textColor: "#facc15",
       backgroundColor: "rgba(3, 7, 18, 0.84)",
+      fontFamily: VIDEO_FONT_STACKS[0].value,
       fontSize: isWide ? 46 : 60,
       fontWeight: "950",
+      lineHeight: 1.1,
+      textStrokeColor: "rgba(0,0,0,0.82)",
+      textStrokeWidth: 7,
+      shadowColor: "rgba(0,0,0,0.4)",
+      shadowBlur: 12,
+      shadowOffsetY: 6,
+      backgroundPadding: 0,
       borderRadius: 22,
       opacity: 1,
     };
@@ -4104,8 +5510,15 @@ function getCaptionStylePatch(
       color: "#111827",
       textColor: "#111827",
       backgroundColor: "#f8fafc",
+      fontFamily: VIDEO_FONT_STACKS[4].value,
       fontSize: isWide ? 40 : 52,
       fontWeight: "900",
+      lineHeight: 1.18,
+      textStrokeWidth: 0,
+      shadowColor: "rgba(0,0,0,0.16)",
+      shadowBlur: 8,
+      shadowOffsetY: 5,
+      backgroundPadding: 24,
       borderRadius: 18,
       opacity: 0.97,
     };
@@ -4116,8 +5529,16 @@ function getCaptionStylePatch(
       color: "#ffffff",
       textColor: "#ffffff",
       backgroundColor: brand,
+      fontFamily: VIDEO_FONT_STACKS[1].value,
       fontSize: isWide ? 44 : 58,
       fontWeight: "950",
+      lineHeight: 1.08,
+      textStrokeColor: "rgba(0,0,0,0.26)",
+      textStrokeWidth: 3,
+      shadowColor: "rgba(0,0,0,0.34)",
+      shadowBlur: 12,
+      shadowOffsetY: 7,
+      backgroundPadding: 26,
       borderRadius: 26,
       opacity: 0.96,
     };
@@ -4127,8 +5548,16 @@ function getCaptionStylePatch(
     color: "#ffffff",
     textColor: "#ffffff",
     backgroundColor: "rgba(0, 0, 0, 0.78)",
+    fontFamily: VIDEO_FONT_STACKS[0].value,
     fontSize: isWide ? 44 : 58,
     fontWeight: "950",
+    lineHeight: 1.1,
+    textStrokeColor: "rgba(0,0,0,0.8)",
+    textStrokeWidth: 7,
+    shadowColor: "rgba(0,0,0,0.38)",
+    shadowBlur: 12,
+    shadowOffsetY: 6,
+    backgroundPadding: 0,
     borderRadius: 24,
     opacity: 0.96,
   };
@@ -4191,6 +5620,78 @@ function revokeObjectUrl(url?: string) {
   if (url?.startsWith("blob:")) {
     URL.revokeObjectURL(url);
   }
+}
+
+function getDerivedExportSource(
+  renderResult: BrowserRenderResult | null,
+  studioFile: StudioFile | null,
+  mode: "audio" | "video",
+) {
+  const canUseRenderResult =
+    renderResult &&
+    !renderResult.mimeType.startsWith("image/") &&
+    (mode === "audio" || !renderResult.mimeType.startsWith("audio/"));
+
+  if (canUseRenderResult) {
+    return {
+      blob: renderResult.blob,
+      fileName: renderResult.fileName,
+    };
+  }
+
+  if (studioFile) {
+    return {
+      blob: studioFile.file,
+      fileName: studioFile.file.name,
+    };
+  }
+
+  return null;
+}
+
+function uniqueMediaAssetsById(assets: MediaAsset[]) {
+  const seen = new Set<string>();
+  return assets.filter((asset) => {
+    if (seen.has(asset.id)) return false;
+    seen.add(asset.id);
+    return true;
+  });
+}
+
+function MediaAssetPreview({ asset }: { asset: MediaAsset }) {
+  if (asset.kind === "image") {
+    return (
+      <span
+        className="block h-12 w-12 shrink-0 rounded-md border border-white/10 bg-cover bg-center bg-no-repeat shadow-inner"
+        style={{ backgroundImage: `url("${asset.url}")` }}
+        aria-label={asset.name}
+        role="img"
+      />
+    );
+  }
+
+  if (asset.kind === "video") {
+    return (
+      <span className="relative block h-12 w-12 shrink-0 overflow-hidden rounded-md border border-white/10 bg-black shadow-inner">
+        <video
+          src={asset.url}
+          muted
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover"
+        />
+        <span className="absolute inset-0 grid place-items-center bg-black/20">
+          <AssetIcon kind={asset.kind} />
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-md border border-white/10 bg-white/[0.04]">
+      <AssetIcon kind={asset.kind} />
+    </span>
+  );
 }
 
 function createAssistantMessage(
@@ -4448,6 +5949,132 @@ function createSilenceRemovalPlan({
       { platform: "SRT", duration: `${Math.round(targetDurationSeconds)}s`, caption: "Captions aligned to the shortened edit." },
     ],
   };
+}
+
+function createTranscriptCutPlan({
+  transcript,
+  deletedSegments,
+  style,
+  aspectRatio,
+  brandName,
+  durationSeconds,
+}: {
+  transcript: TranscriptSegment[];
+  deletedSegments: TranscriptSegment[];
+  style: VideoStyle;
+  aspectRatio: AspectRatio;
+  brandName: string;
+  durationSeconds: number;
+}): EditPlan {
+  const keptSegments = getKeptTranscriptSegments(transcript);
+  const captions = createPlanCaptionsFromTranscript(transcript);
+  const targetDurationSeconds = Math.max(
+    1,
+    Number(keptSegments.reduce((total, segment) => total + Math.max(0, segment.end - segment.start), 0).toFixed(2)),
+  );
+
+  return {
+    id: `transcript-cut-${Date.now()}`,
+    title: `${brandName || "Mawj Studio"} text edit`,
+    hook: keptSegments[0]?.text ?? "Text-based edit",
+    summary: `Cut ${deletedSegments.length} transcript segment${deletedSegments.length === 1 ? "" : "s"} and kept ${Math.round(targetDurationSeconds)}s from ${Math.round(durationSeconds)}s.`,
+    targetDurationSeconds,
+    styleId: style.id,
+    confidence: 93,
+    renderSettings: {
+      aspectRatio,
+      resolution: aspectRatio === "16:9" ? "1920x1080" : aspectRatio === "1:1" ? "1080x1080" : "1080x1920",
+      fps: 30,
+      loudness: "-14 LUFS",
+      safeMargins: "12% captions / 8% UI safe zones",
+    },
+    timeline: keptSegments.map((segment, index) => ({
+      id: `text-keep-${segment.id}`,
+      label: `Text edit ${index + 1}`,
+      start: segment.start,
+      end: segment.end,
+      action: `Keep transcript sentence and remove deleted ranges around ${formatDuration(segment.start)}.`,
+      intensity: index === 0 ? "high" : "medium",
+    })),
+    captions,
+    aiTools: [
+      { name: "Text-based editing", status: "ready", detail: `${deletedSegments.length} transcript segments are excluded from export.` },
+      { name: "FFmpeg trim", status: "ready", detail: "Export will concatenate the remaining transcript ranges." },
+    ],
+    exportVariants: [
+      { platform: "MP4", duration: `${Math.round(targetDurationSeconds)}s`, caption: "Transcript-trimmed video export." },
+      { platform: "SRT", duration: `${Math.round(targetDurationSeconds)}s`, caption: "Captions aligned to the shortened cut." },
+    ],
+  };
+}
+
+function getKeptTranscriptSegments(transcript: TranscriptSegment[]) {
+  return [...transcript]
+    .filter((segment) => !segment.deleted && !segment.id.startsWith("silence-gap-") && segment.end - segment.start > 0.1)
+    .sort((a, b) => a.start - b.start);
+}
+
+function getDeletedTranscriptSegments(transcript: TranscriptSegment[]) {
+  return [...transcript]
+    .filter((segment) => segment.deleted && segment.end - segment.start > 0.1)
+    .sort((a, b) => a.start - b.start);
+}
+
+function createPlanCaptionsFromTranscript(transcript: TranscriptSegment[]) {
+  let outputCursor = 0;
+
+  return getKeptTranscriptSegments(transcript).map((segment) => {
+    const caption = {
+      at: Number(outputCursor.toFixed(2)),
+      text: segment.text,
+      emphasis: [],
+    };
+    outputCursor += Math.max(0, segment.end - segment.start);
+    return caption;
+  });
+}
+
+function createOutputCaptionsFromTranscript(transcript: TranscriptSegment[]): CaptionLine[] {
+  let outputCursor = 0;
+
+  return getKeptTranscriptSegments(transcript).map((segment, index) => {
+    const duration = Math.max(0.4, segment.end - segment.start);
+    const start = Number(outputCursor.toFixed(2));
+    const end = Number((outputCursor + duration).toFixed(2));
+    outputCursor += duration;
+
+    return {
+      id: `cap-text-cut-${index}-${segment.id}`,
+      start,
+      end,
+      text: segment.text,
+    };
+  });
+}
+
+function syncTranscriptCutMarkers(tracks: TimelineTrack[], deletedSegments: TranscriptSegment[]): TimelineTrack[] {
+  const markers: TimelineLayer[] = deletedSegments.map((segment) => ({
+    id: `transcript-cut-${segment.id}`,
+    type: "effect",
+    name: `Text cut ${formatDuration(segment.start)}–${formatDuration(segment.end)}`,
+    start: segment.start,
+    duration: Math.max(0.5, segment.end - segment.start),
+    color: "#fb7185",
+  }));
+
+  return tracks.map((track) =>
+    track.kind === "effects"
+      ? {
+          ...track,
+          layers: [
+            ...track.layers.filter(
+              (layer) => !layer.id.startsWith("transcript-cut-") && !layer.name.startsWith("Text cut "),
+            ),
+            ...markers,
+          ],
+        }
+      : track,
+  );
 }
 
 function createClipSuggestions({
@@ -4916,12 +6543,23 @@ function templateTimelineToEditorTracks(templateTracks: TemplateTimelineTrack[])
       y: layer.y,
       width: layer.width,
       height: layer.height,
+      fontFamily: layer.fontFamily,
       fontSize: layer.fontSize,
       fontWeight: layer.fontWeight,
       textColor: layer.color,
       backgroundColor: layer.backgroundColor,
       borderRadius: layer.borderRadius,
       opacity: layer.opacity,
+      lineHeight: layer.lineHeight,
+      letterSpacing: layer.letterSpacing,
+      textStrokeColor: layer.textStrokeColor,
+      textStrokeWidth: layer.textStrokeWidth,
+      shadowColor: layer.shadowColor,
+      shadowBlur: layer.shadowBlur,
+      shadowOffsetX: layer.shadowOffsetX,
+      shadowOffsetY: layer.shadowOffsetY,
+      backgroundPadding: layer.backgroundPadding,
+      textTransform: layer.textTransform,
       fit: layer.fit,
     })),
   }));
@@ -4940,8 +6578,19 @@ function toTemplateTimelinePatch(patch: Partial<TimelineLayer>): Partial<Templat
     y: patch.y,
     width: patch.width,
     height: patch.height,
+    fontFamily: patch.fontFamily,
     fontSize: patch.fontSize,
     fontWeight: patch.fontWeight,
+    lineHeight: patch.lineHeight,
+    letterSpacing: patch.letterSpacing,
+    textStrokeColor: patch.textStrokeColor,
+    textStrokeWidth: patch.textStrokeWidth,
+    shadowColor: patch.shadowColor,
+    shadowBlur: patch.shadowBlur,
+    shadowOffsetX: patch.shadowOffsetX,
+    shadowOffsetY: patch.shadowOffsetY,
+    backgroundPadding: patch.backgroundPadding,
+    textTransform: patch.textTransform,
     borderRadius: patch.borderRadius,
     opacity: patch.opacity,
     fit: patch.fit,
@@ -5071,8 +6720,19 @@ function timelineLayerToTemplateTimelineLayer(
     y: layer.y,
     width: layer.width,
     height: layer.height,
+    fontFamily: layer.fontFamily,
     fontSize: layer.fontSize,
     fontWeight: layer.fontWeight,
+    lineHeight: layer.lineHeight,
+    letterSpacing: layer.letterSpacing,
+    textStrokeColor: layer.textStrokeColor,
+    textStrokeWidth: layer.textStrokeWidth,
+    shadowColor: layer.shadowColor,
+    shadowBlur: layer.shadowBlur,
+    shadowOffsetX: layer.shadowOffsetX,
+    shadowOffsetY: layer.shadowOffsetY,
+    backgroundPadding: layer.backgroundPadding,
+    textTransform: layer.textTransform,
     borderRadius: layer.borderRadius,
     opacity: layer.opacity,
     direction: layer.type === "text" || layer.type === "caption" ? "auto" : undefined,
@@ -5262,6 +6922,158 @@ function getAssetKind(file: File): MediaAsset["kind"] {
   return "video";
 }
 
+function getDefaultMimeType(kind: MediaAsset["kind"]) {
+  if (kind === "audio") return "audio/mpeg";
+  if (kind === "image") return "image/jpeg";
+  return "video/mp4";
+}
+
+function createBackgroundReplacementLayer({
+  mode,
+  aspectRatio,
+  duration,
+  brandColor,
+}: {
+  mode: string;
+  aspectRatio: AspectRatio;
+  duration: number;
+  brandColor: string;
+}): TimelineLayer {
+  const dimensions = getAspectCanvasDimensions(aspectRatio);
+  const palette = getBackgroundReplacementPalette(mode, brandColor);
+
+  return {
+    id: `background-replacement-${mode.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "custom"}`,
+    type: "background",
+    name: `Background · ${mode}`,
+    content: mode,
+    start: 0,
+    duration,
+    color: palette.color,
+    backgroundColor: palette.backgroundColor,
+    x: 0,
+    y: 0,
+    width: dimensions.width,
+    height: dimensions.height,
+    opacity: 1,
+  };
+}
+
+function getBackgroundReplacementPalette(mode: string, brandColor: string) {
+  if (mode === "Brand color") {
+    return { color: brandColor, backgroundColor: brandColor };
+  }
+
+  if (mode === "Office background") {
+    return { color: "#0f172a", backgroundColor: "linear-gradient(135deg, #0f172a, #334155)" };
+  }
+
+  if (mode === "Classroom board") {
+    return { color: "#064e3b", backgroundColor: "linear-gradient(135deg, #042f2e, #0f766e)" };
+  }
+
+  if (mode === "Podcast room") {
+    return { color: "#312e81", backgroundColor: "linear-gradient(135deg, #111827, #312e81)" };
+  }
+
+  if (mode === "Studio gradient") {
+    return { color: "#111827", backgroundColor: "linear-gradient(135deg, #050608, #8ef7c2)" };
+  }
+
+  if (mode === "Transparent cutout") {
+    return { color: "#111827", backgroundColor: "linear-gradient(135deg, #050608, #1f2937)" };
+  }
+
+  return { color: "#0f172a", backgroundColor: "blur-original" };
+}
+
+async function prepareStudioFileForUpload(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  if (file.type === "image/svg+xml" || file.type === "image/gif") return file;
+  if (typeof window === "undefined" || typeof document === "undefined") return file;
+
+  const optimized = await downscaleImageFile(file).catch(() => null);
+  return optimized ?? file;
+}
+
+function downscaleImageFile(file: File): Promise<File | null> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+    const cleanup = () => URL.revokeObjectURL(url);
+
+    image.onload = () => {
+      const maxDimension = 2160;
+      const width = image.naturalWidth || 0;
+      const height = image.naturalHeight || 0;
+      const largestSide = Math.max(width, height);
+
+      if (!width || !height || (largestSide <= maxDimension && file.size <= 3_000_000)) {
+        cleanup();
+        resolve(null);
+        return;
+      }
+
+      const scale = Math.min(1, maxDimension / largestSide);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(
+        (blob) => {
+          cleanup();
+
+          if (!blob || blob.size >= file.size) {
+            resolve(null);
+            return;
+          }
+
+          resolve(
+            new File([blob], `${withoutFileExtension(file.name)}.webp`, {
+              type: "image/webp",
+              lastModified: file.lastModified,
+            }),
+          );
+        },
+        "image/webp",
+        0.88,
+      );
+    };
+
+    image.onerror = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    image.src = url;
+  });
+}
+
+function withoutFileExtension(fileName: string) {
+  return fileName.replace(/\.[^.]+$/, "") || "image";
+}
+
+function getThumbnailResolutionLabel(aspectRatio: AspectRatio) {
+  if (aspectRatio === "16:9") return "1280x720 PNG";
+  if (aspectRatio === "1:1") return "1080x1080 PNG";
+  return "720x1280 PNG";
+}
+
+function createMediaAssetFromFile(file: File): MediaAsset {
+  const kind = getAssetKind(file);
+
+  return {
+    id: crypto.randomUUID(),
+    name: file.name,
+    file,
+    url: URL.createObjectURL(file),
+    kind,
+    size: file.size,
+    durationSeconds: kind === "image" ? DEFAULT_IMAGE_CLIP_DURATION_SECONDS : undefined,
+  };
+}
+
 function mediaAssetToBridgeAsset(asset: MediaAsset): MediaAssetInput {
   return {
     id: asset.id,
@@ -5282,23 +7094,98 @@ function storedMediaRecordToAsset(record: StoredMediaRecord): MediaAsset {
     url: URL.createObjectURL(record.blob),
     kind: record.type,
     size: record.size,
-    durationSeconds: record.durationSeconds,
+    durationSeconds: record.durationSeconds ?? (record.type === "image" ? DEFAULT_IMAGE_CLIP_DURATION_SECONDS : undefined),
     width: record.width,
     height: record.height,
     persisted: true,
   };
 }
 
-function downloadTextFile(fileName: string, content: string, type: string) {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+
+async function createSourceVideoThumbnail({
+  sourceUrl,
+  time,
+  aspectRatio,
+}: {
+  sourceUrl: string;
+  time: number;
+  aspectRatio: AspectRatio;
+}) {
+  const dimensions = getAspectCanvasDimensions(aspectRatio);
+  const canvas = document.createElement("canvas");
+  canvas.width = dimensions.width;
+  canvas.height = dimensions.height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Could not create thumbnail canvas.");
+
+  const video = await loadVideoFrame(sourceUrl, time);
+  drawVideoCover(context, video, dimensions.width, dimensions.height);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error("Could not export thumbnail image."));
+      }
+    }, "image/png");
+  });
+}
+
+function loadVideoFrame(sourceUrl: string, time: number) {
+  return new Promise<HTMLVideoElement>((resolve, reject) => {
+    const video = document.createElement("video");
+    const cleanup = () => {
+      video.onloadedmetadata = null;
+      video.onloadeddata = null;
+      video.onseeked = null;
+      video.onerror = null;
+    };
+
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "auto";
+    video.onloadedmetadata = () => {
+      const target = Math.max(0, Math.min(time || 0, Math.max(0, (video.duration || 1) - 0.05)));
+      if (target <= 0.05) return;
+      video.currentTime = target;
+    };
+    video.onloadeddata = () => {
+      const target = Math.max(0, Math.min(time || 0, Math.max(0, (video.duration || 1) - 0.05)));
+      if (target > 0.05) return;
+      cleanup();
+      resolve(video);
+    };
+    video.onseeked = () => {
+      cleanup();
+      resolve(video);
+    };
+    video.onerror = () => {
+      cleanup();
+      reject(new Error("Could not read the current video frame for thumbnail export."));
+    };
+    video.src = sourceUrl;
+  });
+}
+
+function drawVideoCover(
+  context: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+  width: number,
+  height: number,
+) {
+  const sourceWidth = video.videoWidth || width;
+  const sourceHeight = video.videoHeight || height;
+  const scale = Math.max(width / sourceWidth, height / sourceHeight);
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
+  const x = (width - drawWidth) / 2;
+  const y = (height - drawHeight) / 2;
+
+  context.fillStyle = "#050608";
+  context.fillRect(0, 0, width, height);
+  context.drawImage(video, x, y, drawWidth, drawHeight);
 }
 
 function secondsToSrt(seconds: number) {

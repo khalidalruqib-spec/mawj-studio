@@ -1,7 +1,16 @@
 {
   "language": "arabic",
-  "animations": ["fadeIn", "pop", "slideUp", "zoomIn", "bounce"],
-  "transitions": ["cut", "fade"],
+  "animations": [
+    "fadeIn",
+    "pop",
+    "slideUp",
+    "zoomIn",
+    "bounce"
+  ],
+  "transitions": [
+    "cut",
+    "fade"
+  ],
   "id": "capcut-karaoke-captions",
   "name": "Karaoke Captions — CapCut",
   "category": "TikTok / Reels",
@@ -10,16 +19,67 @@
   "height": 1920,
   "duration": 15,
   "description": "كابشن كaraoke متحرك فوق فيديو — كل جملة تظهر بـ pop مثل قوالب CapCut الشائعة.",
-  "safeMargins": { "top": 160, "bottom": 260, "left": 70, "right": 70 },
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
   "requiredInputs": [
-    { "key": "video", "label": "فيديو Talking Head", "type": "video", "required": true },
-    { "key": "hook", "label": "الهوك (أول ثانية)", "type": "text", "default": "اسمع هذا!", "required": true },
-    { "key": "line1", "label": "جملة ١", "type": "textarea", "default": "أكبر غلطة يسوونها المبتدئين", "required": true },
-    { "key": "line2", "label": "جملة ٢", "type": "textarea", "default": "إنهم ينشرون بدون hook قوي", "required": true },
-    { "key": "line3", "label": "جملة ٣", "type": "textarea", "default": "الحل؟ استخدم هذا القالب", "required": true },
-    { "key": "line4", "label": "جملة ٤", "type": "textarea", "default": "ووفّر ساعات من المونتاج", "required": true },
-    { "key": "cta", "label": "CTA", "type": "text", "default": "تابع للمزيد ←", "required": true },
-    { "key": "brandColor", "label": "لون الكابشن", "type": "color", "default": "#facc15" }
+    {
+      "key": "video",
+      "label": "فيديو Talking Head",
+      "type": "video",
+      "required": true
+    },
+    {
+      "key": "hook",
+      "label": "الهوك (أول ثانية)",
+      "type": "text",
+      "default": "اسمع هذا!",
+      "required": true
+    },
+    {
+      "key": "line1",
+      "label": "جملة ١",
+      "type": "textarea",
+      "default": "أكبر غلطة يسوونها المبتدئين",
+      "required": true
+    },
+    {
+      "key": "line2",
+      "label": "جملة ٢",
+      "type": "textarea",
+      "default": "إنهم ينشرون بدون hook قوي",
+      "required": true
+    },
+    {
+      "key": "line3",
+      "label": "جملة ٣",
+      "type": "textarea",
+      "default": "الحل؟ استخدم هذا القالب",
+      "required": true
+    },
+    {
+      "key": "line4",
+      "label": "جملة ٤",
+      "type": "textarea",
+      "default": "ووفّر ساعات من المونتاج",
+      "required": true
+    },
+    {
+      "key": "cta",
+      "label": "CTA",
+      "type": "text",
+      "default": "تابع للمزيد ←",
+      "required": true
+    },
+    {
+      "key": "brandColor",
+      "label": "لون الكابشن",
+      "type": "color",
+      "default": "#facc15"
+    }
   ],
   "scenes": [
     {
@@ -27,13 +87,80 @@
       "name": "Hook",
       "start": 0,
       "duration": 2.5,
-      "background": { "type": "color", "value": "#0a0a0a" },
-      "transition": { "type": "cut", "duration": 0.08 },
+      "background": {
+        "type": "color",
+        "value": "#0a0a0a"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0.08
+      },
       "layers": [
-        { "id": "hook-vid", "type": "video", "src": "{{video}}", "x": 0, "y": 0, "width": 1080, "height": 1920, "fit": "cover" },
-        { "id": "hook-dim", "type": "shape", "shape": "rect", "x": 0, "y": 0, "width": 1080, "height": 1920, "color": "#000000", "opacity": 0.35, "borderRadius": 0 },
-        { "id": "hook-cap-bg", "type": "shape", "shape": "rect", "x": 50, "y": 780, "width": 980, "height": 200, "color": "#000000", "opacity": 0.85, "borderRadius": 20, "safeMargin": true },
-        { "id": "hook-cap", "type": "text", "content": "{{hook}}", "x": 70, "y": 820, "width": 940, "height": 120, "fontSize": 72, "fontWeight": "bold", "color": "{{brandColor}}", "align": "center", "direction": "rtl", "safeMargin": true, "animationIn": { "type": "pop", "duration": 0.35 } }
+        {
+          "id": "hook-vid",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover"
+        },
+        {
+          "id": "hook-dim",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "color": "#000000",
+          "opacity": 0.35,
+          "borderRadius": 0
+        },
+        {
+          "id": "hook-cap-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 50,
+          "y": 780,
+          "width": 980,
+          "height": 200,
+          "color": "#000000",
+          "opacity": 0.85,
+          "borderRadius": 20,
+          "safeMargin": true
+        },
+        {
+          "id": "hook-cap",
+          "type": "text",
+          "content": "{{hook}}",
+          "x": 70,
+          "y": 820,
+          "width": 940,
+          "height": 120,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.35
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        }
       ]
     },
     {
@@ -41,12 +168,68 @@
       "name": "Line 1",
       "start": 2.5,
       "duration": 3,
-      "background": { "type": "color", "value": "#0a0a0a" },
-      "transition": { "type": "cut", "duration": 0.08 },
+      "background": {
+        "type": "color",
+        "value": "#0a0a0a"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0.08
+      },
       "layers": [
-        { "id": "l1-vid", "type": "video", "src": "{{video}}", "x": 0, "y": 0, "width": 1080, "height": 1920, "fit": "cover" },
-        { "id": "l1-cap-bg", "type": "shape", "shape": "rect", "x": 50, "y": 1220, "width": 980, "height": 180, "color": "#000000", "opacity": 0.88, "borderRadius": 16, "safeMargin": true },
-        { "id": "l1-cap", "type": "text", "content": "{{line1}}", "x": 70, "y": 1250, "width": 940, "height": 120, "fontSize": 56, "fontWeight": "bold", "color": "#ffffff", "align": "center", "direction": "rtl", "safeMargin": true, "animationIn": { "type": "pop", "duration": 0.3 } }
+        {
+          "id": "l1-vid",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover"
+        },
+        {
+          "id": "l1-cap-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 50,
+          "y": 1220,
+          "width": 980,
+          "height": 180,
+          "color": "#000000",
+          "opacity": 0.88,
+          "borderRadius": 16,
+          "safeMargin": true
+        },
+        {
+          "id": "l1-cap",
+          "type": "text",
+          "content": "{{line1}}",
+          "x": 70,
+          "y": 1250,
+          "width": 940,
+          "height": 120,
+          "fontSize": 56,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        }
       ]
     },
     {
@@ -54,12 +237,68 @@
       "name": "Line 2",
       "start": 5.5,
       "duration": 3,
-      "background": { "type": "color", "value": "#0a0a0a" },
-      "transition": { "type": "cut", "duration": 0.08 },
+      "background": {
+        "type": "color",
+        "value": "#0a0a0a"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0.08
+      },
       "layers": [
-        { "id": "l2-vid", "type": "video", "src": "{{video}}", "x": 0, "y": 0, "width": 1080, "height": 1920, "fit": "cover" },
-        { "id": "l2-cap-bg", "type": "shape", "shape": "rect", "x": 50, "y": 1220, "width": 980, "height": 180, "color": "#000000", "opacity": 0.88, "borderRadius": 16, "safeMargin": true },
-        { "id": "l2-cap", "type": "text", "content": "{{line2}}", "x": 70, "y": 1250, "width": 940, "height": 120, "fontSize": 56, "fontWeight": "bold", "color": "{{brandColor}}", "align": "center", "direction": "rtl", "safeMargin": true, "animationIn": { "type": "pop", "duration": 0.3 } }
+        {
+          "id": "l2-vid",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover"
+        },
+        {
+          "id": "l2-cap-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 50,
+          "y": 1220,
+          "width": 980,
+          "height": 180,
+          "color": "#000000",
+          "opacity": 0.88,
+          "borderRadius": 16,
+          "safeMargin": true
+        },
+        {
+          "id": "l2-cap",
+          "type": "text",
+          "content": "{{line2}}",
+          "x": 70,
+          "y": 1250,
+          "width": 940,
+          "height": 120,
+          "fontSize": 56,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        }
       ]
     },
     {
@@ -67,12 +306,68 @@
       "name": "Line 3",
       "start": 8.5,
       "duration": 3,
-      "background": { "type": "color", "value": "#0a0a0a" },
-      "transition": { "type": "cut", "duration": 0.08 },
+      "background": {
+        "type": "color",
+        "value": "#0a0a0a"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0.08
+      },
       "layers": [
-        { "id": "l3-vid", "type": "video", "src": "{{video}}", "x": 0, "y": 0, "width": 1080, "height": 1920, "fit": "cover" },
-        { "id": "l3-cap-bg", "type": "shape", "shape": "rect", "x": 50, "y": 1220, "width": 980, "height": 180, "color": "#000000", "opacity": 0.88, "borderRadius": 16, "safeMargin": true },
-        { "id": "l3-cap", "type": "text", "content": "{{line3}}", "x": 70, "y": 1250, "width": 940, "height": 120, "fontSize": 56, "fontWeight": "bold", "color": "#ffffff", "align": "center", "direction": "rtl", "safeMargin": true, "animationIn": { "type": "pop", "duration": 0.3 } }
+        {
+          "id": "l3-vid",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover"
+        },
+        {
+          "id": "l3-cap-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 50,
+          "y": 1220,
+          "width": 980,
+          "height": 180,
+          "color": "#000000",
+          "opacity": 0.88,
+          "borderRadius": 16,
+          "safeMargin": true
+        },
+        {
+          "id": "l3-cap",
+          "type": "text",
+          "content": "{{line3}}",
+          "x": 70,
+          "y": 1250,
+          "width": 940,
+          "height": 120,
+          "fontSize": 56,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        }
       ]
     },
     {
@@ -80,17 +375,120 @@
       "name": "Line 4 + CTA",
       "start": 11.5,
       "duration": 3.5,
-      "background": { "type": "color", "value": "#0a0a0a" },
-      "transition": { "type": "fade", "duration": 0.15 },
+      "background": {
+        "type": "color",
+        "value": "#0a0a0a"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.15
+      },
       "layers": [
-        { "id": "l4-vid", "type": "video", "src": "{{video}}", "x": 0, "y": 0, "width": 1080, "height": 1920, "fit": "cover" },
-        { "id": "l4-cap-bg", "type": "shape", "shape": "rect", "x": 50, "y": 1100, "width": 980, "height": 180, "color": "#000000", "opacity": 0.88, "borderRadius": 16, "safeMargin": true },
-        { "id": "l4-cap", "type": "text", "content": "{{line4}}", "x": 70, "y": 1130, "width": 940, "height": 120, "fontSize": 56, "fontWeight": "bold", "color": "#ffffff", "align": "center", "direction": "rtl", "safeMargin": true, "animationIn": { "type": "slideUp", "duration": 0.3 } },
-        { "id": "cta-btn", "type": "shape", "shape": "rect", "x": 200, "y": 1380, "width": 680, "height": 100, "color": "{{brandColor}}", "opacity": 1, "borderRadius": 50, "safeMargin": true },
-        { "id": "cta-text", "type": "text", "content": "{{cta}}", "x": 200, "y": 1405, "width": 680, "height": 50, "fontSize": 40, "fontWeight": "bold", "color": "#060a09", "align": "center", "direction": "rtl", "animationIn": { "type": "bounce", "duration": 0.4 } }
+        {
+          "id": "l4-vid",
+          "type": "video",
+          "src": "{{video}}",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920,
+          "fit": "cover"
+        },
+        {
+          "id": "l4-cap-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 50,
+          "y": 1100,
+          "width": 980,
+          "height": 180,
+          "color": "#000000",
+          "opacity": 0.88,
+          "borderRadius": 16,
+          "safeMargin": true
+        },
+        {
+          "id": "l4-cap",
+          "type": "text",
+          "content": "{{line4}}",
+          "x": 70,
+          "y": 1130,
+          "width": 940,
+          "height": 120,
+          "fontSize": 56,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        },
+        {
+          "id": "cta-btn",
+          "type": "shape",
+          "shape": "rect",
+          "x": 200,
+          "y": 1380,
+          "width": 680,
+          "height": 100,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 50,
+          "safeMargin": true
+        },
+        {
+          "id": "cta-text",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 200,
+          "y": 1405,
+          "width": 680,
+          "height": 50,
+          "fontSize": 40,
+          "fontWeight": "bold",
+          "color": "#060a09",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "bounce",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        }
       ]
     }
   ],
-  "audio": { "music": null, "volume": 1 },
-  "export": { "format": "mp4", "fps": 30, "quality": "1080p" }
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
 }

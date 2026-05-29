@@ -21,6 +21,7 @@ import type { TemplateProject, TemplateTimelineTrack } from "@/lib/video-templat
 import type { AspectRatio, VideoStyle } from "@/lib/video-styles";
 import type { VideoProject } from "@/lib/video-project-model";
 import { isUsableMediaDuration } from "@/lib/media-duration";
+import { resolveVideoTextStyle } from "@/lib/video-typography";
 import {
   getTimelineCanvasHeight,
   getTimelineCanvasWidth,
@@ -84,7 +85,7 @@ export function VideoPreview({
 }) {
   const previewDurationSeconds = isUsableMediaDuration(studioFile?.durationSeconds)
     ? studioFile.durationSeconds
-    : 0;
+    : templateProject?.duration ?? 0;
   const previewProgress = previewDurationSeconds
     ? Math.min(100, Math.max(0, (previewTime / previewDurationSeconds) * 100))
     : 0;
@@ -93,7 +94,12 @@ export function VideoPreview({
     () => getActivePreviewOverlayLayers(timelineTracks, previewTime),
     [previewTime, timelineTracks],
   );
+  const activeBackgroundLayer = useMemo(
+    () => getActivePreviewBackgroundLayer(timelineTracks, previewTime),
+    [previewTime, timelineTracks],
+  );
   const hasActiveCaptionOverlay = activeVideoOverlayLayers.some((layer) => layer.type === "caption");
+  const hasBackgroundReplacement = Boolean(studioFile && activeBackgroundLayer);
 
   return (
     <div className="relative grid min-h-[520px] place-items-center overflow-hidden rounded-lg bg-black">
@@ -107,13 +113,21 @@ export function VideoPreview({
                 : "aspect-video max-w-[920px]"
           }`}
         >
+          {activeBackgroundLayer ? (
+            <PreviewBackgroundLayer layer={activeBackgroundLayer} sourceUrl={studioFile.url} />
+          ) : null}
           <video
             ref={videoRef}
             src={studioFile.url}
+            preload="metadata"
             onLoadedMetadata={onLoadedMetadata}
             onTimeUpdate={onTimeUpdate}
             onEnded={onEnded}
-            className="h-full w-full bg-black object-cover"
+            className={`relative h-full w-full bg-black ${
+              hasBackgroundReplacement
+                ? "z-10 rounded-xl object-contain p-5 shadow-2xl sm:p-8"
+                : "object-cover"
+            }`}
             style={{ filter: previewFilter }}
           />
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.36),transparent_31%,transparent_61%,rgba(0,0,0,0.56))]" />
@@ -147,6 +161,7 @@ export function VideoPreview({
         >
           <TemplateProjectPreview
             project={templateProject}
+            previewTime={previewTime}
             selectedLayerId={selectedLayerId}
             onSelectLayer={onSelectLayer}
             onUpdateLayerGeometry={onUpdateLayerGeometry}
@@ -201,7 +216,7 @@ export function VideoPreview({
         <button
           type="button"
           onClick={onTogglePlayback}
-          disabled={!studioFile}
+          disabled={!studioFile && !templateProject}
           aria-label={isPlaying ? "Pause preview" : "Play preview"}
           className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-black transition hover:bg-[var(--brand)] disabled:opacity-40"
         >
@@ -214,7 +229,7 @@ export function VideoPreview({
           />
         </div>
         <span className="text-xs font-black text-white/70" dir="ltr">
-          {studioFile ? `${formatDuration(previewTime)} / ${formatDuration(previewDurationSeconds)}` : "00:00"}
+          {studioFile || templateProject ? `${formatDuration(previewTime)} / ${formatDuration(previewDurationSeconds)}` : "00:00"}
         </span>
       </div>
     </div>
@@ -334,6 +349,33 @@ export function VideoOverlayPreview({
   );
 }
 
+function PreviewBackgroundLayer({
+  layer,
+  sourceUrl,
+}: {
+  layer: TimelineLayer;
+  sourceUrl: string;
+}) {
+  const background = resolvePreviewBackground(layer);
+
+  if (background === "blur-original") {
+    return (
+      <video
+        src={sourceUrl}
+        muted
+        playsInline
+        loop
+        autoPlay
+        preload="metadata"
+        className="absolute inset-0 h-full w-full scale-110 object-cover opacity-75 blur-2xl"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  return <div className="absolute inset-0" style={{ background }} aria-hidden="true" />;
+}
+
 export function TimelinePreviewLayer({
   layer,
   geometry,
@@ -369,7 +411,13 @@ export function TimelinePreviewLayer({
     return (
       <div onPointerDown={onPointerDown} className="absolute cursor-move overflow-hidden" style={shellStyle}>
         {layer.src ? (
-          <img src={layer.src} alt={layer.name} className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "contain")}`} />
+          <img
+            src={layer.src}
+            alt={layer.name}
+            loading="lazy"
+            decoding="async"
+            className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "contain")}`}
+          />
         ) : (
           <div className="grid h-full w-full place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70">
             IMAGE
@@ -403,7 +451,7 @@ export function TimelinePreviewLayer({
       className="absolute grid cursor-move place-items-center overflow-hidden px-3 text-center font-black leading-tight text-white"
       style={{
         ...shellStyle,
-        color: normalizeHexColor(layer.textColor ?? layer.color ?? "#ffffff"),
+        color: cssVideoColor(layer.textColor ?? layer.color, "#ffffff"),
         background:
           layer.backgroundColor && !layer.backgroundColor.includes("{{")
             ? layer.backgroundColor
@@ -413,6 +461,13 @@ export function TimelinePreviewLayer({
         borderRadius: `${Math.min(24, layer.borderRadius ?? 14)}px`,
         fontSize: `${Math.max(13, (layer.fontSize ?? (layer.type === "caption" ? 58 : 64)) * 0.22)}px`,
         fontWeight: layer.fontWeight ?? "900",
+        fontFamily: resolveVideoTextStyle(layer).fontFamily,
+        lineHeight: resolveVideoTextStyle(layer).lineHeight,
+        letterSpacing: `${resolveVideoTextStyle(layer).letterSpacing * 0.22}px`,
+        padding: `${Math.max(6, resolveVideoTextStyle(layer).backgroundPadding * 0.18)}px`,
+        textTransform: resolveVideoTextStyle(layer).textTransform,
+        textShadow: buildCssTextShadow(layer),
+        WebkitTextStroke: buildCssTextStroke(layer, 0.22),
       }}
     >
       {layer.content ?? layer.name}
@@ -452,11 +507,13 @@ function getPreviewSafeMargins({ width, height }: PreviewCanvasGeometry) {
 
 export function TemplateProjectPreview({
   project,
+  previewTime = 0,
   selectedLayerId,
   onSelectLayer,
   onUpdateLayerGeometry,
 }: {
   project: TemplateProject;
+  previewTime?: number;
   selectedLayerId?: string;
   onSelectLayer?: (id: string) => void;
   onUpdateLayerGeometry?: (layerId: string, patch: Pick<TimelineLayer, "x" | "y" | "width" | "height">) => void;
@@ -464,10 +521,12 @@ export function TemplateProjectPreview({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<PreviewLayerDragState | null>(null);
   const [dragDraft, setDragDraft] = useState<PreviewLayerDragDraft | null>(null);
-  const firstScene = project.scenes[0];
+  const activeTime = Math.max(0, Math.min(project.duration, previewTime));
   const activeLayers = project.timeline
     .flatMap((track) => track.layers)
-    .filter((layer) => layer.absoluteStart <= (firstScene?.duration ?? project.duration))
+    .filter((layer) => layer.id !== layer.sceneId)
+    .filter((layer) => layer.absoluteStart <= activeTime && layer.absoluteStart + layer.duration >= activeTime)
+    .sort((left, right) => getTemplatePreviewLayerOrder(left.type) - getTemplatePreviewLayerOrder(right.type))
     .slice(0, 12);
 
   const handleLayerPointerDown = useCallback(
@@ -630,8 +689,23 @@ export function TemplatePreviewLayer({
         className="absolute grid cursor-move place-items-center overflow-hidden px-2 text-center font-black leading-tight"
         style={{
           ...shellStyle,
-          color: normalizeHexColor(layer.color),
+          color: cssVideoColor(layer.color, "#ffffff"),
+          background:
+            layer.backgroundColor && !layer.backgroundColor.includes("{{")
+              ? layer.backgroundColor
+              : layer.type === "captions"
+                ? "rgba(0,0,0,0.58)"
+                : "transparent",
+          borderRadius: `${Math.min(24, layer.borderRadius ?? 14)}px`,
           fontSize: `${Math.max(11, (layer.fontSize ?? 44) * 0.2)}px`,
+          fontFamily: resolveVideoTextStyle(layer).fontFamily,
+          fontWeight: layer.fontWeight ?? "900",
+          lineHeight: resolveVideoTextStyle(layer).lineHeight,
+          letterSpacing: `${resolveVideoTextStyle(layer).letterSpacing * 0.2}px`,
+          padding: `${Math.max(5, resolveVideoTextStyle(layer).backgroundPadding * 0.16)}px`,
+          textTransform: resolveVideoTextStyle(layer).textTransform,
+          textShadow: buildCssTextShadow(layer),
+          WebkitTextStroke: buildCssTextStroke(layer, 0.2),
           direction: layer.direction === "ltr" ? "ltr" : "rtl",
         }}
       >
@@ -651,7 +725,23 @@ export function TemplatePreviewLayer({
         style={shellStyle}
       >
         {src && layer.type === "image" ? (
-          <img src={src} alt={layer.name ?? layer.id} className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "contain")}`} />
+          <img
+            src={src}
+            alt={layer.name ?? layer.id}
+            loading="lazy"
+            decoding="async"
+            className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "contain")}`}
+          />
+        ) : src && layer.type === "video" ? (
+          <video
+            src={src}
+            muted
+            loop
+            playsInline
+            autoPlay
+            preload="metadata"
+            className={`h-full w-full ${getMediaObjectFitClass(layer.fit ?? "cover")}`}
+          />
         ) : (
           <div className="grid h-full w-full place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70">
             {layer.type.toUpperCase()}
@@ -772,6 +862,25 @@ function getActivePreviewOverlayLayers(tracks: TimelineTrack[], previewTime: num
     .slice(0, 16);
 }
 
+function getActivePreviewBackgroundLayer(tracks: TimelineTrack[], previewTime: number) {
+  return tracks
+    .flatMap((track) => track.layers)
+    .find(
+      (layer) =>
+        layer.type === "background" &&
+        layer.start <= previewTime &&
+        layer.start + layer.duration >= previewTime,
+    );
+}
+
+function resolvePreviewBackground(layer: TimelineLayer) {
+  const value = layer.backgroundColor ?? layer.color;
+  if (!value || value.includes("{{")) return "#050608";
+  if (value === "blur-original") return value;
+  if (value.startsWith("linear-gradient(")) return value;
+  return normalizeHexColor(value);
+}
+
 function resolveTimelineLayerGeometry(
   layer: TimelineLayer,
   geometry: PreviewCanvasGeometry,
@@ -829,6 +938,14 @@ function getMediaObjectFitClass(fit: TimelineLayer["fit"]) {
   if (fit === "fill") return "object-fill";
   if (fit === "cover") return "object-cover";
   return "object-contain";
+}
+
+function getTemplatePreviewLayerOrder(type: TemplateTimelineTrack["layers"][number]["type"]) {
+  if (type === "background") return 0;
+  if (type === "video" || type === "image") return 1;
+  if (type === "shape" || type === "waveform") return 2;
+  if (type === "text" || type === "captions") return 3;
+  return 4;
 }
 
 export function TimelineEditor({
@@ -1152,6 +1269,30 @@ function snapTimelineSeconds(value: number) {
 function cursorForDragMode(mode: TimelineDragMode) {
   if (mode === "move") return "grab";
   return "ew-resize";
+}
+
+function cssVideoColor(value: string | undefined, fallback: string) {
+  if (!value || value.includes("{{")) return fallback;
+  if (value === "transparent" || value.startsWith("rgb(") || value.startsWith("rgba(")) return value;
+  if (/^#[0-9a-f]{6}$/i.test(value)) return value;
+  return fallback;
+}
+
+function buildCssTextShadow(layer: {
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+}) {
+  const style = resolveVideoTextStyle(layer);
+  if (!style.shadowBlur && !style.shadowOffsetX && !style.shadowOffsetY) return undefined;
+  return `${style.shadowOffsetX}px ${style.shadowOffsetY}px ${style.shadowBlur}px ${style.shadowColor}`;
+}
+
+function buildCssTextStroke(layer: { textStrokeColor?: string; textStrokeWidth?: number }, scale: number) {
+  const style = resolveVideoTextStyle(layer);
+  if (!style.textStrokeWidth || style.textStrokeColor === "transparent") return undefined;
+  return `${Math.max(0.5, style.textStrokeWidth * scale)}px ${style.textStrokeColor}`;
 }
 
 export function ProjectMetrics({

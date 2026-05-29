@@ -139,6 +139,16 @@ export interface LayerStyle {
   color?: string;
   backgroundColor?: string;
   borderRadius?: number;
+  lineHeight?: number;
+  letterSpacing?: number;
+  textStrokeColor?: string;
+  textStrokeWidth?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  backgroundPadding?: number;
+  textTransform?: "none" | "uppercase";
   borderColor?: string;
   borderWidth?: number;
   shadow?: string;
@@ -206,6 +216,16 @@ export const layerStyleSchema = z.object({
   color: z.string().optional(),
   backgroundColor: z.string().optional(),
   borderRadius: z.number().min(0).optional(),
+  lineHeight: z.number().positive().optional(),
+  letterSpacing: z.number().optional(),
+  textStrokeColor: z.string().optional(),
+  textStrokeWidth: z.number().min(0).optional(),
+  shadowColor: z.string().optional(),
+  shadowBlur: z.number().min(0).optional(),
+  shadowOffsetX: z.number().optional(),
+  shadowOffsetY: z.number().optional(),
+  backgroundPadding: z.number().min(0).optional(),
+  textTransform: z.enum(["none", "uppercase"]).optional(),
   borderColor: z.string().optional(),
   borderWidth: z.number().min(0).optional(),
   shadow: z.string().optional(),

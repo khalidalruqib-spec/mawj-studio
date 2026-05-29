@@ -1,7 +1,28 @@
 {
   "language": "mixed",
-  "animations": ["fadeIn","fadeOut","slideUp","slideDown","slideLeft","slideRight","zoomIn","zoomOut","pop","bounce","typewriter","blurReveal","rotateIn"],
-  "transitions": ["cut","fade","slide","zoom","wipe","blur"],
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
   "id": "motivational-quote",
   "name": "Motivational Quote",
   "category": "TikTok / Reels",
@@ -10,14 +31,57 @@
   "height": 1920,
   "duration": 15,
   "description": "Elegant 3-scene motivational quote template: atmospheric intro → typewriter quote reveal → branded outro. Perfect for daily inspiration, wisdom, and engagement content.",
-  "safeMargins": { "top": 160, "bottom": 260, "left": 70, "right": 70 },
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
   "requiredInputs": [
-    { "key": "quote",    "label": "Quote Text",     "type": "textarea", "default": "النجاح ليس مصادفة، هو نتيجة عمل متواصل وإيمان لا يتزعزع بالهدف",  "placeholder": "اكتب الاقتباس أو الحكمة", "required": true },
-    { "key": "author",  "label": "Quote Author",   "type": "text",     "default": "— ستيف جوبز",                                                       "placeholder": "مثال: — اسم القائل",     "required": false },
-    { "key": "handle",  "label": "Your Handle",    "type": "text",     "default": "@daily.wisdom.ar",                                                  "placeholder": "@حسابك",                "required": true },
-    { "key": "logo",    "label": "Logo / Icon",    "type": "image",                                                                                                              "required": false },
-    { "key": "color1",  "label": "Gradient Color 1 (From)", "type": "color", "default": "#7ef2bc",                                                      "required": false },
-    { "key": "color2",  "label": "Gradient Color 2 (To)",   "type": "color", "default": "#a78bfa",                                                      "required": false }
+    {
+      "key": "quote",
+      "label": "Quote Text",
+      "type": "textarea",
+      "default": "النجاح ليس مصادفة، هو نتيجة عمل متواصل وإيمان لا يتزعزع بالهدف",
+      "placeholder": "اكتب الاقتباس أو الحكمة",
+      "required": true
+    },
+    {
+      "key": "author",
+      "label": "Quote Author",
+      "type": "text",
+      "default": "— ستيف جوبز",
+      "placeholder": "مثال: — اسم القائل",
+      "required": false
+    },
+    {
+      "key": "handle",
+      "label": "Your Handle",
+      "type": "text",
+      "default": "@daily.wisdom.ar",
+      "placeholder": "@حسابك",
+      "required": true
+    },
+    {
+      "key": "logo",
+      "label": "Logo / Icon",
+      "type": "image",
+      "required": false
+    },
+    {
+      "key": "color1",
+      "label": "Gradient Color 1 (From)",
+      "type": "color",
+      "default": "#7ef2bc",
+      "required": false
+    },
+    {
+      "key": "color2",
+      "label": "Gradient Color 2 (To)",
+      "type": "color",
+      "default": "#a78bfa",
+      "required": false
+    }
   ],
   "scenes": [
     {
@@ -25,8 +89,16 @@
       "name": "Atmosphere",
       "start": 0,
       "duration": 3,
-      "background": { "type": "gradient", "from": "{{color1}}", "to": "{{color2}}", "angle": 145 },
-      "transition": { "type": "fade", "duration": 0.5 },
+      "background": {
+        "type": "gradient",
+        "from": "{{color1}}",
+        "to": "{{color2}}",
+        "angle": 145
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
       "layers": [
         {
           "id": "atm-overlay",
@@ -54,7 +126,21 @@
           "align": "center",
           "direction": "ltr",
           "opacity": 0.06,
-          "animationIn": { "type": "fadeIn", "duration": 0.8 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.8
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "atm-handle-faint",
@@ -71,7 +157,21 @@
           "direction": "ltr",
           "safeMargin": true,
           "opacity": 0.35,
-          "animationIn": { "type": "fadeIn", "duration": 0.6 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.6
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "atm-top-left-dot",
@@ -104,8 +204,16 @@
       "name": "Quote",
       "start": 3,
       "duration": 8,
-      "background": { "type": "gradient", "from": "{{color1}}", "to": "{{color2}}", "angle": 145 },
-      "transition": { "type": "fade", "duration": 0.4 },
+      "background": {
+        "type": "gradient",
+        "from": "{{color1}}",
+        "to": "{{color2}}",
+        "angle": 145
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.4
+      },
       "layers": [
         {
           "id": "quote-overlay",
@@ -134,7 +242,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "typewriter", "duration": 2.0 }
+          "animationIn": {
+            "type": "typewriter",
+            "duration": 2
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "quote-separator",
@@ -163,7 +285,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "quote-handle",
@@ -180,7 +316,21 @@
           "direction": "ltr",
           "safeMargin": true,
           "opacity": 0.6,
-          "animationIn": { "type": "fadeIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -189,8 +339,16 @@
       "name": "Brand Outro",
       "start": 11,
       "duration": 4,
-      "background": { "type": "gradient", "from": "{{color2}}", "to": "{{color1}}", "angle": 145 },
-      "transition": { "type": "fade", "duration": 0.5 },
+      "background": {
+        "type": "gradient",
+        "from": "{{color2}}",
+        "to": "{{color1}}",
+        "angle": 145
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
       "layers": [
         {
           "id": "outro-overlay",
@@ -213,7 +371,10 @@
           "width": 400,
           "height": 400,
           "fit": "contain",
-          "animationIn": { "type": "zoomIn", "duration": 0.55 }
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
         },
         {
           "id": "outro-share-text",
@@ -229,7 +390,21 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "pop", "duration": 0.5 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "outro-handle",
@@ -246,11 +421,32 @@
           "direction": "ltr",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.4 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     }
   ],
-  "audio": { "music": null, "volume": 1 },
-  "export": { "format": "mp4", "fps": 30, "quality": "1080p" }
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
 }

@@ -1,7 +1,28 @@
 {
   "language": "mixed",
-  "animations": ["fadeIn","fadeOut","slideUp","slideDown","slideLeft","slideRight","zoomIn","zoomOut","pop","bounce","typewriter","blurReveal","rotateIn"],
-  "transitions": ["cut","fade","slide","zoom","wipe","blur"],
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
   "id": "personal-intro",
   "name": "Personal Brand Intro",
   "category": "Personal Branding",
@@ -10,18 +31,90 @@
   "height": 1920,
   "duration": 20,
   "description": "Clean 3-scene personal branding intro: name reveal → expertise showcase → connect CTA. Perfect for creators, coaches, and professionals introducing themselves on social media.",
-  "safeMargins": { "top": 160, "bottom": 260, "left": 70, "right": 70 },
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
   "requiredInputs": [
-    { "key": "fullName",    "label": "Full Name",           "type": "text",     "default": "سارة المنصوري",              "placeholder": "اسمك الكامل",              "required": true },
-    { "key": "roleTitle",   "label": "Role / Title",        "type": "text",     "default": "مدربة حياة ومتحدثة تحفيزية", "placeholder": "مسماك المهني أو التخصص",   "required": true },
-    { "key": "bio",         "label": "Short Bio",           "type": "textarea", "default": "أساعدك تكتشف قوتك الداخلية وتحقق أهدافك في ٩٠ يوماً", "placeholder": "نبذة قصيرة عنك", "required": true },
-    { "key": "skill1",      "label": "Skill / Tag 1",       "type": "text",     "default": "تطوير الذات",               "placeholder": "مهارة أو تخصص ١",         "required": true },
-    { "key": "skill2",      "label": "Skill / Tag 2",       "type": "text",     "default": "التدريب الحياتي",           "placeholder": "مهارة أو تخصص ٢",         "required": true },
-    { "key": "skill3",      "label": "Skill / Tag 3",       "type": "text",     "default": "بناء العادات",              "placeholder": "مهارة أو تخصص ٣",         "required": true },
-    { "key": "igHandle",    "label": "Instagram Handle",    "type": "text",     "default": "@sara.almansouri",          "placeholder": "@حسابك على انستغرام",      "required": true },
-    { "key": "website",     "label": "Website / Link",      "type": "text",     "default": "www.sara-coach.com",         "placeholder": "موقعك الإلكتروني",        "required": false },
-    { "key": "photo",       "label": "Your Photo",          "type": "image",                                                                                     "required": true },
-    { "key": "brandColor",  "label": "Brand Color",         "type": "color",    "default": "#8b5cf6",                                                            "required": false }
+    {
+      "key": "fullName",
+      "label": "Full Name",
+      "type": "text",
+      "default": "سارة المنصوري",
+      "placeholder": "اسمك الكامل",
+      "required": true
+    },
+    {
+      "key": "roleTitle",
+      "label": "Role / Title",
+      "type": "text",
+      "default": "مدربة حياة ومتحدثة تحفيزية",
+      "placeholder": "مسماك المهني أو التخصص",
+      "required": true
+    },
+    {
+      "key": "bio",
+      "label": "Short Bio",
+      "type": "textarea",
+      "default": "أساعدك تكتشف قوتك الداخلية وتحقق أهدافك في ٩٠ يوماً",
+      "placeholder": "نبذة قصيرة عنك",
+      "required": true
+    },
+    {
+      "key": "skill1",
+      "label": "Skill / Tag 1",
+      "type": "text",
+      "default": "تطوير الذات",
+      "placeholder": "مهارة أو تخصص ١",
+      "required": true
+    },
+    {
+      "key": "skill2",
+      "label": "Skill / Tag 2",
+      "type": "text",
+      "default": "التدريب الحياتي",
+      "placeholder": "مهارة أو تخصص ٢",
+      "required": true
+    },
+    {
+      "key": "skill3",
+      "label": "Skill / Tag 3",
+      "type": "text",
+      "default": "بناء العادات",
+      "placeholder": "مهارة أو تخصص ٣",
+      "required": true
+    },
+    {
+      "key": "igHandle",
+      "label": "Instagram Handle",
+      "type": "text",
+      "default": "@sara.almansouri",
+      "placeholder": "@حسابك على انستغرام",
+      "required": true
+    },
+    {
+      "key": "website",
+      "label": "Website / Link",
+      "type": "text",
+      "default": "www.sara-coach.com",
+      "placeholder": "موقعك الإلكتروني",
+      "required": false
+    },
+    {
+      "key": "photo",
+      "label": "Your Photo",
+      "type": "image",
+      "required": true
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#8b5cf6",
+      "required": false
+    }
   ],
   "scenes": [
     {
@@ -29,8 +122,16 @@
       "name": "Name Reveal",
       "start": 0,
       "duration": 6,
-      "background": { "type": "gradient", "from": "#0d0d1a", "to": "#140d2a", "angle": 145 },
-      "transition": { "type": "fade", "duration": 0.5 },
+      "background": {
+        "type": "gradient",
+        "from": "#0d0d1a",
+        "to": "#140d2a",
+        "angle": 145
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
       "layers": [
         {
           "id": "nr-bg-glow",
@@ -71,7 +172,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "blurReveal", "duration": 0.7 }
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.7
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "nr-role-title",
@@ -88,7 +203,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.6 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.6
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "nr-deco-accent",
@@ -109,8 +238,14 @@
       "name": "Expertise",
       "start": 6,
       "duration": 8,
-      "background": { "type": "color", "value": "#0d0d1a" },
-      "transition": { "type": "slide", "duration": 0.4 },
+      "background": {
+        "type": "color",
+        "value": "#0d0d1a"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.4
+      },
       "layers": [
         {
           "id": "exp-photo-bg",
@@ -134,7 +269,10 @@
           "height": 660,
           "fit": "cover",
           "borderRadius": 32,
-          "animationIn": { "type": "zoomIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.5
+          }
         },
         {
           "id": "exp-bio",
@@ -150,7 +288,21 @@
           "align": "right",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.55 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.55
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "exp-skill1-bg",
@@ -178,7 +330,21 @@
           "align": "center",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "pop", "duration": 0.4 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "exp-skill2-bg",
@@ -206,7 +372,21 @@
           "align": "center",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "pop", "duration": 0.5 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "exp-skill3-bg",
@@ -234,7 +414,21 @@
           "align": "center",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "pop", "duration": 0.6 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.6
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -243,8 +437,16 @@
       "name": "Connect",
       "start": 14,
       "duration": 6,
-      "background": { "type": "gradient", "from": "#1a0d33", "to": "#0d0d1a", "angle": 145 },
-      "transition": { "type": "fade", "duration": 0.5 },
+      "background": {
+        "type": "gradient",
+        "from": "#1a0d33",
+        "to": "#0d0d1a",
+        "angle": 145
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
       "layers": [
         {
           "id": "conn-top-bar",
@@ -272,7 +474,21 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "blurReveal", "duration": 0.55 }
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.55
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "conn-divider",
@@ -301,7 +517,21 @@
           "direction": "ltr",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.5 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "conn-website",
@@ -318,11 +548,32 @@
           "direction": "ltr",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.6 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.6
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     }
   ],
-  "audio": { "music": null, "volume": 1 },
-  "export": { "format": "mp4", "fps": 30, "quality": "1080p" }
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
 }

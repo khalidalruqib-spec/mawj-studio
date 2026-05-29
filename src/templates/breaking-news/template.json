@@ -1,7 +1,28 @@
 {
   "language": "mixed",
-  "animations": ["fadeIn","fadeOut","slideUp","slideDown","slideLeft","slideRight","zoomIn","zoomOut","pop","bounce","typewriter","blurReveal","rotateIn"],
-  "transitions": ["cut","fade","slide","zoom","wipe","blur"],
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
   "id": "breaking-news",
   "name": "Breaking News Style",
   "category": "News Style",
@@ -10,17 +31,82 @@
   "height": 1920,
   "duration": 20,
   "description": "Broadcast-style 3-scene breaking news template: urgent headline → detailed report → channel follow CTA. Built for news creators, journalists, and media accounts.",
-  "safeMargins": { "top": 160, "bottom": 260, "left": 70, "right": 70 },
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
   "requiredInputs": [
-    { "key": "headline",     "label": "Main Headline",        "type": "textarea", "default": "الحكومة تعلن عن حزمة دعم اقتصادية تاريخية",  "placeholder": "العنوان الرئيسي للخبر",    "required": true },
-    { "key": "subHeadline",  "label": "Sub Headline",         "type": "text",     "default": "تفاصيل جديدة تكشف عن ٣٠٠ مليار ريال دعم مباشر", "placeholder": "العنوان الفرعي",          "required": true },
-    { "key": "body",         "label": "Body Text",            "type": "textarea", "default": "كشفت المصادر الرسمية عن خطة شاملة تستهدف ٢ مليون مستفيد خلال العام القادم", "placeholder": "نص الخبر التفصيلي", "required": true },
-    { "key": "location",     "label": "Location",             "type": "text",     "default": "الرياض، المملكة العربية السعودية",            "placeholder": "المدينة أو الدولة",        "required": false },
-    { "key": "reporter",     "label": "Reporter / Source",    "type": "text",     "default": "مراسلنا: أحمد الشهري",                       "placeholder": "اسم المراسل أو المصدر",    "required": false },
-    { "key": "channelName",  "label": "Channel / Account Name","type": "text",    "default": "قناة الخبر العاجل",                          "placeholder": "اسم القناة أو الحساب",     "required": true },
-    { "key": "handle",       "label": "Social Handle",        "type": "text",     "default": "@alkhbar.sa",                                "placeholder": "@حساب القناة",             "required": true },
-    { "key": "photo",        "label": "News Photo",           "type": "image",                                                                                                  "required": true },
-    { "key": "accentColor",  "label": "Accent Color",         "type": "color",    "default": "#ef4444",                                                                        "required": false }
+    {
+      "key": "headline",
+      "label": "Main Headline",
+      "type": "textarea",
+      "default": "الحكومة تعلن عن حزمة دعم اقتصادية تاريخية",
+      "placeholder": "العنوان الرئيسي للخبر",
+      "required": true
+    },
+    {
+      "key": "subHeadline",
+      "label": "Sub Headline",
+      "type": "text",
+      "default": "تفاصيل جديدة تكشف عن ٣٠٠ مليار ريال دعم مباشر",
+      "placeholder": "العنوان الفرعي",
+      "required": true
+    },
+    {
+      "key": "body",
+      "label": "Body Text",
+      "type": "textarea",
+      "default": "كشفت المصادر الرسمية عن خطة شاملة تستهدف ٢ مليون مستفيد خلال العام القادم",
+      "placeholder": "نص الخبر التفصيلي",
+      "required": true
+    },
+    {
+      "key": "location",
+      "label": "Location",
+      "type": "text",
+      "default": "الرياض، المملكة العربية السعودية",
+      "placeholder": "المدينة أو الدولة",
+      "required": false
+    },
+    {
+      "key": "reporter",
+      "label": "Reporter / Source",
+      "type": "text",
+      "default": "مراسلنا: أحمد الشهري",
+      "placeholder": "اسم المراسل أو المصدر",
+      "required": false
+    },
+    {
+      "key": "channelName",
+      "label": "Channel / Account Name",
+      "type": "text",
+      "default": "قناة الخبر العاجل",
+      "placeholder": "اسم القناة أو الحساب",
+      "required": true
+    },
+    {
+      "key": "handle",
+      "label": "Social Handle",
+      "type": "text",
+      "default": "@alkhbar.sa",
+      "placeholder": "@حساب القناة",
+      "required": true
+    },
+    {
+      "key": "photo",
+      "label": "News Photo",
+      "type": "image",
+      "required": true
+    },
+    {
+      "key": "accentColor",
+      "label": "Accent Color",
+      "type": "color",
+      "default": "#ef4444",
+      "required": false
+    }
   ],
   "scenes": [
     {
@@ -28,8 +114,14 @@
       "name": "Breaking",
       "start": 0,
       "duration": 5,
-      "background": { "type": "color", "value": "#0a0000" },
-      "transition": { "type": "cut", "duration": 0.25 },
+      "background": {
+        "type": "color",
+        "value": "#0a0000"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0.25
+      },
       "layers": [
         {
           "id": "brk-urgent-bg",
@@ -56,7 +148,21 @@
           "color": "#ffffff",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "pop", "duration": 0.3 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "brk-channel",
@@ -71,7 +177,21 @@
           "color": "#cccccc",
           "align": "right",
           "direction": "auto",
-          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "brk-headline",
@@ -88,8 +208,25 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.5 },
-          "animationOut": { "type": "fadeOut", "duration": 0.25 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.5
+          },
+          "animationOut": {
+            "type": "fadeOut",
+            "duration": 0.25
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "brk-reporter",
@@ -106,7 +243,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "brk-red-bar",
@@ -127,8 +278,14 @@
       "name": "Details",
       "start": 5,
       "duration": 9,
-      "background": { "type": "color", "value": "#050000" },
-      "transition": { "type": "slide", "duration": 0.35 },
+      "background": {
+        "type": "color",
+        "value": "#050000"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.35
+      },
       "layers": [
         {
           "id": "det-photo",
@@ -140,7 +297,10 @@
           "height": 1000,
           "fit": "cover",
           "opacity": 1,
-          "animationIn": { "type": "zoomIn", "duration": 0.55 }
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
         },
         {
           "id": "det-photo-overlay",
@@ -169,7 +329,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.45 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.45
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "det-location-bg",
@@ -197,7 +371,21 @@
           "align": "right",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "det-body",
@@ -214,7 +402,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -223,8 +425,16 @@
       "name": "Follow",
       "start": 14,
       "duration": 6,
-      "background": { "type": "gradient", "from": "#1a0000", "to": "#050000", "angle": 145 },
-      "transition": { "type": "fade", "duration": 0.4 },
+      "background": {
+        "type": "gradient",
+        "from": "#1a0000",
+        "to": "#050000",
+        "angle": 145
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.4
+      },
       "layers": [
         {
           "id": "fol-accent-bg",
@@ -253,7 +463,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "fol-follow-text",
@@ -269,7 +493,21 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "slideUp", "duration": 0.4 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "fol-handle-bg",
@@ -297,11 +535,32 @@
           "align": "center",
           "direction": "ltr",
           "editable": true,
-          "animationIn": { "type": "pop", "duration": 0.4 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     }
   ],
-  "audio": { "music": null, "volume": 1 },
-  "export": { "format": "mp4", "fps": 30, "quality": "1080p" }
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
 }

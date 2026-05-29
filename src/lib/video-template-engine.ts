@@ -92,6 +92,16 @@ export type TemplateLayer = {
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
+  lineHeight?: number;
+  letterSpacing?: number;
+  textStrokeColor?: string;
+  textStrokeWidth?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  backgroundPadding?: number;
+  textTransform?: "none" | "uppercase";
   align?: "left" | "center" | "right";
   direction?: "auto" | "rtl" | "ltr";
   highlightColor?: string;

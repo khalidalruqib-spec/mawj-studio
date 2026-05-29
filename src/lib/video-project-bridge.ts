@@ -43,12 +43,23 @@ export type EditorTimelineLayerInput = {
   y?: number;
   width?: number;
   height?: number;
+  fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
   textColor?: string;
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
+  lineHeight?: number;
+  letterSpacing?: number;
+  textStrokeColor?: string;
+  textStrokeWidth?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  backgroundPadding?: number;
+  textTransform?: "none" | "uppercase";
   fit?: "cover" | "contain" | "fill";
 };
 
@@ -323,11 +334,22 @@ export function editorLayerPatchToVideoLayerPatch(
   patch: Partial<EditorTimelineLayerInput>,
 ): Partial<Layer> {
   const style = {
+    fontFamily: patch.fontFamily,
     fontSize: patch.fontSize,
     fontWeight: patch.fontWeight,
     color: patch.textColor ?? patch.color,
     backgroundColor: patch.backgroundColor,
     borderRadius: patch.borderRadius,
+    lineHeight: patch.lineHeight,
+    letterSpacing: patch.letterSpacing,
+    textStrokeColor: patch.textStrokeColor,
+    textStrokeWidth: patch.textStrokeWidth,
+    shadowColor: patch.shadowColor,
+    shadowBlur: patch.shadowBlur,
+    shadowOffsetX: patch.shadowOffsetX,
+    shadowOffsetY: patch.shadowOffsetY,
+    backgroundPadding: patch.backgroundPadding,
+    textTransform: patch.textTransform,
     fit: patch.fit,
   };
   const cleanStyle = removeUndefined(style);
@@ -378,12 +400,23 @@ function videoLayerToEditorTimelineLayer({
     y: layer.y,
     width: layer.width,
     height: layer.height,
+    fontFamily: layer.style?.fontFamily,
     fontSize: layer.style?.fontSize,
     fontWeight: layer.style?.fontWeight,
     textColor: layer.style?.color,
     backgroundColor: layer.style?.backgroundColor,
     borderRadius: layer.style?.borderRadius,
     opacity: layer.opacity,
+    lineHeight: layer.style?.lineHeight,
+    letterSpacing: layer.style?.letterSpacing,
+    textStrokeColor: layer.style?.textStrokeColor,
+    textStrokeWidth: layer.style?.textStrokeWidth,
+    shadowColor: layer.style?.shadowColor,
+    shadowBlur: layer.style?.shadowBlur,
+    shadowOffsetX: layer.style?.shadowOffsetX,
+    shadowOffsetY: layer.style?.shadowOffsetY,
+    backgroundPadding: layer.style?.backgroundPadding,
+    textTransform: layer.style?.textTransform,
     fit: layer.style?.fit,
   };
 }
@@ -520,6 +553,16 @@ function templateLayerToVideoLayer(
       color: layer.color,
       backgroundColor: layer.backgroundColor,
       borderRadius: layer.borderRadius,
+      lineHeight: layer.lineHeight,
+      letterSpacing: layer.letterSpacing,
+      textStrokeColor: layer.textStrokeColor,
+      textStrokeWidth: layer.textStrokeWidth,
+      shadowColor: layer.shadowColor,
+      shadowBlur: layer.shadowBlur,
+      shadowOffsetX: layer.shadowOffsetX,
+      shadowOffsetY: layer.shadowOffsetY,
+      backgroundPadding: layer.backgroundPadding,
+      textTransform: layer.textTransform,
       align: layer.align,
       direction: layer.direction,
       fit: layer.fit,
@@ -562,12 +605,22 @@ function editorTimelineLayerToVideoLayer(
     hidden: previous?.hidden ?? false,
     style: {
       ...previous?.style,
-      fontFamily: previous?.style?.fontFamily ?? defaultFontForDirection("auto"),
+      fontFamily: layer.fontFamily ?? previous?.style?.fontFamily ?? defaultFontForDirection("auto"),
       fontSize: layer.fontSize ?? previous?.style?.fontSize,
       fontWeight: layer.fontWeight ?? previous?.style?.fontWeight,
       color: layer.textColor ?? layer.color ?? previous?.style?.color,
       backgroundColor: layer.backgroundColor ?? previous?.style?.backgroundColor,
       borderRadius: layer.borderRadius ?? previous?.style?.borderRadius,
+      lineHeight: layer.lineHeight ?? previous?.style?.lineHeight,
+      letterSpacing: layer.letterSpacing ?? previous?.style?.letterSpacing,
+      textStrokeColor: layer.textStrokeColor ?? previous?.style?.textStrokeColor,
+      textStrokeWidth: layer.textStrokeWidth ?? previous?.style?.textStrokeWidth,
+      shadowColor: layer.shadowColor ?? previous?.style?.shadowColor,
+      shadowBlur: layer.shadowBlur ?? previous?.style?.shadowBlur,
+      shadowOffsetX: layer.shadowOffsetX ?? previous?.style?.shadowOffsetX,
+      shadowOffsetY: layer.shadowOffsetY ?? previous?.style?.shadowOffsetY,
+      backgroundPadding: layer.backgroundPadding ?? previous?.style?.backgroundPadding,
+      textTransform: layer.textTransform ?? previous?.style?.textTransform,
       align: previous?.style?.align ?? "center",
       direction: previous?.style?.direction ?? "auto",
       fit: layer.fit ?? previous?.style?.fit ?? (type === "image" ? "contain" : type === "video" ? "cover" : undefined),

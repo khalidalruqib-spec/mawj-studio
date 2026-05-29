@@ -2,6 +2,7 @@ import type { EditPlan } from "@/lib/edit-plan";
 import { trimVideoWithFFmpeg, type FFmpegCut } from "@/lib/ffmpeg-renderer";
 import { resolveMediaDuration } from "@/lib/media-duration";
 import type { AspectRatio, VideoStyle } from "@/lib/video-styles";
+import { resolveVideoTextStyle } from "@/lib/video-typography";
 
 const FPS = 30;
 
@@ -19,6 +20,7 @@ export type BrowserRenderResult = {
   mimeType: string;
   durationSeconds: number;
   resolution: string;
+  textPreview?: string;
 };
 
 type RenderEditedVideoOptions = {
@@ -47,17 +49,36 @@ type RenderTimelineLayer = {
   y?: number;
   width?: number;
   height?: number;
+  fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
   textColor?: string;
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
+  lineHeight?: number;
+  letterSpacing?: number;
+  textStrokeColor?: string;
+  textStrokeWidth?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  backgroundPadding?: number;
+  textTransform?: "none" | "uppercase";
   fit?: "cover" | "contain" | "fill";
 };
 
 type RenderTimelineTrack = {
   layers: RenderTimelineLayer[];
+};
+
+type AudioEnhancementSettings = {
+  enabled: boolean;
+  noiseReduction: boolean;
+  voiceEnhancement: boolean;
+  echoReduction: boolean;
+  volumeLeveling: boolean;
 };
 
 export async function renderEditedVideo({
@@ -141,14 +162,16 @@ export async function renderEditedVideo({
   }
 
   const playbackRate = getPlaybackRate(style.pace);
+  const cutSourceSeconds = ffmpegCuts.reduce((total, cut) => total + Math.max(0, cut.end - cut.start), 0);
   const desiredSourceSeconds = Math.max(4, Math.min(plan?.targetDurationSeconds ?? realDuration, 60));
-  const sourceSeconds = Math.min(realDuration, desiredSourceSeconds);
+  const sourceSeconds = ffmpegCuts.length > 0 ? Math.min(realDuration, cutSourceSeconds) : Math.min(realDuration, desiredSourceSeconds);
   const outputSeconds = sourceSeconds / playbackRate;
   const overlayImages = await loadTimelineOverlayImages(timelineTracks);
 
   const canvasStream = canvas.captureStream(FPS);
   const stream = new MediaStream(canvasStream.getVideoTracks());
-  const audio = connectAudioToStream(video, stream);
+  const audioEnhancement = getAudioEnhancementSettings(timelineTracks);
+  const audio = connectAudioToStream(video, stream, audioEnhancement);
   const mimeType = pickRecorderMimeType();
   const chunks: Blob[] = [];
   const recorderOptions: MediaRecorderOptions = {
@@ -172,7 +195,7 @@ export async function renderEditedVideo({
       await audio.context.resume();
     }
 
-    video.currentTime = 0;
+    video.currentTime = ffmpegCuts[0]?.start ?? 0;
     video.playbackRate = playbackRate;
     drawEditedFrame(context, video, {
       style,
@@ -190,14 +213,30 @@ export async function renderEditedVideo({
 
     await new Promise<void>((resolve, reject) => {
       let animationFrame = 0;
+      const renderStart = performance.now();
       const tick = () => {
         if (video.error) {
           reject(new Error("تعذر قراءة الفيديو أثناء الرندر."));
           return;
         }
 
-        const elapsedSourceSeconds = Math.max(0, video.currentTime);
-        const elapsedOutputSeconds = Math.min(outputSeconds, elapsedSourceSeconds / playbackRate);
+        const elapsedOutputSeconds = ffmpegCuts.length > 0
+          ? Math.min(outputSeconds, (performance.now() - renderStart) / 1000)
+          : Math.min(outputSeconds, Math.max(0, video.currentTime) / playbackRate);
+
+        if (ffmpegCuts.length > 0) {
+          const targetSourceTime = getSourceTimeForCutOutput(ffmpegCuts, elapsedOutputSeconds * playbackRate);
+          const currentCut = getCutForSourceTime(ffmpegCuts, targetSourceTime);
+          const isOutsideCut =
+            !currentCut ||
+            video.currentTime < currentCut.start - 0.08 ||
+            video.currentTime > currentCut.end + 0.08;
+          const drift = Math.abs(video.currentTime - targetSourceTime);
+
+          if (isOutsideCut || drift > 0.35) {
+            video.currentTime = targetSourceTime;
+          }
+        }
 
         drawEditedFrame(context, video, {
           style,
@@ -217,7 +256,7 @@ export async function renderEditedVideo({
           outputSeconds,
         });
 
-        if (elapsedSourceSeconds >= sourceSeconds || video.ended) {
+        if (elapsedOutputSeconds >= outputSeconds || (!ffmpegCuts.length && video.ended)) {
           cancelAnimationFrame(animationFrame);
           resolve();
           return;
@@ -240,8 +279,7 @@ export async function renderEditedVideo({
     video.pause();
     canvasStream.getTracks().forEach((track) => track.stop());
     stream.getTracks().forEach((track) => track.stop());
-    audio?.source.disconnect();
-    audio?.destination.disconnect();
+    audio?.cleanup();
     await audio?.context.close().catch(() => undefined);
   }
 
@@ -277,6 +315,24 @@ function getPlanCuts(plan: EditPlan | null, realDuration: number): FFmpegCut[] {
       label: item.label,
     }))
     .filter((cut) => cut.end - cut.start > 0.1);
+}
+
+function getSourceTimeForCutOutput(cuts: FFmpegCut[], elapsedSourceSeconds: number) {
+  let cursor = 0;
+
+  for (const cut of cuts) {
+    const duration = Math.max(0, cut.end - cut.start);
+    if (elapsedSourceSeconds <= cursor + duration) {
+      return cut.start + Math.max(0, elapsedSourceSeconds - cursor);
+    }
+    cursor += duration;
+  }
+
+  return cuts.at(-1)?.end ?? elapsedSourceSeconds;
+}
+
+function getCutForSourceTime(cuts: FFmpegCut[], sourceTime: number) {
+  return cuts.find((cut) => sourceTime >= cut.start - 0.01 && sourceTime <= cut.end + 0.01) ?? null;
 }
 
 export function getPreviewFilter(styleId: VideoStyle["id"]) {
@@ -328,21 +384,42 @@ function drawEditedFrame(
   const { width, height } = context.canvas;
   const videoWidth = video.videoWidth || width;
   const videoHeight = video.videoHeight || height;
+  const backgroundLayer = getActiveRenderBackgroundLayer(timelineTracks, outputTime);
   const motion = getMotionAmount(style.pace);
   const zoom = 1.035 + motion * Math.sin(outputTime * 1.45);
-  const drawScale = Math.max(width / videoWidth, height / videoHeight) * zoom;
-  const drawWidth = videoWidth * drawScale;
-  const drawHeight = videoHeight * drawScale;
-  const panX = Math.sin(outputTime * 0.72) * width * motion * 0.24;
-  const panY = Math.cos(outputTime * 0.48) * height * motion * 0.08;
-  const drawX = (width - drawWidth) / 2 + panX;
-  const drawY = (height - drawHeight) / 2 + panY;
 
   context.save();
   context.fillStyle = "#050608";
   context.fillRect(0, 0, width, height);
+
+  if (backgroundLayer) {
+    drawRenderBackground(context, video, backgroundLayer);
+  }
+
   context.filter = getCanvasFilter(style.id);
-  context.drawImage(video, drawX, drawY, drawWidth, drawHeight);
+
+  if (backgroundLayer) {
+    const frame = getBackgroundReplacementVideoFrame(width, height);
+    roundedRect(context, frame.x, frame.y, frame.width, frame.height, frame.radius);
+    context.save();
+    context.shadowColor = "rgba(0,0,0,0.36)";
+    context.shadowBlur = Math.round(width * 0.045);
+    context.fillStyle = "rgba(0,0,0,0.24)";
+    context.fill();
+    context.restore();
+    roundedRect(context, frame.x, frame.y, frame.width, frame.height, frame.radius);
+    context.clip();
+    drawVideoContain(context, video, frame.x, frame.y, frame.width, frame.height, zoom);
+  } else {
+    const drawScale = Math.max(width / videoWidth, height / videoHeight) * zoom;
+    const drawWidth = videoWidth * drawScale;
+    const drawHeight = videoHeight * drawScale;
+    const panX = Math.sin(outputTime * 0.72) * width * motion * 0.24;
+    const panY = Math.cos(outputTime * 0.48) * height * motion * 0.08;
+    const drawX = (width - drawWidth) / 2 + panX;
+    const drawY = (height - drawHeight) / 2 + panY;
+    context.drawImage(video, drawX, drawY, drawWidth, drawHeight);
+  }
   context.restore();
 
   drawStyleWash(context, style.id);
@@ -560,16 +637,26 @@ function drawTimelineTextLayer(
     aspectRatio: AspectRatio;
   },
 ) {
-  const text = layer.content ?? layer.name;
+  const text = layer.content ?? "";
   if (!text.trim()) return;
 
   const fontSize = clamp((layer.fontSize ?? (layer.type === "caption" ? 58 : 64)) * scaleX, 18, aspectRatio === "16:9" ? 54 : 62);
-  const lineHeight = fontSize * 1.18;
+  const textStyle = resolveVideoTextStyle(layer, {
+    lineHeight: 1.18,
+    textStrokeColor: layer.type === "caption" ? "rgba(0, 0, 0, 0.72)" : "rgba(0, 0, 0, 0.42)",
+    textStrokeWidth: layer.type === "caption" ? Math.max(4, fontSize * 0.09) : 0,
+    shadowColor: "rgba(0, 0, 0, 0.34)",
+    shadowBlur: layer.type === "caption" ? 10 : 0,
+    shadowOffsetY: layer.type === "caption" ? 6 : 0,
+  });
+  const displayText = textStyle.textTransform === "uppercase" ? text.toUpperCase() : text;
+  const lineHeight = fontSize * textStyle.lineHeight;
   const maxLines = Math.max(1, Math.floor((height - fontSize * 0.65) / lineHeight));
+  const maxTextWidth = Math.max(20, width - textStyle.backgroundPadding * 2 - fontSize * 0.2);
 
-  context.font = `${layer.fontWeight ?? "900"} ${fontSize}px "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif`;
-  const lines = wrapText(context, text, width * 0.88, Math.min(4, maxLines), fontSize);
-  const blockHeight = Math.min(height, lines.length * lineHeight + fontSize * 0.85);
+  context.font = `${layer.fontWeight ?? "900"} ${fontSize}px ${textStyle.fontFamily}`;
+  const lines = wrapText(context, displayText, maxTextWidth, Math.min(4, maxLines), fontSize, layer.fontWeight ?? "900", textStyle.fontFamily);
+  const blockHeight = Math.min(height, lines.length * lineHeight + Math.max(fontSize * 0.5, textStyle.backgroundPadding * 1.4));
   const blockY = y + (height - blockHeight) / 2;
   const background =
     layer.type === "caption"
@@ -587,17 +674,28 @@ function drawTimelineTextLayer(
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.direction = "rtl";
+  context.shadowColor = textStyle.shadowColor;
+  context.shadowBlur = textStyle.shadowBlur;
+  context.shadowOffsetX = textStyle.shadowOffsetX;
+  context.shadowOffsetY = textStyle.shadowOffsetY;
+  (context as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = `${textStyle.letterSpacing}px`;
 
   lines.forEach((line, index) => {
-    const baseline = blockY + fontSize * 0.62 + index * lineHeight;
-    if (layer.type === "caption") {
-      context.lineWidth = Math.max(4, fontSize * 0.09);
-      context.strokeStyle = "rgba(0, 0, 0, 0.72)";
-      context.strokeText(line, x + width / 2, baseline, width * 0.9);
+    const baseline = blockY + blockHeight / 2 - ((lines.length - 1) * lineHeight) / 2 + index * lineHeight;
+    if (textStyle.textStrokeWidth > 0 && textStyle.textStrokeColor !== "transparent") {
+      context.lineWidth = textStyle.textStrokeWidth;
+      context.strokeStyle = textStyle.textStrokeColor;
+      context.strokeText(line, x + width / 2, baseline, maxTextWidth);
     }
     context.fillStyle = normalizeCanvasColor(layer.textColor ?? layer.color, "#ffffff");
-    context.fillText(line, x + width / 2, baseline, width * 0.9);
+    context.fillText(line, x + width / 2, baseline, maxTextWidth);
   });
+
+  (context as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = "0px";
+  context.shadowColor = "transparent";
+  context.shadowBlur = 0;
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 0;
 }
 
 function drawCutPulse(context: CanvasRenderingContext2D, plan: EditPlan | null, outputTime: number) {
@@ -640,8 +738,10 @@ function wrapText(
   maxWidth: number,
   maxLines: number,
   fontSize: number,
+  fontWeight = "900",
+  fontFamily = '"IBM Plex Sans Arabic", Tahoma, Arial, sans-serif',
 ) {
-  context.font = `900 ${fontSize}px "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif`;
+  context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
   const words = text.replace(/\s+/g, " ").trim().split(" ");
   const lines: string[] = [];
   let current = "";
@@ -710,7 +810,7 @@ function getProjectDimensions(aspectRatio: AspectRatio) {
 }
 
 function hasRenderableTimelineOverlays(tracks: RenderTimelineTrack[]) {
-  return getRenderableTimelineLayers(tracks).length > 0;
+  return getRenderableTimelineLayers(tracks).length > 0 || hasRenderBackgroundLayers(tracks);
 }
 
 function getRenderableTimelineLayers(tracks: RenderTimelineTrack[]) {
@@ -718,10 +818,49 @@ function getRenderableTimelineLayers(tracks: RenderTimelineTrack[]) {
     .flatMap((track) => track.layers)
     .filter((layer) => {
       if (!["text", "caption", "image", "shape"].includes(layer.type)) return false;
-      if ((layer.type === "text" || layer.type === "caption") && !(layer.content ?? layer.name).trim()) return false;
+      if ((layer.type === "text" || layer.type === "caption") && !layer.content?.trim()) return false;
       if (layer.type === "image" && !layer.src) return false;
       return layer.duration > 0;
     });
+}
+
+function hasRenderBackgroundLayers(tracks: RenderTimelineTrack[]) {
+  return tracks
+    .flatMap((track) => track.layers)
+    .some((layer) => layer.type === "background" && layer.duration > 0);
+}
+
+function getActiveRenderBackgroundLayer(tracks: RenderTimelineTrack[], time: number) {
+  return tracks
+    .flatMap((track) => track.layers)
+    .find(
+      (layer) =>
+        layer.type === "background" &&
+        layer.start <= time &&
+        layer.start + layer.duration >= time,
+    );
+}
+
+function getAudioEnhancementSettings(tracks: RenderTimelineTrack[]): AudioEnhancementSettings {
+  const labels = tracks
+    .flatMap((track) => track.layers)
+    .filter((layer) => layer.type === "effect" || layer.type === "audio")
+    .map((layer) => `${layer.name} ${layer.content ?? ""}`.toLowerCase());
+
+  const has = (patterns: string[]) => labels.some((label) => patterns.some((pattern) => label.includes(pattern)));
+  const fullChain = has(["audio cleanup chain", "audio enhancement chain"]);
+  const noiseReduction = fullChain || has(["noise reduction", "noise"]);
+  const voiceEnhancement = fullChain || has(["voice enhancement", "voice"]);
+  const echoReduction = fullChain || has(["echo reduction", "echo"]);
+  const volumeLeveling = fullChain || has(["auto volume leveling", "volume leveling", "leveling"]);
+
+  return {
+    enabled: noiseReduction || voiceEnhancement || echoReduction || volumeLeveling,
+    noiseReduction,
+    voiceEnhancement,
+    echoReduction,
+    volumeLeveling,
+  };
 }
 
 async function loadTimelineOverlayImages(tracks: RenderTimelineTrack[]) {
@@ -871,6 +1010,80 @@ function drawFittedImage(
   context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
 }
 
+function drawRenderBackground(
+  context: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+  layer: RenderTimelineLayer,
+) {
+  const { width, height } = context.canvas;
+  const background = layer.backgroundColor ?? layer.color;
+
+  if (background === "blur-original" || layer.content === "Blur original video") {
+    context.save();
+    context.filter = "blur(28px) saturate(1.18) brightness(0.82)";
+    const scale = Math.max(width / (video.videoWidth || width), height / (video.videoHeight || height)) * 1.16;
+    const drawWidth = (video.videoWidth || width) * scale;
+    const drawHeight = (video.videoHeight || height) * scale;
+    context.drawImage(video, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+    context.restore();
+    context.fillStyle = "rgba(0,0,0,0.28)";
+    context.fillRect(0, 0, width, height);
+    return;
+  }
+
+  if (background?.startsWith("linear-gradient(")) {
+    const gradient = context.createLinearGradient(0, 0, width, height);
+    const colors = extractGradientColors(background);
+    gradient.addColorStop(0, colors[0]);
+    gradient.addColorStop(1, colors[1]);
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, width, height);
+    return;
+  }
+
+  context.fillStyle = normalizeCanvasColor(background, "#050608");
+  context.fillRect(0, 0, width, height);
+}
+
+function getBackgroundReplacementVideoFrame(width: number, height: number) {
+  const marginX = Math.round(width * 0.075);
+  const marginY = Math.round(height * 0.1);
+  return {
+    x: marginX,
+    y: marginY,
+    width: width - marginX * 2,
+    height: height - marginY * 2,
+    radius: Math.round(Math.min(width, height) * 0.045),
+  };
+}
+
+function drawVideoContain(
+  context: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  zoom: number,
+) {
+  const sourceWidth = video.videoWidth || width;
+  const sourceHeight = video.videoHeight || height;
+  const scale = Math.min(width / sourceWidth, height / sourceHeight) * Math.max(1, Math.min(1.04, zoom));
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
+  context.fillStyle = "rgba(0,0,0,0.42)";
+  context.fillRect(x, y, width, height);
+  context.drawImage(video, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+}
+
+function extractGradientColors(value: string): [string, string] {
+  const matches = value.match(/#[0-9a-f]{6}|rgba?\([^)]*\)/gi);
+  return [
+    matches?.[0] ?? "#050608",
+    matches?.[1] ?? matches?.[0] ?? "#111827",
+  ];
+}
+
 function normalizeCanvasColor(value: string | undefined, fallback: string) {
   if (!value || value.includes("{{")) return fallback;
   if (value === "transparent" || value.startsWith("rgba(") || value.startsWith("rgb(")) return value;
@@ -925,7 +1138,11 @@ function pickRecorderMimeType() {
   return candidates.find((type) => MediaRecorder.isTypeSupported(type)) ?? "";
 }
 
-function connectAudioToStream(video: HTMLVideoElement, stream: MediaStream) {
+function connectAudioToStream(
+  video: HTMLVideoElement,
+  stream: MediaStream,
+  enhancement: AudioEnhancementSettings,
+) {
   const AudioContextConstructor =
     window.AudioContext ??
     (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -936,12 +1153,82 @@ function connectAudioToStream(video: HTMLVideoElement, stream: MediaStream) {
     const context = new AudioContextConstructor();
     const source = context.createMediaElementSource(video);
     const destination = context.createMediaStreamDestination();
-    source.connect(destination);
+    const nodes = enhancement.enabled ? createAudioEnhancementNodes(context, enhancement) : [];
+    let currentNode: AudioNode = source;
+
+    for (const node of nodes) {
+      currentNode.connect(node);
+      currentNode = node;
+    }
+
+    currentNode.connect(destination);
     destination.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
-    return { context, source, destination };
+
+    return {
+      context,
+      cleanup: () => {
+        source.disconnect();
+        nodes.forEach((node) => node.disconnect());
+        destination.disconnect();
+      },
+    };
   } catch {
     return null;
   }
+}
+
+function createAudioEnhancementNodes(
+  context: AudioContext,
+  enhancement: AudioEnhancementSettings,
+) {
+  const nodes: AudioNode[] = [];
+
+  if (enhancement.noiseReduction) {
+    const highPass = context.createBiquadFilter();
+    highPass.type = "highpass";
+    highPass.frequency.value = 85;
+    highPass.Q.value = 0.72;
+    nodes.push(highPass);
+
+    const lowPass = context.createBiquadFilter();
+    lowPass.type = "lowpass";
+    lowPass.frequency.value = 12_500;
+    lowPass.Q.value = 0.58;
+    nodes.push(lowPass);
+  }
+
+  if (enhancement.voiceEnhancement) {
+    const presence = context.createBiquadFilter();
+    presence.type = "peaking";
+    presence.frequency.value = 2_600;
+    presence.Q.value = 0.92;
+    presence.gain.value = 3.2;
+    nodes.push(presence);
+
+    const warmth = context.createBiquadFilter();
+    warmth.type = "lowshelf";
+    warmth.frequency.value = 180;
+    warmth.gain.value = -1.4;
+    nodes.push(warmth);
+  }
+
+  if (enhancement.echoReduction || enhancement.volumeLeveling) {
+    const compressor = context.createDynamicsCompressor();
+    compressor.threshold.value = enhancement.echoReduction ? -32 : -24;
+    compressor.knee.value = enhancement.echoReduction ? 18 : 24;
+    compressor.ratio.value = enhancement.echoReduction ? 8 : 5;
+    compressor.attack.value = 0.006;
+    compressor.release.value = enhancement.echoReduction ? 0.18 : 0.24;
+    nodes.push(compressor);
+  }
+
+  if (enhancement.volumeLeveling) {
+    const gain = context.createGain();
+    gain.gain.value = 1.08;
+    nodes.push(gain);
+  }
+
+  return nodes;
 }
 
 function waitForVideoEvent(video: HTMLVideoElement, eventName: keyof HTMLMediaElementEventMap) {

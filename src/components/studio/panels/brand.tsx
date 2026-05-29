@@ -1,4 +1,4 @@
-import { Palette } from "lucide-react";
+import { Palette, WandSparkles } from "lucide-react";
 import type { BrandKitState } from "../foundation";
 import { Field, PanelHeading } from "../ui";
 
@@ -7,15 +7,27 @@ export function BrandKitPanel({
   brandName,
   onChange,
   onBrandNameChange,
+  onApply,
 }: {
   brandKit: BrandKitState;
   brandName: string;
   onChange: (brandKit: BrandKitState) => void;
   onBrandNameChange: (name: string) => void;
+  onApply: () => void;
 }) {
   return (
     <section className="panel p-4">
       <PanelHeading icon={Palette} title="Brand Kit" />
+      <div className="mb-4 grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3">
+        <div>
+          <p className="text-sm font-black text-white">{brandName || "Mawj Studio"}</p>
+          <p className="mt-1 text-xs font-semibold text-[var(--muted)]">Apply your colors, caption style, and brand bug to the editable timeline.</p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="h-8 w-8 rounded-full border border-white/15" style={{ background: brandKit.primaryColor }} aria-hidden="true" />
+          <span className="h-8 w-8 rounded-full border border-white/15" style={{ background: brandKit.secondaryColor }} aria-hidden="true" />
+        </div>
+      </div>
       <Field label="Brand name">
         <input value={brandName} onChange={(event) => onBrandNameChange(event.target.value)} className="control-input" />
       </Field>
@@ -42,6 +54,10 @@ export function BrandKitPanel({
           <input value={brandKit.outro} onChange={(event) => onChange({ ...brandKit, outro: event.target.value })} className="control-input" />
         </div>
       </Field>
+      <button type="button" onClick={onApply} className="btn-brand mt-2 flex w-full items-center justify-center gap-2">
+        <WandSparkles className="h-4 w-4" aria-hidden="true" />
+        Apply brand kit
+      </button>
     </section>
   );
 }

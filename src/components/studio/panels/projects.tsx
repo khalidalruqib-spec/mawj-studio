@@ -2,15 +2,22 @@ import { Cloud, CreditCard, FolderOpen, History, LayoutDashboard, RefreshCw, Upl
 import type { StudioProject } from "@/lib/project-store";
 import { EXPORT_TIERS } from "../foundation";
 import { DashboardCard, EmptyMini, PanelHeading } from "../ui";
+import { formatBytes } from "../utils";
 
 export function DashboardPanel({
   projects,
+  mediaCount,
+  exportCount,
+  storageBytes,
   projectStatus,
   onRefresh,
   onUpdate,
   onDelete,
 }: {
   projects: StudioProject[];
+  mediaCount: number;
+  exportCount: number;
+  storageBytes: number;
   projectStatus: string;
   onRefresh: () => void;
   onUpdate: (projectId: string) => void;
@@ -20,9 +27,9 @@ export function DashboardPanel({
     <section className="space-y-4">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <DashboardCard label="Projects" value={`${projects.length}`} icon={FolderOpen} />
-        <DashboardCard label="Uploaded media" value="48 assets" icon={UploadCloud} />
-        <DashboardCard label="Export history" value="19 renders" icon={History} />
-        <DashboardCard label="Storage usage" value="38.2 GB" icon={Cloud} />
+        <DashboardCard label="Uploaded media" value={`${mediaCount} assets`} icon={UploadCloud} />
+        <DashboardCard label="Export history" value={`${exportCount} renders`} icon={History} />
+        <DashboardCard label="Storage usage" value={formatBytes(storageBytes)} icon={Cloud} />
       </div>
       <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <section className="panel p-4">
