@@ -33,6 +33,28 @@ export function deleteCustomVideoTemplate(templateId: string): VideoTemplate[] {
   return next;
 }
 
+export function createCustomTemplateCopy(template: VideoTemplate, source: "duplicate" | "import" = "duplicate"): VideoTemplate {
+  if (!isStoredVideoTemplate(template)) {
+    throw new Error("Invalid Mawj template JSON.");
+  }
+
+  const now = Date.now();
+  const suffix = source === "import" ? "Imported" : "Copy";
+
+  return {
+    ...template,
+    id: `custom-${slugifyTemplateId(template.name)}-${now}`,
+    name: `${template.name} ${suffix}`,
+    category: "Custom Templates",
+    description:
+      source === "import"
+        ? `${template.description} Imported into your Mawj custom templates.`
+        : `${template.description} Duplicated into your Mawj custom templates.`,
+    thumbnailUrl: "",
+    previewUrl: "",
+  };
+}
+
 export function isCustomVideoTemplate(template: Pick<VideoTemplate, "id" | "category">) {
   return template.id.startsWith("custom-") || template.category === "Custom Templates";
 }
@@ -51,4 +73,8 @@ function isStoredVideoTemplate(value: unknown): value is VideoTemplate {
     Array.isArray(template.requiredInputs) &&
     Array.isArray(template.scenes)
   );
+}
+
+function slugifyTemplateId(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "mawj-template";
 }

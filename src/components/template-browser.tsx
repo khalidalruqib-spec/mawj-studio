@@ -16,6 +16,7 @@ import {
   Check,
   Clock3,
   Code2,
+  Copy,
   Crown,
   Database,
   Download,
@@ -52,9 +53,11 @@ import {
   type VideoTemplateInput,
 } from "@/lib/video-template-engine";
 import {
+  createCustomTemplateCopy,
   deleteCustomVideoTemplate,
   isCustomVideoTemplate,
   listCustomVideoTemplates,
+  storeCustomVideoTemplate,
 } from "@/lib/custom-video-template-store";
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -235,6 +238,8 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
   const [selectedTemplate, setSelectedTemplate] = useState<VideoTemplate | null>(null);
   const [inputValues, setInputValues] = useState<TemplateUserInputs>({});
   const [customTemplates, setCustomTemplates] = useState<VideoTemplate[]>(listCustomVideoTemplates);
+  const [templateNotice, setTemplateNotice] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const availableTemplates = useMemo(() => {
     const seenIds = new Set<string>();
@@ -371,6 +376,32 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
     URL.revokeObjectURL(url);
   }
 
+  function duplicateTemplate(template: VideoTemplate) {
+    try {
+      const duplicate = createCustomTemplateCopy(template, "duplicate");
+      setCustomTemplates(storeCustomVideoTemplate(duplicate));
+      setTemplatePack("custom");
+      setTemplateNotice(`تم نسخ "${template.name}" إلى قوالبي.`);
+    } catch {
+      setTemplateNotice("تعذر نسخ هذا القالب. بنية القالب غير صالحة.");
+    }
+  }
+
+  async function importTemplateJson(file?: File) {
+    if (!file) return;
+
+    try {
+      const imported = createCustomTemplateCopy(JSON.parse(await file.text()) as VideoTemplate, "import");
+      setCustomTemplates(storeCustomVideoTemplate(imported));
+      setTemplatePack("custom");
+      setTemplateNotice(`تم استيراد "${imported.name}" إلى قوالبي.`);
+    } catch {
+      setTemplateNotice("ملف JSON غير صالح. استورد ملف template.json من Mawj Studio.");
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  }
+
   function useTemplate() {
     if (!selectedTemplate) return;
     const project = createProjectFromTemplate(selectedTemplate, inputValues);
@@ -432,6 +463,24 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
                       {i < arr.length - 1 && <span className="text-[var(--line-strong)]">›</span>}
                     </span>
                   ))}
+                </div>
+                <div className="mt-5 flex flex-wrap items-center gap-2">
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept="application/json,.json"
+                    className="sr-only"
+                    onChange={(event) => void importTemplateJson(event.target.files?.[0])}
+                  />
+                  <button type="button" onClick={() => importInputRef.current?.click()} className="btn-brand">
+                    <UploadCloud className="h-4 w-4" aria-hidden="true" />
+                    Import template JSON
+                  </button>
+                  {templateNotice ? (
+                    <span className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-xs font-black text-[var(--brand)]">
+                      {templateNotice}
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
@@ -594,6 +643,7 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
               onToggleFavorite={() => toggleFavoriteTemplate(template.id)}
               onPreview={() => setPreviewTemplate(template)}
               onUse={() => openTemplateForm(template)}
+              onDuplicate={() => duplicateTemplate(template)}
               onDownloadJson={() => downloadTemplateJson(template)}
               onDelete={isCustomVideoTemplate(template) ? () => deleteCustomTemplate(template.id) : undefined}
             />
@@ -641,6 +691,7 @@ function TemplateCard({
   onToggleFavorite,
   onPreview,
   onUse,
+  onDuplicate,
   onDownloadJson,
   onDelete,
 }: {
@@ -649,6 +700,7 @@ function TemplateCard({
   onToggleFavorite: () => void;
   onPreview: () => void;
   onUse: () => void;
+  onDuplicate: () => void;
   onDownloadJson: () => void;
   onDelete?: () => void;
 }) {
@@ -810,6 +862,10 @@ function TemplateCard({
             استخدام
           </button>
         </div>
+        <button type="button" onClick={onDuplicate} className="btn-ghost mt-2 w-full text-sm">
+          <Copy className="h-4 w-4" aria-hidden="true" />
+          Duplicate to قوالبي
+        </button>
         {isCustom ? (
           <div className="mt-2 grid grid-cols-2 gap-2">
             <button type="button" onClick={onDownloadJson} className="btn-ghost text-sm">
