@@ -171,7 +171,7 @@ function drawLayer(
   } else if (layer.type === "image" || layer.type === "video") {
     const asset = layer.src ? assets.get(layer.src) : null;
     if (asset) {
-      drawMedia(context, asset, x, y, width, height, layer.fit ?? "cover");
+      drawMedia(context, asset, x, y, width, height, layer.fit ?? "cover", layer.borderRadius ?? 0);
     } else {
       drawMissingMedia(context, x, y, width, height, layer.type);
     }
@@ -467,12 +467,23 @@ function drawMedia(
   width: number,
   height: number,
   fit: "cover" | "contain" | "fill",
+  borderRadius = 0,
 ) {
   const sourceWidth = asset instanceof HTMLVideoElement ? asset.videoWidth : asset.naturalWidth;
   const sourceHeight = asset instanceof HTMLVideoElement ? asset.videoHeight : asset.naturalHeight;
 
+  context.save();
+  context.beginPath();
+  if (borderRadius > 0) {
+    roundedRect(context, x, y, width, height, borderRadius);
+  } else {
+    context.rect(x, y, width, height);
+  }
+  context.clip();
+
   if (!sourceWidth || !sourceHeight || fit === "fill") {
     context.drawImage(asset, x, y, width, height);
+    context.restore();
     return;
   }
 
@@ -480,6 +491,7 @@ function drawMedia(
   const drawWidth = sourceWidth * scale;
   const drawHeight = sourceHeight * scale;
   context.drawImage(asset, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+  context.restore();
 }
 
 function drawMissingMedia(

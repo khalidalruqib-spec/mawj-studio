@@ -464,7 +464,11 @@ function TimelinePreviewLayer({
         onClick={onSelect}
         {...pointerHandlers}
         className={`${baseClass} ${locked ? "cursor-not-allowed" : "cursor-pointer"} border-0 p-0`}
-        style={box}
+        style={{
+          ...box,
+          borderRadius: scalePreviewRadius(layer.borderRadius),
+          opacity: layer.opacity ?? 1,
+        }}
       >
         <img src={layer.src} alt={layer.name} className="h-full w-full object-cover" />
         <ResizeHandles selected={selected && !locked} onResizePointerDown={onResizePointerDown} />

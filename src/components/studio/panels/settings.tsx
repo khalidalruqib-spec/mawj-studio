@@ -4,7 +4,6 @@ import { TEMPLATE_FONT_PRESETS } from "@/lib/template-typography";
 import { GOAL_LABELS } from "../foundation";
 import type { Goal, TimelineLayer } from "../foundation";
 import { EmptyMini, Field, PanelHeading } from "../ui";
-import { normalizeHexColor } from "../utils";
 
 export function ProjectSettingsPanel({
   brandName,
@@ -116,6 +115,8 @@ export function LayerInspector({
     );
   }
   const locked = Boolean(layer.locked);
+  const supportsBorderRadius = layer.type === "text" || layer.type === "caption" || layer.type === "shape" || layer.type === "image" || layer.type === "video";
+  const supportsBackgroundColor = layer.type === "text" || layer.type === "caption" || layer.type === "shape";
 
   return (
     <section className="panel p-4">
@@ -195,6 +196,22 @@ export function LayerInspector({
         <NumberField label="Y" value={layer.y ?? 0} disabled={locked} onChange={(y) => onChange({ y })} />
         <NumberField label="Width" value={layer.width ?? 0} disabled={locked} onChange={(width) => onChange({ width })} />
         <NumberField label="Height" value={layer.height ?? 0} disabled={locked} onChange={(height) => onChange({ height })} />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <NumberField
+          label="Opacity %"
+          value={Math.round((layer.opacity ?? 1) * 100)}
+          disabled={locked}
+          onChange={(opacity) => onChange({ opacity: clampInspectorNumber(opacity, 0, 100) / 100 })}
+        />
+        {supportsBorderRadius ? (
+          <NumberField
+            label="Radius"
+            value={layer.borderRadius ?? 0}
+            disabled={locked}
+            onChange={(borderRadius) => onChange({ borderRadius: clampInspectorNumber(borderRadius, 0, 240) })}
+          />
+        ) : null}
       </div>
       {layer.type === "text" || layer.type === "caption" ? (
         <div className="space-y-3">
@@ -287,17 +304,27 @@ export function LayerInspector({
               className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </Field>
+          <BackgroundColorField layer={layer} locked={locked} onChange={onChange} />
         </div>
       ) : (
-        <Field label="Layer color">
-          <input
-            type="color"
-            value={normalizeHexColor(layer.color)}
-            disabled={locked}
-            onChange={(event) => onChange({ color: event.target.value })}
-            className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
-          />
-        </Field>
+        <>
+          <Field label="Layer color">
+            <input
+              type="color"
+              value={resolveInspectorColorInputValue(layer.backgroundColor ?? layer.color)}
+              disabled={locked}
+              onChange={(event) =>
+                onChange(
+                  layer.type === "shape"
+                    ? { color: event.target.value, backgroundColor: event.target.value }
+                    : { color: event.target.value },
+                )
+              }
+              className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </Field>
+          {supportsBackgroundColor ? <BackgroundColorField layer={layer} locked={locked} onChange={onChange} /> : null}
+        </>
       )}
       <button
         type="button"
@@ -320,6 +347,48 @@ function normalizeInspectorFontWeight(weight?: string) {
   if (weight === "normal") return 500;
   if (weight === "bold") return 900;
   return weight ?? 900;
+}
+
+function BackgroundColorField({
+  layer,
+  locked,
+  onChange,
+}: {
+  layer: TimelineLayer;
+  locked: boolean;
+  onChange: (patch: Partial<TimelineLayer>) => void;
+}) {
+  return (
+    <Field label="Background color">
+      <div className="grid grid-cols-[1fr_auto] gap-2">
+        <input
+          type="color"
+          value={resolveInspectorColorInputValue(layer.backgroundColor, "#050608")}
+          disabled={locked}
+          onChange={(event) => onChange({ backgroundColor: event.target.value })}
+          className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
+        />
+        <button
+          type="button"
+          disabled={locked}
+          onClick={() => onChange({ backgroundColor: "transparent" })}
+          className="min-h-11 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 text-xs font-black text-[var(--muted)] transition hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Clear
+        </button>
+      </div>
+    </Field>
+  );
+}
+
+function clampInspectorNumber(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, value));
+}
+
+function resolveInspectorColorInputValue(value: string | undefined, fallback = "#8ef7c2") {
+  if (!value || value.includes("{{") || !/^#[0-9a-f]{6}$/i.test(value)) return fallback;
+  return value;
 }
 
 export function NumberField({

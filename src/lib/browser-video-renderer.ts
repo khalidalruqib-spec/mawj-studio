@@ -424,7 +424,7 @@ function drawTimelineOverlays(
 
     if (layer.type === "image" && layer.src) {
       const image = assets.get(layer.src);
-      if (image) drawImageCover(context, image, x, y, width, height);
+      if (image) drawImageCover(context, image, x, y, width, height, radius);
     } else if (layer.type === "shape") {
       roundedRect(context, x, y, width, height, radius);
       context.fillStyle = layer.backgroundColor ?? layer.color ?? "rgba(255,255,255,0.16)";
@@ -493,6 +493,7 @@ function drawImageCover(
   y: number,
   width: number,
   height: number,
+  radius = 0,
 ) {
   const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
   const drawWidth = image.naturalWidth * scale;
@@ -502,7 +503,11 @@ function drawImageCover(
 
   context.save();
   context.beginPath();
-  context.rect(x, y, width, height);
+  if (radius > 0) {
+    roundedRect(context, x, y, width, height, radius);
+  } else {
+    context.rect(x, y, width, height);
+  }
   context.clip();
   context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
   context.restore();
