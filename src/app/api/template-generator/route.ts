@@ -6,6 +6,14 @@ import type { VideoTemplate } from "@/lib/video-template-engine";
 
 const templateGeneratorSchema = z.object({
   prompt: z.string().min(4).max(600),
+  brand: z
+    .object({
+      brandName: z.string().max(120).optional(),
+      brandColor: z.string().max(16).optional(),
+      accentColor: z.string().max(16).optional(),
+      logoName: z.string().max(240).optional(),
+    })
+    .optional(),
 });
 
 const templateResponseSchema = {
@@ -163,7 +171,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "اكتب وصف القالب أولاً." }, { status: 400 });
   }
 
-  const localTemplate = generateLocalVideoTemplate(parsed.data.prompt);
+  const localTemplate = generateLocalVideoTemplate(parsed.data.prompt, parsed.data.brand);
 
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({
@@ -184,14 +192,16 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model,
         instructions:
-          "You are Mawj Studio's professional video template designer. Generate one editable JSON video template for an Arabic-first browser video editor. Use placeholders such as {{title}}, {{subtitle}}, {{mainImage}}, {{mainVideo}}, {{logo}}, {{brandColor}}, {{accentColor}}, {{cta}}. Keep important text inside mobile safe margins. Return valid JSON only.",
+          "You are Mawj Studio's professional video template designer. Generate one editable JSON video template for an Arabic-first browser video editor. Use placeholders such as {{brandName}}, {{title}}, {{subtitle}}, {{mainImage}}, {{mainVideo}}, {{logo}}, {{brandColor}}, {{accentColor}}, {{cta}}. Keep important text inside mobile safe margins. Return valid JSON only.",
         input: JSON.stringify({
           prompt: parsed.data.prompt,
+          brand: parsed.data.brand,
           fallbackTemplate: localTemplate,
           requirements: [
             "3 to 6 scenes",
             "text/image/video/shape/captions layers where useful",
             "editable placeholders in requiredInputs",
+            "Use the provided brand.brandName, brand.brandColor, brand.accentColor, and brand.logoName as requiredInputs defaults when present",
             "Arabic RTL direction auto/rtl for text layers",
             "safe margins for 9:16: top 160, bottom 260, left 70, right 70",
             "export mp4 1080p 30fps",

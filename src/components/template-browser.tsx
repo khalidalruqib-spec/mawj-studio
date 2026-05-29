@@ -59,6 +59,7 @@ import {
   listCustomVideoTemplates,
   storeCustomVideoTemplate,
 } from "@/lib/custom-video-template-store";
+import { getTemplateGeneratorBrandPayload } from "@/lib/brand-kit-store";
 import { generateLocalVideoTemplate } from "@/lib/local-template-generator";
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -414,19 +415,21 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
     }
 
     setIsGeneratingTemplate(true);
+    const brand = getTemplateGeneratorBrandPayload();
 
     try {
       const response = await fetch("/api/template-generator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, brand }),
       });
       const data = (await response.json()) as {
         template?: VideoTemplate;
         mode?: "openai" | "local" | "local-fallback";
         error?: string;
       };
-      const generatedTemplate = data.template ?? generateLocalVideoTemplate(prompt);
+      const generatedTemplate = data.template ?? generateLocalVideoTemplate(prompt, brand);
+      const brandSuffix = brand?.brandName ? ` بهوية ${brand.brandName}` : "";
 
       setCustomTemplates(storeCustomVideoTemplate(generatedTemplate));
       setTemplatePack("custom");
@@ -435,17 +438,18 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
       setPreviewTemplate(generatedTemplate);
       setTemplateNotice(
         data.mode === "openai"
-          ? `تم توليد "${generatedTemplate.name}" بالذكاء الاصطناعي وإضافته إلى قوالبي.`
-          : `تم توليد "${generatedTemplate.name}" محليًا وإضافته إلى قوالبي.`,
+          ? `تم توليد "${generatedTemplate.name}"${brandSuffix} بالذكاء الاصطناعي وإضافته إلى قوالبي.`
+          : `تم توليد "${generatedTemplate.name}"${brandSuffix} محليًا وإضافته إلى قوالبي.`,
       );
     } catch {
-      const generatedTemplate = generateLocalVideoTemplate(prompt);
+      const generatedTemplate = generateLocalVideoTemplate(prompt, brand);
       setCustomTemplates(storeCustomVideoTemplate(generatedTemplate));
       setTemplatePack("custom");
       setCategory("All");
       setQuery("");
       setPreviewTemplate(generatedTemplate);
-      setTemplateNotice(`تعذر الاتصال بالمولد الذكي، فأنشأنا "${generatedTemplate.name}" محليًا.`);
+      const brandSuffix = brand?.brandName ? ` بهوية ${brand.brandName}` : "";
+      setTemplateNotice(`تعذر الاتصال بالمولد الذكي، فأنشأنا "${generatedTemplate.name}"${brandSuffix} محليًا.`);
     } finally {
       setIsGeneratingTemplate(false);
     }

@@ -1,8 +1,17 @@
 import type { VideoTemplate, VideoTemplateInput } from "@/lib/video-template-engine";
 
+export type TemplateGeneratorBrandKit = {
+  brandName?: string;
+  brandColor?: string;
+  accentColor?: string;
+  logoName?: string;
+};
+
 type GeneratedTemplateIntent = {
   id: string;
   name: string;
+  brandName: string;
+  logoSrc: string;
   title: string;
   subtitle: string;
   cta: string;
@@ -17,8 +26,8 @@ type GeneratedTemplateIntent = {
   accentColor: string;
 };
 
-export function generateLocalVideoTemplate(prompt: string): VideoTemplate {
-  const intent = inferTemplateIntent(prompt);
+export function generateLocalVideoTemplate(prompt: string, brand?: TemplateGeneratorBrandKit): VideoTemplate {
+  const intent = inferTemplateIntent(prompt, brand);
   const safeMargins = getGeneratedTemplateSafeMargins(intent.aspectRatio);
 
   return {
@@ -32,13 +41,14 @@ export function generateLocalVideoTemplate(prompt: string): VideoTemplate {
     description: `Generated from prompt: ${prompt.trim().slice(0, 160)}`,
     language: "mixed",
     requiredInputs: [
+      { key: "brandName", label: "Brand Name", type: "text", default: intent.brandName },
       { key: "title", label: "Title", type: "text", default: intent.title, required: true },
       { key: "subtitle", label: "Subtitle", type: "textarea", default: intent.subtitle },
       { key: "benefit", label: "Benefit", type: "textarea", default: intent.benefit },
       { key: "proof", label: "Proof / Detail", type: "textarea", default: intent.proof },
       { key: "cta", label: "Call To Action", type: "text", default: intent.cta },
       intent.mediaInput,
-      { key: "logo", label: "Logo", type: "image", default: "/platform-logo.png" },
+      { key: "logo", label: "Logo", type: "image", default: intent.logoSrc },
       { key: "brandColor", label: "Brand Color", type: "color", default: intent.brandColor },
       { key: "accentColor", label: "Accent Color", type: "color", default: intent.accentColor },
     ],
@@ -93,6 +103,21 @@ export function generateLocalVideoTemplate(prompt: string): VideoTemplate {
             align: "center",
             direction: "auto",
             animationIn: { type: "blurReveal", duration: 0.6 },
+          },
+          {
+            id: "hook-brand",
+            type: "text",
+            content: "{{brandName}}",
+            x: safeMargins.left,
+            y: intent.aspectRatio === "16:9" ? intent.height - safeMargins.bottom - 72 : safeMargins.top + 450,
+            width: intent.width - safeMargins.left - safeMargins.right,
+            height: 72,
+            fontSize: intent.aspectRatio === "16:9" ? 30 : 38,
+            fontWeight: "850",
+            color: "{{accentColor}}",
+            align: "center",
+            direction: "auto",
+            animationIn: { type: "fadeIn", duration: 0.45 },
           },
         ],
         transition: { type: "fade", duration: 0.35 },
@@ -194,6 +219,21 @@ export function generateLocalVideoTemplate(prompt: string): VideoTemplate {
             direction: "auto",
             animationIn: { type: "pop", duration: 0.55 },
           },
+          {
+            id: "cta-brand",
+            type: "text",
+            content: "{{brandName}}",
+            x: safeMargins.left,
+            y: intent.aspectRatio === "16:9" ? 620 : 1040,
+            width: intent.width - safeMargins.left - safeMargins.right,
+            height: 86,
+            fontSize: intent.aspectRatio === "16:9" ? 34 : 46,
+            fontWeight: "850",
+            color: "#ffffff",
+            align: "center",
+            direction: "auto",
+            animationIn: { type: "slideUp", duration: 0.5 },
+          },
         ],
       },
     ],
@@ -207,18 +247,26 @@ export function generateLocalVideoTemplate(prompt: string): VideoTemplate {
   };
 }
 
-function inferTemplateIntent(prompt: string): GeneratedTemplateIntent {
+function inferTemplateIntent(prompt: string, brand?: TemplateGeneratorBrandKit): GeneratedTemplateIntent {
   const normalized = prompt.toLowerCase();
   const isWide = includesAny(normalized, ["16:9", "يوتيوب", "youtube", "عرضي", "landscape"]);
   const aspectRatio: VideoTemplate["aspectRatio"] = isWide ? "16:9" : "9:16";
   const dimensions = aspectRatio === "16:9" ? { width: 1920, height: 1080 } : { width: 1080, height: 1920 };
-  const palette = inferPalette(normalized);
+  const inferredPalette = inferPalette(normalized);
+  const palette = {
+    brandColor: normalizeGeneratorColor(brand?.brandColor, inferredPalette.brandColor),
+    accentColor: normalizeGeneratorColor(brand?.accentColor, inferredPalette.accentColor),
+  };
+  const brandName = normalizeBrandName(brand?.brandName);
+  const logoSrc = normalizeLogoSrc(brand?.logoName);
   const title = extractTitle(prompt) || inferTitle(normalized);
 
   if (includesAny(normalized, ["بودكاست", "podcast", "مقابلة"])) {
     return {
       id: "podcast-short",
       name: "AI Podcast Clip",
+      brandName,
+      logoSrc,
       title,
       subtitle: "أفضل لقطة من الحلقة في قالب رأسي واضح.",
       benefit: "اقتباس قوي + كابشن متحرك + هوية البرنامج.",
@@ -236,6 +284,8 @@ function inferTemplateIntent(prompt: string): GeneratedTemplateIntent {
     return {
       id: "real-estate-ad",
       name: "AI Real Estate Ad",
+      brandName,
+      logoSrc,
       title,
       subtitle: "جولة عقارية قصيرة تبرز الموقع والسعر والمساحة.",
       benefit: "واجهة العقار + أهم ميزة + دعوة تواصل.",
@@ -253,6 +303,8 @@ function inferTemplateIntent(prompt: string): GeneratedTemplateIntent {
     return {
       id: "restaurant-offer",
       name: "AI Restaurant Offer",
+      brandName,
+      logoSrc,
       title,
       subtitle: "عرض سريع يشهي العميل من أول لقطة.",
       benefit: "صورة الأكل + السعر + الفرع أو طريقة الطلب.",
@@ -270,6 +322,8 @@ function inferTemplateIntent(prompt: string): GeneratedTemplateIntent {
     return {
       id: "course-announcement",
       name: "AI Course Announcement",
+      brandName,
+      logoSrc,
       title,
       subtitle: "إعلان دورة واضح مع نقاط تعلم وموعد التسجيل.",
       benefit: "ماذا سيتعلم المتابع خلال الدورة؟",
@@ -287,6 +341,8 @@ function inferTemplateIntent(prompt: string): GeneratedTemplateIntent {
     return {
       id: "news-alert",
       name: "AI News Alert",
+      brandName,
+      logoSrc,
       title,
       subtitle: "قالب خبر سريع بعناوين واضحة وشريط عاجل.",
       benefit: "العنوان + التفاصيل + المصدر في ترتيب سريع.",
@@ -303,6 +359,8 @@ function inferTemplateIntent(prompt: string): GeneratedTemplateIntent {
   return {
     id: "product-ad",
     name: "AI Product Ad",
+    brandName,
+    logoSrc,
     title,
     subtitle: "إعلان قصير يوضح المشكلة ثم يعرض المنتج والحل.",
     benefit: "ميزة واضحة تجعل المنتج أسهل في القرار.",
@@ -338,6 +396,33 @@ function inferPalette(prompt: string) {
   }
 
   return { brandColor: "#111827", accentColor: "#8ef7c2" };
+}
+
+function normalizeGeneratorColor(value: string | undefined, fallback: string) {
+  if (!value || value.includes("{{") || !/^#[0-9a-f]{6}$/i.test(value)) return fallback;
+  return value;
+}
+
+function normalizeBrandName(value: string | undefined) {
+  const trimmed = value?.trim();
+  return trimmed || "Mawj Studio";
+}
+
+function normalizeLogoSrc(value: string | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return "/platform-logo.png";
+
+  if (
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("blob:") ||
+    trimmed.startsWith("data:")
+  ) {
+    return trimmed;
+  }
+
+  return "/platform-logo.png";
 }
 
 function inferTitle(prompt: string) {
