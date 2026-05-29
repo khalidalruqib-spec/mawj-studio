@@ -93,7 +93,12 @@ export function VideoPreview({
     () => getActivePreviewOverlayLayers(timelineTracks, previewTime),
     [previewTime, timelineTracks],
   );
+  const activeBackgroundLayer = useMemo(
+    () => getActivePreviewBackgroundLayer(timelineTracks, previewTime),
+    [previewTime, timelineTracks],
+  );
   const hasActiveCaptionOverlay = activeVideoOverlayLayers.some((layer) => layer.type === "caption");
+  const hasBackgroundReplacement = Boolean(studioFile && activeBackgroundLayer);
 
   return (
     <div className="relative grid min-h-[520px] place-items-center overflow-hidden rounded-lg bg-black">
@@ -107,6 +112,9 @@ export function VideoPreview({
                 : "aspect-video max-w-[920px]"
           }`}
         >
+          {activeBackgroundLayer ? (
+            <PreviewBackgroundLayer layer={activeBackgroundLayer} sourceUrl={studioFile.url} />
+          ) : null}
           <video
             ref={videoRef}
             src={studioFile.url}
@@ -114,7 +122,11 @@ export function VideoPreview({
             onLoadedMetadata={onLoadedMetadata}
             onTimeUpdate={onTimeUpdate}
             onEnded={onEnded}
-            className="h-full w-full bg-black object-cover"
+            className={`relative h-full w-full bg-black ${
+              hasBackgroundReplacement
+                ? "z-10 rounded-xl object-contain p-5 shadow-2xl sm:p-8"
+                : "object-cover"
+            }`}
             style={{ filter: previewFilter }}
           />
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.36),transparent_31%,transparent_61%,rgba(0,0,0,0.56))]" />
@@ -334,6 +346,33 @@ export function VideoOverlayPreview({
       })}
     </div>
   );
+}
+
+function PreviewBackgroundLayer({
+  layer,
+  sourceUrl,
+}: {
+  layer: TimelineLayer;
+  sourceUrl: string;
+}) {
+  const background = resolvePreviewBackground(layer);
+
+  if (background === "blur-original") {
+    return (
+      <video
+        src={sourceUrl}
+        muted
+        playsInline
+        loop
+        autoPlay
+        preload="metadata"
+        className="absolute inset-0 h-full w-full scale-110 object-cover opacity-75 blur-2xl"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  return <div className="absolute inset-0" style={{ background }} aria-hidden="true" />;
 }
 
 export function TimelinePreviewLayer({
@@ -798,6 +837,25 @@ function getActivePreviewOverlayLayers(tracks: TimelineTrack[], previewTime: num
       layer.start + layer.duration >= previewTime,
     )
     .slice(0, 16);
+}
+
+function getActivePreviewBackgroundLayer(tracks: TimelineTrack[], previewTime: number) {
+  return tracks
+    .flatMap((track) => track.layers)
+    .find(
+      (layer) =>
+        layer.type === "background" &&
+        layer.start <= previewTime &&
+        layer.start + layer.duration >= previewTime,
+    );
+}
+
+function resolvePreviewBackground(layer: TimelineLayer) {
+  const value = layer.backgroundColor ?? layer.color;
+  if (!value || value.includes("{{")) return "#050608";
+  if (value === "blur-original") return value;
+  if (value.startsWith("linear-gradient(")) return value;
+  return normalizeHexColor(value);
 }
 
 function resolveTimelineLayerGeometry(

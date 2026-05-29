@@ -328,21 +328,42 @@ function drawEditedFrame(
   const { width, height } = context.canvas;
   const videoWidth = video.videoWidth || width;
   const videoHeight = video.videoHeight || height;
+  const backgroundLayer = getActiveRenderBackgroundLayer(timelineTracks, outputTime);
   const motion = getMotionAmount(style.pace);
   const zoom = 1.035 + motion * Math.sin(outputTime * 1.45);
-  const drawScale = Math.max(width / videoWidth, height / videoHeight) * zoom;
-  const drawWidth = videoWidth * drawScale;
-  const drawHeight = videoHeight * drawScale;
-  const panX = Math.sin(outputTime * 0.72) * width * motion * 0.24;
-  const panY = Math.cos(outputTime * 0.48) * height * motion * 0.08;
-  const drawX = (width - drawWidth) / 2 + panX;
-  const drawY = (height - drawHeight) / 2 + panY;
 
   context.save();
   context.fillStyle = "#050608";
   context.fillRect(0, 0, width, height);
+
+  if (backgroundLayer) {
+    drawRenderBackground(context, video, backgroundLayer);
+  }
+
   context.filter = getCanvasFilter(style.id);
-  context.drawImage(video, drawX, drawY, drawWidth, drawHeight);
+
+  if (backgroundLayer) {
+    const frame = getBackgroundReplacementVideoFrame(width, height);
+    roundedRect(context, frame.x, frame.y, frame.width, frame.height, frame.radius);
+    context.save();
+    context.shadowColor = "rgba(0,0,0,0.36)";
+    context.shadowBlur = Math.round(width * 0.045);
+    context.fillStyle = "rgba(0,0,0,0.24)";
+    context.fill();
+    context.restore();
+    roundedRect(context, frame.x, frame.y, frame.width, frame.height, frame.radius);
+    context.clip();
+    drawVideoContain(context, video, frame.x, frame.y, frame.width, frame.height, zoom);
+  } else {
+    const drawScale = Math.max(width / videoWidth, height / videoHeight) * zoom;
+    const drawWidth = videoWidth * drawScale;
+    const drawHeight = videoHeight * drawScale;
+    const panX = Math.sin(outputTime * 0.72) * width * motion * 0.24;
+    const panY = Math.cos(outputTime * 0.48) * height * motion * 0.08;
+    const drawX = (width - drawWidth) / 2 + panX;
+    const drawY = (height - drawHeight) / 2 + panY;
+    context.drawImage(video, drawX, drawY, drawWidth, drawHeight);
+  }
   context.restore();
 
   drawStyleWash(context, style.id);
@@ -710,7 +731,7 @@ function getProjectDimensions(aspectRatio: AspectRatio) {
 }
 
 function hasRenderableTimelineOverlays(tracks: RenderTimelineTrack[]) {
-  return getRenderableTimelineLayers(tracks).length > 0;
+  return getRenderableTimelineLayers(tracks).length > 0 || hasRenderBackgroundLayers(tracks);
 }
 
 function getRenderableTimelineLayers(tracks: RenderTimelineTrack[]) {
@@ -722,6 +743,23 @@ function getRenderableTimelineLayers(tracks: RenderTimelineTrack[]) {
       if (layer.type === "image" && !layer.src) return false;
       return layer.duration > 0;
     });
+}
+
+function hasRenderBackgroundLayers(tracks: RenderTimelineTrack[]) {
+  return tracks
+    .flatMap((track) => track.layers)
+    .some((layer) => layer.type === "background" && layer.duration > 0);
+}
+
+function getActiveRenderBackgroundLayer(tracks: RenderTimelineTrack[], time: number) {
+  return tracks
+    .flatMap((track) => track.layers)
+    .find(
+      (layer) =>
+        layer.type === "background" &&
+        layer.start <= time &&
+        layer.start + layer.duration >= time,
+    );
 }
 
 async function loadTimelineOverlayImages(tracks: RenderTimelineTrack[]) {
@@ -869,6 +907,80 @@ function drawFittedImage(
   }
 
   context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+}
+
+function drawRenderBackground(
+  context: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+  layer: RenderTimelineLayer,
+) {
+  const { width, height } = context.canvas;
+  const background = layer.backgroundColor ?? layer.color;
+
+  if (background === "blur-original" || layer.content === "Blur original video") {
+    context.save();
+    context.filter = "blur(28px) saturate(1.18) brightness(0.82)";
+    const scale = Math.max(width / (video.videoWidth || width), height / (video.videoHeight || height)) * 1.16;
+    const drawWidth = (video.videoWidth || width) * scale;
+    const drawHeight = (video.videoHeight || height) * scale;
+    context.drawImage(video, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+    context.restore();
+    context.fillStyle = "rgba(0,0,0,0.28)";
+    context.fillRect(0, 0, width, height);
+    return;
+  }
+
+  if (background?.startsWith("linear-gradient(")) {
+    const gradient = context.createLinearGradient(0, 0, width, height);
+    const colors = extractGradientColors(background);
+    gradient.addColorStop(0, colors[0]);
+    gradient.addColorStop(1, colors[1]);
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, width, height);
+    return;
+  }
+
+  context.fillStyle = normalizeCanvasColor(background, "#050608");
+  context.fillRect(0, 0, width, height);
+}
+
+function getBackgroundReplacementVideoFrame(width: number, height: number) {
+  const marginX = Math.round(width * 0.075);
+  const marginY = Math.round(height * 0.1);
+  return {
+    x: marginX,
+    y: marginY,
+    width: width - marginX * 2,
+    height: height - marginY * 2,
+    radius: Math.round(Math.min(width, height) * 0.045),
+  };
+}
+
+function drawVideoContain(
+  context: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  zoom: number,
+) {
+  const sourceWidth = video.videoWidth || width;
+  const sourceHeight = video.videoHeight || height;
+  const scale = Math.min(width / sourceWidth, height / sourceHeight) * Math.max(1, Math.min(1.04, zoom));
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
+  context.fillStyle = "rgba(0,0,0,0.42)";
+  context.fillRect(x, y, width, height);
+  context.drawImage(video, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+}
+
+function extractGradientColors(value: string): [string, string] {
+  const matches = value.match(/#[0-9a-f]{6}|rgba?\([^)]*\)/gi);
+  return [
+    matches?.[0] ?? "#050608",
+    matches?.[1] ?? matches?.[0] ?? "#111827",
+  ];
 }
 
 function normalizeCanvasColor(value: string | undefined, fallback: string) {

@@ -2184,8 +2184,29 @@ export function ProfessionalVideoStudio() {
 
   function applyBackgroundReplacement(mode = backgroundMode) {
     setBackgroundMode(mode);
-    addEffectLayer(`Background replacement · ${mode}`, "#36d399");
-    setProjectStatus(`${mode} background effect applied to timeline`);
+    const backgroundLayer = createBackgroundReplacementLayer({
+      mode,
+      aspectRatio,
+      duration: Math.max(1, totalTimelineSeconds),
+      brandColor: brandKit.primaryColor,
+    });
+
+    commitTimeline((tracks) =>
+      tracks.map((track) =>
+        track.kind === "effects"
+          ? {
+              ...track,
+              layers: [
+                backgroundLayer,
+                ...track.layers.filter((layer) => !layer.id.startsWith("background-replacement-")),
+              ],
+            }
+          : track,
+      ),
+    );
+    setSelectedLayerId(backgroundLayer.id);
+    selectEngineLayer(backgroundLayer.id);
+    setProjectStatus(`${mode} background applied to preview, timeline, and export`);
   }
 
   function applyAudioEnhancementChain() {
@@ -2822,13 +2843,13 @@ export function ProfessionalVideoStudio() {
       }
 
       if (action.type === "IMPROVE_AUDIO") {
+        applyAudioEnhancementChain();
         setActivePanel("audio");
-        setProjectStatus("ميزة تحسين الصوت تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro.");
         setAssistantMessages((messages) =>
           [
             createAssistantMessage(
               "assistant",
-              "ميزة تحسين الصوت تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro. فتحت لك لوحة الصوت للتحكم اليدوي الحالي.",
+              "فعّلت سلسلة تحسين الصوت داخل المشروع: Noise reduction + Voice enhancement + Echo reduction + Auto volume leveling. مرحلة المعالجة العميقة على الخادم ستأتي لاحقًا، لكن التايملاين الآن يحمل إعدادات الصوت بوضوح.",
               [action],
             ),
             ...messages,
@@ -2837,13 +2858,13 @@ export function ProfessionalVideoStudio() {
       }
 
       if (action.type === "REMOVE_BACKGROUND") {
+        applyBackgroundReplacement("Blur original video");
         setActivePanel("background");
-        setProjectStatus("ميزة إزالة الخلفية تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro.");
         setAssistantMessages((messages) =>
           [
             createAssistantMessage(
               "assistant",
-              "ميزة إزالة الخلفية من الفيديو تحتاج معالجة خادم. سنضيفها قريبًا في Mawj Pro. فتحت لك لوحة الخلفية للتجهيز اليدوي.",
+              "طبقت خلفية Blur original video على المعاينة والتصدير. الإزالة الدقيقة للشخص بخادم AI ستأتي لاحقًا، لكن الخلفية الآن تأثير فعلي وليس زر صوري.",
               [action],
             ),
             ...messages,
@@ -5701,6 +5722,65 @@ function getDefaultMimeType(kind: MediaAsset["kind"]) {
   if (kind === "audio") return "audio/mpeg";
   if (kind === "image") return "image/jpeg";
   return "video/mp4";
+}
+
+function createBackgroundReplacementLayer({
+  mode,
+  aspectRatio,
+  duration,
+  brandColor,
+}: {
+  mode: string;
+  aspectRatio: AspectRatio;
+  duration: number;
+  brandColor: string;
+}): TimelineLayer {
+  const dimensions = getAspectCanvasDimensions(aspectRatio);
+  const palette = getBackgroundReplacementPalette(mode, brandColor);
+
+  return {
+    id: `background-replacement-${mode.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "custom"}`,
+    type: "background",
+    name: `Background · ${mode}`,
+    content: mode,
+    start: 0,
+    duration,
+    color: palette.color,
+    backgroundColor: palette.backgroundColor,
+    x: 0,
+    y: 0,
+    width: dimensions.width,
+    height: dimensions.height,
+    opacity: 1,
+  };
+}
+
+function getBackgroundReplacementPalette(mode: string, brandColor: string) {
+  if (mode === "Brand color") {
+    return { color: brandColor, backgroundColor: brandColor };
+  }
+
+  if (mode === "Office background") {
+    return { color: "#0f172a", backgroundColor: "linear-gradient(135deg, #0f172a, #334155)" };
+  }
+
+  if (mode === "Classroom board") {
+    return { color: "#064e3b", backgroundColor: "linear-gradient(135deg, #042f2e, #0f766e)" };
+  }
+
+  if (mode === "Podcast room") {
+    return { color: "#312e81", backgroundColor: "linear-gradient(135deg, #111827, #312e81)" };
+  }
+
+  if (mode === "Studio gradient") {
+    return { color: "#111827", backgroundColor: "linear-gradient(135deg, #050608, #8ef7c2)" };
+  }
+
+  if (mode === "Transparent cutout") {
+    return { color: "#111827", backgroundColor: "linear-gradient(135deg, #050608, #1f2937)" };
+  }
+
+  return { color: "#0f172a", backgroundColor: "blur-original" };
 }
 
 async function prepareStudioFileForUpload(file: File): Promise<File> {
