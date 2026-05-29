@@ -76,6 +76,7 @@ import {
 import type {
   TemplateProject,
   TemplateScene,
+  TemplateTimelineLayer,
   TemplateTimelineTrack,
 } from "@/lib/video-template-engine";
 import { convertScenesToTimeline } from "@/lib/video-template-engine";
@@ -146,12 +147,23 @@ import { useProjectPersistence } from "@/components/studio/hooks/use-project-per
 import { useTemplateDraftLoader } from "@/components/studio/hooks/use-template-draft-loader";
 
 const DEFAULT_IMAGE_CLIP_DURATION_SECONDS = 6;
+const BRAND_KIT_STORAGE_KEY = "mawj-brand-kit-v1";
+const DEFAULT_BRAND_KIT: BrandKitState = {
+  logoName: "mawj-logo.svg",
+  primaryColor: "#8ef7c2",
+  secondaryColor: "#a78bfa",
+  font: "IBM Plex Sans Arabic",
+  captionStyle: "Saudi Viral Bold",
+  intro: "2s animated logo",
+  outro: "Follow / CTA screen",
+};
 
 export function ProfessionalVideoStudio() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const imageLayerInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const restoredMediaOnceRef = useRef(false);
+  const restoredBrandIdentityRef = useRef(false);
   const keyboardActionsRef = useRef<{
     canDelete: boolean;
     canNudge: boolean;
@@ -197,15 +209,7 @@ export function ProfessionalVideoStudio() {
   const [captionTemplate, setCaptionTemplate] = useState(CAPTION_TEMPLATES[0]);
   const [backgroundMode, setBackgroundMode] = useState(BACKGROUND_OPTIONS[1]);
   const [activeAudioTools, setActiveAudioTools] = useState<Record<string, boolean>>({});
-  const [brandKit, setBrandKit] = useState<BrandKitState>({
-    logoName: "mawj-logo.svg",
-    primaryColor: "#8ef7c2",
-    secondaryColor: "#a78bfa",
-    font: "IBM Plex Sans Arabic",
-    captionStyle: "Saudi Viral Bold",
-    intro: "2s animated logo",
-    outro: "Follow / CTA screen",
-  });
+  const [brandKit, setBrandKit] = useState<BrandKitState>(DEFAULT_BRAND_KIT);
   const [adProductName, setAdProductName] = useState("Premium Saudi coffee");
   const [adTone, setAdTone] = useState<AdTone>("luxury");
   const [adOutput, setAdOutput] = useState("");
@@ -353,6 +357,18 @@ export function ProfessionalVideoStudio() {
   useEffect(() => {
     timelineTracksRef.current = timelineTracks;
   }, [timelineTracks]);
+
+  useEffect(() => {
+    const stored = getStoredBrandIdentity();
+    if (stored?.brandName) setBrandName(stored.brandName);
+    if (stored?.brandKit) setBrandKit(stored.brandKit);
+    restoredBrandIdentityRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!restoredBrandIdentityRef.current) return;
+    persistStoredBrandIdentity({ brandName, brandKit });
+  }, [brandKit, brandName]);
 
   const restorePersistedMedia = useCallback(async (isCancelled: () => boolean) => {
     const records = await listMediaRecords();
@@ -2372,6 +2388,46 @@ export function ProfessionalVideoStudio() {
     setProjectStatus(`${nextTemplate} caption style applied`);
   }
 
+  function applyBrandKitToTimeline() {
+    const normalizedBrandKit = normalizeBrandKit(brandKit);
+    const brandLabel = brandName.trim() || BRAND.displayName;
+    const nextCaptionTemplate = normalizedBrandKit.captionStyle.trim() || captionTemplate;
+    const captionStylePatch = getCaptionStylePatch(nextCaptionTemplate, aspectRatio, normalizedBrandKit.primaryColor);
+    const durationSeconds = Math.max(1, totalTimelineSeconds, studioFile?.durationSeconds ?? 0, templateProject?.duration ?? 0);
+    const brandBugLayer = createBrandBugTimelineLayer({
+      brandName: brandLabel,
+      brandKit: normalizedBrandKit,
+      aspectRatio,
+      durationSeconds,
+    });
+
+    setBrandKit(normalizedBrandKit);
+    setCaptionTemplate(nextCaptionTemplate);
+    commitTimeline((tracks) => applyBrandKitToEditorTracks(tracks, normalizedBrandKit, brandBugLayer, captionStylePatch));
+    setTemplateProject((project) =>
+      project
+        ? applyBrandKitToTemplateProject({
+            project,
+            brandName: brandLabel,
+            brandKit: normalizedBrandKit,
+            captionStylePatch,
+          })
+        : project,
+    );
+    setSelectedLayerId(brandBugLayer.id);
+    selectEngineLayer(brandBugLayer.id);
+    setAssistantMessages((messages) =>
+      [
+        createAssistantMessage(
+          "assistant",
+          `تم تطبيق هوية ${brandLabel}: الألوان والكابشن وطبقة البراند أصبحت عناصر قابلة للتعديل داخل التايملاين.`,
+        ),
+        ...messages,
+      ].slice(0, 12),
+    );
+    setProjectStatus("Brand kit applied to editable timeline");
+  }
+
   function getActiveCaptionStylePatch() {
     return getCaptionStylePatch(captionTemplate, aspectRatio, brandKit.primaryColor);
   }
@@ -3621,7 +3677,15 @@ export function ProfessionalVideoStudio() {
     }
 
     if (activePanel === "brand") {
-      return <BrandKitPanel brandKit={brandKit} onChange={setBrandKit} brandName={brandName} onBrandNameChange={setBrandName} />;
+      return (
+        <BrandKitPanel
+          brandKit={brandKit}
+          onChange={setBrandKit}
+          brandName={brandName}
+          onBrandNameChange={setBrandName}
+          onApply={applyBrandKitToTimeline}
+        />
+      );
     }
 
     if (activePanel === "stock") {
@@ -3985,6 +4049,324 @@ export function ProfessionalVideoStudio() {
 
     setProjectStatus(`${tool.title} ready`);
   }
+}
+
+type StoredBrandIdentity = {
+  brandName?: string;
+  brandKit?: BrandKitState;
+};
+
+function getStoredBrandIdentity(): StoredBrandIdentity | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(BRAND_KIT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredBrandIdentity;
+    return {
+      brandName: typeof parsed.brandName === "string" ? parsed.brandName : undefined,
+      brandKit: parsed.brandKit ? normalizeBrandKit(parsed.brandKit) : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistStoredBrandIdentity(identity: StoredBrandIdentity) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(BRAND_KIT_STORAGE_KEY, JSON.stringify(identity));
+  } catch {
+    // Local persistence should not block editing.
+  }
+}
+
+function normalizeBrandKit(brandKit: BrandKitState): BrandKitState {
+  return {
+    ...DEFAULT_BRAND_KIT,
+    ...brandKit,
+    primaryColor: normalizeBrandColor(brandKit.primaryColor, DEFAULT_BRAND_KIT.primaryColor),
+    secondaryColor: normalizeBrandColor(brandKit.secondaryColor, DEFAULT_BRAND_KIT.secondaryColor),
+    font: brandKit.font.trim() || DEFAULT_BRAND_KIT.font,
+    captionStyle: brandKit.captionStyle.trim() || DEFAULT_BRAND_KIT.captionStyle,
+  };
+}
+
+function normalizeBrandColor(value: string | undefined, fallback: string) {
+  if (!value || value.includes("{{") || !/^#[0-9a-f]{6}$/i.test(value)) return fallback;
+  return value;
+}
+
+function applyBrandKitToEditorTracks(
+  tracks: TimelineTrack[],
+  brandKit: BrandKitState,
+  brandBugLayer: TimelineLayer,
+  captionStylePatch: Partial<TimelineLayer>,
+): TimelineTrack[] {
+  let hasOverlayTrack = false;
+
+  const nextTracks = tracks.map((track) => {
+    const styledLayers = track.layers
+      .filter((layer) => layer.id !== brandBugLayer.id)
+      .map((layer) => applyBrandKitToEditorLayer(layer, brandKit, captionStylePatch));
+
+    if (track.kind !== "overlay") {
+      return { ...track, layers: styledLayers };
+    }
+
+    hasOverlayTrack = true;
+    return {
+      ...track,
+      layers: [...styledLayers, brandBugLayer],
+    };
+  });
+
+  if (hasOverlayTrack) return nextTracks;
+
+  return [
+    ...nextTracks,
+    {
+      id: "track-brand-kit",
+      name: "Brand Kit",
+      kind: "overlay",
+      layers: [brandBugLayer],
+    },
+  ];
+}
+
+function applyBrandKitToEditorLayer(
+  layer: TimelineLayer,
+  brandKit: BrandKitState,
+  captionStylePatch: Partial<TimelineLayer>,
+): TimelineLayer {
+  if (layer.type === "caption") {
+    return {
+      ...layer,
+      ...captionStylePatch,
+      fontWeight: captionStylePatch.fontWeight ?? layer.fontWeight ?? "900",
+    };
+  }
+
+  if (layer.type === "text") {
+    return {
+      ...layer,
+      color: brandKit.primaryColor,
+      textColor: layer.textColor ?? brandKit.primaryColor,
+      backgroundColor: layer.backgroundColor ? brandKit.secondaryColor : layer.backgroundColor,
+      fontWeight: layer.fontWeight ?? "900",
+    };
+  }
+
+  if (layer.type === "shape") {
+    return {
+      ...layer,
+      color: brandKit.secondaryColor,
+      backgroundColor: brandKit.secondaryColor,
+    };
+  }
+
+  if (layer.type === "background" && layer.backgroundColor !== "blur-original") {
+    return {
+      ...layer,
+      color: brandKit.primaryColor,
+      backgroundColor: `linear-gradient(145deg, ${brandKit.primaryColor}, ${brandKit.secondaryColor})`,
+    };
+  }
+
+  return layer;
+}
+
+function createBrandBugTimelineLayer({
+  brandName,
+  brandKit,
+  aspectRatio,
+  durationSeconds,
+}: {
+  brandName: string;
+  brandKit: BrandKitState;
+  aspectRatio: AspectRatio;
+  durationSeconds: number;
+}): TimelineLayer {
+  const dimensions = getTemplateDimensions(aspectRatio);
+  const geometry = getBrandBugGeometry(dimensions.width, dimensions.height);
+
+  return {
+    id: "brand-kit-bug",
+    type: "text",
+    name: "Brand bug",
+    start: 0,
+    duration: durationSeconds,
+    color: brandKit.primaryColor,
+    textColor: getReadableTextColor(brandKit.primaryColor),
+    backgroundColor: brandKit.primaryColor,
+    content: brandName,
+    x: geometry.x,
+    y: geometry.y,
+    width: geometry.width,
+    height: geometry.height,
+    fontSize: geometry.height > 95 ? 54 : 42,
+    fontWeight: "950",
+    borderRadius: Math.round(geometry.height / 2),
+    opacity: 0.94,
+  };
+}
+
+function applyBrandKitToTemplateProject({
+  project,
+  brandName,
+  brandKit,
+  captionStylePatch,
+}: {
+  project: TemplateProject;
+  brandName: string;
+  brandKit: BrandKitState;
+  captionStylePatch: Partial<TimelineLayer>;
+}): TemplateProject {
+  const brandBugLayer = createBrandBugTemplateLayer(project, brandName, brandKit);
+  let hasTextTrack = false;
+
+  const nextTimeline = project.timeline.map((track) => {
+    const styledLayers = track.layers
+      .filter((layer) => layer.id !== brandBugLayer.id)
+      .map((layer) => applyBrandKitToTemplateLayer(layer, brandKit, captionStylePatch));
+
+    if (track.kind !== "text") {
+      return { ...track, layers: styledLayers };
+    }
+
+    hasTextTrack = true;
+    return {
+      ...track,
+      layers: [...styledLayers, brandBugLayer],
+    };
+  });
+
+  return {
+    ...project,
+    timeline: hasTextTrack
+      ? nextTimeline
+      : [
+          ...nextTimeline,
+          {
+            id: "track-brand-kit",
+            name: "Brand Kit",
+            kind: "text",
+            layers: [brandBugLayer],
+          },
+        ],
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function applyBrandKitToTemplateLayer(
+  layer: TemplateTimelineLayer,
+  brandKit: BrandKitState,
+  captionStylePatch: Partial<TimelineLayer>,
+): TemplateTimelineLayer {
+  if (layer.type === "captions") {
+    return {
+      ...layer,
+      color: captionStylePatch.textColor ?? captionStylePatch.color ?? "#ffffff",
+      backgroundColor: captionStylePatch.backgroundColor,
+      fontSize: captionStylePatch.fontSize,
+      fontWeight: captionStylePatch.fontWeight,
+      borderRadius: captionStylePatch.borderRadius,
+      opacity: captionStylePatch.opacity,
+      highlightColor: brandKit.primaryColor,
+    };
+  }
+
+  if (layer.type === "text") {
+    return {
+      ...layer,
+      color: layer.color && layer.color !== "#ffffff" ? brandKit.primaryColor : layer.color,
+      fontFamily: brandKit.font,
+      fontWeight: layer.fontWeight ?? "900",
+    };
+  }
+
+  if (layer.type === "shape") {
+    return {
+      ...layer,
+      color: brandKit.secondaryColor,
+      backgroundColor: brandKit.secondaryColor,
+    };
+  }
+
+  if (layer.type === "background") {
+    return {
+      ...layer,
+      color: brandKit.primaryColor,
+      backgroundColor: brandKit.primaryColor,
+      gradientFrom: brandKit.primaryColor,
+      gradientTo: brandKit.secondaryColor,
+    };
+  }
+
+  return layer;
+}
+
+function createBrandBugTemplateLayer(
+  project: TemplateProject,
+  brandName: string,
+  brandKit: BrandKitState,
+): TemplateTimelineLayer {
+  const scene = project.scenes[0];
+  const geometry = getBrandBugGeometry(project.width, project.height);
+
+  return {
+    id: "brand-kit-bug",
+    type: "text",
+    sceneId: scene?.id ?? "scene-brand-kit",
+    sceneName: scene?.name ?? "Brand Kit",
+    absoluteStart: 0,
+    duration: Math.max(1, project.duration),
+    editable: true,
+    name: "Brand bug",
+    content: brandName,
+    x: geometry.x,
+    y: geometry.y,
+    width: geometry.width,
+    height: geometry.height,
+    color: brandKit.primaryColor,
+    backgroundColor: brandKit.primaryColor,
+    fontFamily: brandKit.font,
+    fontSize: geometry.height > 95 ? 54 : 42,
+    fontWeight: "950",
+    align: "center",
+    direction: "auto",
+    borderRadius: Math.round(geometry.height / 2),
+    opacity: 0.96,
+  };
+}
+
+function getBrandBugGeometry(width: number, height: number) {
+  const isVertical = height > width * 1.35;
+  const safe = isVertical
+    ? { top: 160, right: 70 }
+    : Math.abs(width - height) < 10
+      ? { top: 92, right: 76 }
+      : { top: 72, right: 96 };
+  const layerWidth = Math.round(isVertical ? Math.min(520, width * 0.48) : Math.min(420, width * 0.26));
+  const layerHeight = Math.round(isVertical ? 92 : 74);
+
+  return {
+    x: Math.max(0, width - safe.right - layerWidth),
+    y: safe.top,
+    width: layerWidth,
+    height: layerHeight,
+  };
+}
+
+function getReadableTextColor(hexColor: string) {
+  const normalized = normalizeBrandColor(hexColor, DEFAULT_BRAND_KIT.primaryColor).replace("#", "");
+  const red = parseInt(normalized.slice(0, 2), 16);
+  const green = parseInt(normalized.slice(2, 4), 16);
+  const blue = parseInt(normalized.slice(4, 6), 16);
+  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+
+  return luminance > 0.6 ? "#06120d" : "#ffffff";
 }
 
 function createDefaultTimeline(): TimelineTrack[] {
