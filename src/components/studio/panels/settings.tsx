@@ -364,7 +364,7 @@ export function LayerInspector({
   const supportsBlendMode = supportsBorderRadius;
   const dimensions = getInspectorDimensions(aspectRatio);
   const safeMargins = getInspectorSafeMargins(aspectRatio);
-  const { horizontal, vertical, sizing } = createLayerLayoutActions(layer, dimensions, safeMargins);
+  const { horizontal, vertical, sizing, formats } = createLayerLayoutActions(layer, dimensions, safeMargins);
 
   return (
     <section className="panel p-4">
@@ -598,6 +598,21 @@ export function LayerInspector({
           <p className="pt-1 text-xs font-black text-[var(--muted)]">Smart sizing</p>
           <div className="grid grid-cols-2 gap-2">
             {sizing.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                disabled={locked}
+                onClick={() => onChange(action.patch)}
+                className="min-h-12 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-2 py-1 text-xs font-black transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="block text-white" dir="auto">{action.label}</span>
+                <span className="mt-0.5 block text-[10px] font-bold text-[var(--muted)]" dir="auto">{action.detail}</span>
+              </button>
+            ))}
+          </div>
+          <p className="pt-1 text-xs font-black text-[var(--muted)]">Format presets</p>
+          <div className="grid grid-cols-2 gap-2">
+            {formats.map((action) => (
               <button
                 key={action.label}
                 type="button"
@@ -1017,6 +1032,11 @@ function createLayerLayoutActions(
   const safeHeight = Math.max(1, dimensions.height - safeMargins.top - safeMargins.bottom);
   const rightX = Math.round(clampInspectorNumber(dimensions.width - safeMargins.right - layerWidth, 0, Math.max(0, dimensions.width - layerWidth)));
   const bottomY = Math.round(clampInspectorNumber(dimensions.height - safeMargins.bottom - layerHeight, 0, Math.max(0, dimensions.height - layerHeight)));
+  const titleHeight = Math.round(dimensions.height * 0.12);
+  const captionHeight = Math.round(dimensions.height * 0.14);
+  const lowerThirdHeight = Math.round(dimensions.height * 0.18);
+  const heroHeight = Math.round(safeHeight * 0.6);
+  const squareSize = Math.round(Math.min(safeWidth, safeHeight * 0.54));
 
   return {
     horizontal: [
@@ -1034,6 +1054,43 @@ function createLayerLayoutActions(
       { label: "Safe frame", detail: "داخل الهوامش", patch: { x: safeMargins.left, y: safeMargins.top, width: safeWidth, height: safeHeight } },
       { label: "Full width", detail: "عرض الكادر", patch: { x: 0, width: dimensions.width } },
       { label: "Full frame", detail: "املأ الكادر", patch: { x: 0, y: 0, width: dimensions.width, height: dimensions.height } },
+    ],
+    formats: [
+      {
+        label: "Title block",
+        detail: "عنوان علوي آمن",
+        patch: { x: safeMargins.left, y: safeMargins.top, width: safeWidth, height: titleHeight },
+      },
+      {
+        label: "Caption block",
+        detail: "كابشن سفلي واضح",
+        patch: { x: safeMargins.left, y: Math.round(dimensions.height - safeMargins.bottom - captionHeight), width: safeWidth, height: captionHeight },
+      },
+      {
+        label: "Hero media",
+        detail: "مساحة رئيسية للصور",
+        patch: { x: safeMargins.left, y: safeMargins.top, width: safeWidth, height: heroHeight },
+      },
+      {
+        label: "Square focus",
+        detail: "منتج أو صورة مربعة",
+        patch: { x: Math.round((dimensions.width - squareSize) / 2), y: Math.round((dimensions.height - squareSize) / 2), width: squareSize, height: squareSize },
+      },
+      {
+        label: "Lower third",
+        detail: "شريط معلومات سفلي",
+        patch: { x: safeMargins.left, y: Math.round(dimensions.height - safeMargins.bottom - lowerThirdHeight), width: safeWidth, height: lowerThirdHeight },
+      },
+      {
+        label: "CTA pill",
+        detail: "زر دعوة للتفاعل",
+        patch: {
+          x: Math.round(dimensions.width * 0.18),
+          y: Math.round(dimensions.height - safeMargins.bottom - dimensions.height * 0.08),
+          width: Math.round(dimensions.width * 0.64),
+          height: Math.round(dimensions.height * 0.08),
+        },
+      },
     ],
   };
 }
