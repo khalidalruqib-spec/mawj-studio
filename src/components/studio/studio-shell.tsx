@@ -40,6 +40,7 @@ import {
   createSupabaseBrowserClient,
   hasSupabaseBrowserEnv,
 } from "@/lib/supabase/client";
+import { TEMPLATE_FONT_PRESETS } from "@/lib/template-typography";
 import {
   deleteMediaRecord,
   getLatestProjectSnapshot,
@@ -421,6 +422,7 @@ export function ProfessionalVideoStudio() {
     setTimelineUndo((history) => [timelineTracks, ...history].slice(0, 25));
     setTimelineRedo([]);
     setTimelineTracks(resolvedTracks);
+    syncTemplateProjectTimeline(resolvedTracks);
     useVideoProjectStore.getState().setCurrentProject(syncedProject);
     clearRenderedOutput();
     setProjectStatus("Autosaved timeline changes");
@@ -698,13 +700,15 @@ export function ProfessionalVideoStudio() {
       const editorLayers = new Map(
         nextTracks.flatMap((track) => track.layers.map((layer) => [layer.id, layer] as const)),
       );
-      const syncedTimeline = project.timeline.map((track) => ({
+      const syncedLayerIds = new Set<string>();
+      let syncedTimeline = project.timeline.map((track) => ({
         ...track,
         layers: track.layers
           .filter((layer) => editorLayers.has(layer.id))
           .map((layer) => {
             const editorLayer = editorLayers.get(layer.id);
             if (!editorLayer) return layer;
+            syncedLayerIds.add(editorLayer.id);
             const patch = toTemplateTimelinePatch(editorLayer);
 
             return {
@@ -715,12 +719,48 @@ export function ProfessionalVideoStudio() {
           }),
       }));
 
+      const addedLayers = nextTracks.flatMap((track) =>
+        track.layers
+          .filter((layer) => !syncedLayerIds.has(layer.id))
+          .map((layer) => ({
+            trackKind: templateTrackKindForEditorLayer(layer),
+            layer: editorLayerToTemplateTimelineLayer(layer, project),
+          })),
+      );
+
+      if (addedLayers.length) {
+        for (const addedLayer of addedLayers) {
+          const trackIndex = syncedTimeline.findIndex((track) => track.kind === addedLayer.trackKind);
+
+          if (trackIndex === -1) {
+            syncedTimeline = [
+              ...syncedTimeline,
+              createTemplateTimelineTrack(addedLayer.trackKind, [addedLayer.layer]),
+            ];
+            continue;
+          }
+
+          syncedTimeline = syncedTimeline.map((track, index) =>
+            index === trackIndex
+              ? {
+                  ...track,
+                  layers: [...track.layers, addedLayer.layer],
+                }
+              : track,
+          );
+        }
+      }
+
       if (!syncedTimeline.some((track) => track.layers.length > 0)) {
         return null;
       }
 
       return {
         ...project,
+        duration: Math.max(
+          project.duration,
+          ...nextTracks.flatMap((track) => track.layers.map((layer) => layer.start + layer.duration)),
+        ),
         timeline: syncedTimeline,
         updatedAt: new Date().toISOString(),
       };
@@ -1360,26 +1400,23 @@ export function ProfessionalVideoStudio() {
   }
 
   function addTextLayer() {
-    commitTimeline((tracks) =>
-      tracks.map((track) =>
-        track.kind === "overlay"
-          ? {
-              ...track,
-              layers: [
-                ...track.layers,
-                {
-                  id: crypto.randomUUID(),
-                  type: "text",
-                  name: "Hook title",
-                  start: Math.max(0, Math.round(previewTime)),
-                  duration: 5,
-                  color: "#facc15",
-                },
-              ],
-            }
-          : track,
-      ),
+    const textLayer = createManualTextLayer({
+      start: Math.max(0, Math.round(previewTime)),
+      aspectRatio,
+    });
+    const nextTracks = timelineTracks.map((track) =>
+      track.kind === "overlay"
+        ? {
+            ...track,
+            layers: [...track.layers, textLayer],
+          }
+        : track,
     );
+
+    commitTimeline(nextTracks);
+    setSelectedLayerId(textLayer.id);
+    selectEngineLayer(textLayer.id);
+    setProjectStatus("Editable text layer added and selected");
   }
 
   function markTranscriptDeleted(segmentId: string) {
@@ -2766,6 +2803,49 @@ function createDefaultTimeline(): TimelineTrack[] {
   return createTimelineForVideo("Source video", 36);
 }
 
+function createManualTextLayer({
+  start,
+  aspectRatio,
+}: {
+  start: number;
+  aspectRatio: AspectRatio;
+}): TimelineLayer {
+  const box = getManualTextLayerBox(aspectRatio);
+  const content = "اكتب عنوانك هنا";
+
+  return {
+    id: `text-${crypto.randomUUID()}`,
+    type: "text",
+    name: content,
+    content,
+    start,
+    duration: 5,
+    color: "#facc15",
+    textColor: "#ffffff",
+    fontFamily: TEMPLATE_FONT_PRESETS[1].cssStack,
+    fontSize: aspectRatio === "16:9" ? 64 : 72,
+    fontWeight: "900",
+    align: "center",
+    direction: "auto",
+    backgroundColor: "rgba(5, 6, 8, 0.42)",
+    borderRadius: 28,
+    opacity: 1,
+    ...box,
+  };
+}
+
+function getManualTextLayerBox(aspectRatio: AspectRatio) {
+  if (aspectRatio === "16:9") {
+    return { x: 160, y: 760, width: 1600, height: 170 };
+  }
+
+  if (aspectRatio === "1:1") {
+    return { x: 90, y: 760, width: 900, height: 170 };
+  }
+
+  return { x: 70, y: 1280, width: 940, height: 190 };
+}
+
 function createImageStoryboardTemplateProject({
   assets,
   plan,
@@ -3875,6 +3955,112 @@ function cleanOpenAIError(message: string) {
   }
 
   return message.replace(/sk-[A-Za-z0-9_-]+/g, "sk-***");
+}
+
+function editorLayerToTemplateTimelineLayer(
+  layer: TimelineLayer,
+  project: TemplateProject,
+): TemplateTimelineTrack["layers"][number] {
+  const scene = findTemplateSceneForLayer(project.scenes, layer);
+  const templateType = templateLayerTypeForEditorLayer(layer);
+  const relativeStart = Math.max(0, roundTime(layer.start - scene.start));
+
+  return {
+    id: layer.id,
+    sceneId: scene.id,
+    sceneName: scene.name,
+    type: templateType,
+    name: layer.name,
+    content: layer.content,
+    src: layer.src,
+    x: layer.x,
+    y: layer.y,
+    width: layer.width,
+    height: layer.height,
+    start: relativeStart,
+    absoluteStart: layer.start,
+    duration: Math.max(0.1, layer.duration),
+    color: layer.textColor ?? layer.color,
+    backgroundColor: layer.backgroundColor,
+    borderRadius: layer.borderRadius,
+    opacity: layer.opacity,
+    fontFamily: layer.fontFamily,
+    fontSize: layer.fontSize,
+    fontWeight: layer.fontWeight,
+    align: layer.align,
+    direction: layer.direction,
+    editable: true,
+    animationIn:
+      templateType === "text" || templateType === "captions"
+        ? {
+            type: "slideUp",
+            duration: 0.45,
+          }
+        : undefined,
+  };
+}
+
+function findTemplateSceneForLayer(scenes: TemplateScene[], layer: TimelineLayer) {
+  const matchingScene =
+    scenes.find((scene) => scene.id === layer.sceneId) ??
+    scenes.find((scene) => layer.start >= scene.start && layer.start < scene.start + scene.duration);
+
+  return matchingScene ?? scenes[0] ?? {
+    id: "scene-main",
+    name: "Main Scene",
+    start: 0,
+    duration: Math.max(1, layer.duration),
+    background: { type: "color" as const, value: "#050608" },
+    layers: [],
+  };
+}
+
+function createTemplateTimelineTrack(
+  kind: TemplateTimelineTrack["kind"],
+  layers: TemplateTimelineTrack["layers"],
+): TemplateTimelineTrack {
+  const label: Record<TemplateTimelineTrack["kind"], string> = {
+    scenes: "Scenes",
+    video: "Video",
+    audio: "Audio",
+    text: "Text",
+    image: "Images / Logos",
+    shape: "Shapes",
+    captions: "Captions",
+    background: "Backgrounds",
+    waveform: "Waveform",
+  };
+
+  return {
+    id: `track-${kind}`,
+    name: label[kind],
+    kind,
+    layers,
+  };
+}
+
+function templateTrackKindForEditorLayer(layer: TimelineLayer): TemplateTimelineTrack["kind"] {
+  if (layer.type === "caption") return "captions";
+  if (layer.type === "background") return "background";
+  if (layer.type === "shape") return "shape";
+  if (layer.type === "effect") return "shape";
+  if (layer.type === "waveform") return "waveform";
+  if (layer.type === "image") return "image";
+  if (layer.type === "video") return "video";
+  if (layer.type === "audio") return "audio";
+  return "text";
+}
+
+function templateLayerTypeForEditorLayer(layer: TimelineLayer): TemplateTimelineTrack["layers"][number]["type"] {
+  if (layer.type === "caption") return "captions";
+  if (layer.type === "background") return "background";
+  if (layer.type === "shape") return "shape";
+  if (layer.type === "effect") return "shape";
+  if (layer.type === "waveform") return "waveform";
+  if (layer.type === "image") return "image";
+  if (layer.type === "video") return "video";
+  if (layer.type === "audio") return "audio";
+  return "text";
 }
 
 function templateTimelineToEditorTracks(templateTracks: TemplateTimelineTrack[]): TimelineTrack[] {

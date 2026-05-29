@@ -250,6 +250,8 @@ export function TemplatePreviewLayer({
           fontFamily: resolveLayerFontFamily({ layer }),
           fontSize: `${Math.max(11, (layer.fontSize ?? 44) * 0.2)}px`,
           fontWeight: normalizeTemplateFontWeight(layer.fontWeight),
+          backgroundColor: layer.backgroundColor,
+          borderRadius: layer.borderRadius ? `${Math.max(4, layer.borderRadius * 0.2)}px` : undefined,
           direction: layer.direction === "ltr" ? "ltr" : "rtl",
           justifyItems: textAlign === "right" ? "end" : textAlign === "left" ? "start" : "center",
           textAlign,

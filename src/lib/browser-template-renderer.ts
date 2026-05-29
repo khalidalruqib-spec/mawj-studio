@@ -312,6 +312,15 @@ function drawTextLayer(
   const startY = y + Math.max(fontSize, (height - (lines.length - 1) * lineHeight) / 2);
   const shouldDrawPlaceholder = layer.type === "captions" && isAutoCaptionPlaceholder(layer);
 
+  if (layer.backgroundColor && !layer.backgroundColor.includes("{{") && !shouldDrawPlaceholder) {
+    context.save();
+    context.globalAlpha *= 0.94;
+    context.fillStyle = layer.backgroundColor;
+    roundedRect(context, x, y, width, height, Math.min(48, layer.borderRadius ?? 28));
+    context.fill();
+    context.restore();
+  }
+
   if (shouldDrawPlaceholder) {
     const pillPadding = Math.max(22, fontSize * 0.42);
     const pillHeight = Math.min(height, Math.max(fontSize * 1.9, lines.length * lineHeight + pillPadding));
