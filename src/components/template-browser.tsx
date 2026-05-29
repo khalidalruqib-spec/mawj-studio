@@ -241,6 +241,7 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
   const [customTemplates, setCustomTemplates] = useState<VideoTemplate[]>(listCustomVideoTemplates);
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
   const [generatorPrompt, setGeneratorPrompt] = useState("");
+  const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const availableTemplates = useMemo(() => {
@@ -404,7 +405,7 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
     }
   }
 
-  function generateTemplateFromPrompt() {
+  async function generateTemplateFromPrompt() {
     const prompt = generatorPrompt.trim();
 
     if (!prompt) {
@@ -412,13 +413,42 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
       return;
     }
 
-    const generatedTemplate = generateLocalVideoTemplate(prompt);
-    setCustomTemplates(storeCustomVideoTemplate(generatedTemplate));
-    setTemplatePack("custom");
-    setCategory("All");
-    setQuery("");
-    setPreviewTemplate(generatedTemplate);
-    setTemplateNotice(`تم توليد "${generatedTemplate.name}" وإضافته إلى قوالبي.`);
+    setIsGeneratingTemplate(true);
+
+    try {
+      const response = await fetch("/api/template-generator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = (await response.json()) as {
+        template?: VideoTemplate;
+        mode?: "openai" | "local" | "local-fallback";
+        error?: string;
+      };
+      const generatedTemplate = data.template ?? generateLocalVideoTemplate(prompt);
+
+      setCustomTemplates(storeCustomVideoTemplate(generatedTemplate));
+      setTemplatePack("custom");
+      setCategory("All");
+      setQuery("");
+      setPreviewTemplate(generatedTemplate);
+      setTemplateNotice(
+        data.mode === "openai"
+          ? `تم توليد "${generatedTemplate.name}" بالذكاء الاصطناعي وإضافته إلى قوالبي.`
+          : `تم توليد "${generatedTemplate.name}" محليًا وإضافته إلى قوالبي.`,
+      );
+    } catch {
+      const generatedTemplate = generateLocalVideoTemplate(prompt);
+      setCustomTemplates(storeCustomVideoTemplate(generatedTemplate));
+      setTemplatePack("custom");
+      setCategory("All");
+      setQuery("");
+      setPreviewTemplate(generatedTemplate);
+      setTemplateNotice(`تعذر الاتصال بالمولد الذكي، فأنشأنا "${generatedTemplate.name}" محليًا.`);
+    } finally {
+      setIsGeneratingTemplate(false);
+    }
   }
 
   function useTemplate() {
@@ -500,14 +530,19 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
                       value={generatorPrompt}
                       onChange={(event) => setGeneratorPrompt(event.target.value)}
                       onKeyDown={(event) => {
-                        if (event.key === "Enter") generateTemplateFromPrompt();
+                        if (event.key === "Enter") void generateTemplateFromPrompt();
                       }}
                       placeholder="مثال: قالب إعلان عطر فاخر أسود وذهبي للتيك توك"
                       className="min-h-11 flex-1 rounded-lg border border-transparent bg-black/20 px-3 text-sm font-bold outline-none transition focus:border-[var(--brand)]"
                     />
-                    <button type="button" onClick={generateTemplateFromPrompt} className="btn-ghost shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => void generateTemplateFromPrompt()}
+                      disabled={isGeneratingTemplate}
+                      className="btn-ghost shrink-0 disabled:opacity-50"
+                    >
                       <Sparkles className="h-4 w-4" aria-hidden="true" />
-                      Generate
+                      {isGeneratingTemplate ? "Generating..." : "Generate"}
                     </button>
                   </div>
                   {templateNotice ? (
