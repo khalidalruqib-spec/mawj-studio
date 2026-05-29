@@ -2313,7 +2313,7 @@ export function ProfessionalVideoStudio() {
                     onCreatorCommand={runAssistantCommand}
                     onClearTemplateProject={clearActiveTemplateProject}
                     onSelectLayer={selectTimelineLayer}
-                    onMoveLayer={updateTimelineLayer}
+                    onUpdateLayer={updateTimelineLayer}
                   />
                   <ProjectMetrics
                     plan={plan}
