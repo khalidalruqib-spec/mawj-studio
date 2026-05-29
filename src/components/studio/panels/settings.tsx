@@ -115,6 +115,38 @@ const ANIMATION_OPTIONS: Array<{ value: "none" | TemplateAnimationType; label: s
   { value: "bounce", label: "Bounce" },
 ];
 
+const MEDIA_FILTER_PRESETS: Array<{
+  id: string;
+  label: string;
+  detail: string;
+  patch: Pick<TimelineLayer, "brightness" | "contrast" | "saturation" | "blur">;
+}> = [
+  {
+    id: "clean-product",
+    label: "Product clean",
+    detail: "واضح ومشرق للمنتجات",
+    patch: { brightness: 108, contrast: 112, saturation: 118, blur: 0 },
+  },
+  {
+    id: "food-pop",
+    label: "Food pop",
+    detail: "ألوان أقوى للأكل",
+    patch: { brightness: 104, contrast: 114, saturation: 148, blur: 0 },
+  },
+  {
+    id: "cinematic",
+    label: "Cinematic",
+    detail: "تباين ناعم وإشباع أقل",
+    patch: { brightness: 96, contrast: 124, saturation: 88, blur: 0 },
+  },
+  {
+    id: "soft-blur",
+    label: "Soft blur",
+    detail: "خلفية ناعمة للنصوص",
+    patch: { brightness: 92, contrast: 105, saturation: 96, blur: 10 },
+  },
+];
+
 export function ProjectSettingsPanel({
   brandName,
   styleId,
@@ -321,6 +353,24 @@ export function LayerInspector({
           </Field>
           <div>
             <p className="mb-2 text-xs font-black text-[var(--muted)]">Visual filters</p>
+            <div className="mb-2 grid grid-cols-2 gap-2">
+              {MEDIA_FILTER_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  disabled={locked}
+                  onClick={() => onChange(preset.patch)}
+                  className="min-h-14 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-2 text-right transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="block text-xs font-black text-white" dir="auto">
+                    {preset.label}
+                  </span>
+                  <span className="mt-1 block text-[10px] font-bold leading-4 text-[var(--muted)]" dir="auto">
+                    {preset.detail}
+                  </span>
+                </button>
+              ))}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <NumberField
                 label="Brightness %"
