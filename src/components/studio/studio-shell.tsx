@@ -450,13 +450,17 @@ export function ProfessionalVideoStudio() {
 
   function updateSelectedLayer(patch: Partial<TimelineLayer>) {
     if (!selectedLayer) return;
+    updateTimelineLayer(selectedLayer.id, patch);
+  }
+
+  function updateTimelineLayer(layerId: string, patch: Partial<TimelineLayer>) {
     const templatePatch = toTemplateTimelinePatch(patch);
 
     commitTimeline((tracks) =>
       tracks.map((track) => ({
         ...track,
         layers: track.layers.map((layer) =>
-          layer.id === selectedLayer.id ? { ...layer, ...patch } : layer,
+          layer.id === layerId ? { ...layer, ...patch } : layer,
         ),
       })),
     );
@@ -468,7 +472,7 @@ export function ProfessionalVideoStudio() {
             timeline: project.timeline.map((track) => ({
               ...track,
               layers: track.layers.map((layer) =>
-                layer.id === selectedLayer.id
+                layer.id === layerId
                   ? {
                       ...layer,
                       ...templatePatch,
@@ -485,7 +489,7 @@ export function ProfessionalVideoStudio() {
         : project,
     );
 
-    updateEngineLayer(selectedLayer.id, editorLayerPatchToVideoLayerPatch(patch));
+    updateEngineLayer(layerId, editorLayerPatchToVideoLayerPatch(patch));
   }
 
   const applyTemplateProject = useCallback((
@@ -2309,6 +2313,7 @@ export function ProfessionalVideoStudio() {
                     onCreatorCommand={runAssistantCommand}
                     onClearTemplateProject={clearActiveTemplateProject}
                     onSelectLayer={selectTimelineLayer}
+                    onMoveLayer={updateTimelineLayer}
                   />
                   <ProjectMetrics
                     plan={plan}

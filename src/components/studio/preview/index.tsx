@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Captions,
   Clock3,
@@ -56,6 +56,7 @@ export function VideoPreview({
   onCreatorCommand,
   onClearTemplateProject,
   onSelectLayer,
+  onMoveLayer,
 }: {
   studioFile: StudioFile | null;
   templateProject: TemplateProject | null;
@@ -78,6 +79,7 @@ export function VideoPreview({
   onCreatorCommand: (commandOverride?: string) => void;
   onClearTemplateProject: () => void;
   onSelectLayer: (id: string) => void;
+  onMoveLayer: (id: string, patch: Pick<TimelineLayer, "x" | "y">) => void;
 }) {
   const previewDurationSeconds = isUsableMediaDuration(studioFile?.durationSeconds)
     ? studioFile.durationSeconds
@@ -114,6 +116,7 @@ export function VideoPreview({
             currentTime={previewTime}
             selectedLayerId={selectedLayerId}
             onSelectLayer={onSelectLayer}
+            onMoveLayer={onMoveLayer}
           />
           <div className="pointer-events-none absolute inset-x-4 top-4 flex justify-center">
             <span className="max-w-full truncate rounded-full border border-white/15 bg-black/55 px-3 py-1.5 text-xs font-black text-white shadow-lg backdrop-blur">
@@ -243,17 +246,76 @@ function TimelinePreviewOverlay({
   currentTime,
   selectedLayerId,
   onSelectLayer,
+  onMoveLayer,
 }: {
   aspectRatio: AspectRatio;
   tracks: TimelineTrack[];
   currentTime: number;
   selectedLayerId: string;
   onSelectLayer: (id: string) => void;
+  onMoveLayer: (id: string, patch: Pick<TimelineLayer, "x" | "y">) => void;
 }) {
   const dimensions = getPreviewDesignDimensions(aspectRatio);
+  const [dragState, setDragState] = useState<PreviewDragState | null>(null);
   const layers = tracks
     .flatMap((track) => track.layers)
     .filter((layer) => isRenderablePreviewLayer(layer, currentTime));
+  const activeDrag = dragState
+    ? {
+        layerId: dragState.layerId,
+        x: Math.round(dragState.startLayerX + dragState.deltaX),
+        y: Math.round(dragState.startLayerY + dragState.deltaY),
+      }
+    : null;
+
+  const startDrag = useCallback(
+    (layer: TimelineLayer, event: React.PointerEvent<HTMLElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onSelectLayer(layer.id);
+      event.currentTarget.setPointerCapture(event.pointerId);
+      const bounds = event.currentTarget.parentElement?.getBoundingClientRect();
+      setDragState({
+        layerId: layer.id,
+        pointerId: event.pointerId,
+        startPointerX: event.clientX,
+        startPointerY: event.clientY,
+        startLayerX: layer.x ?? 0,
+        startLayerY: layer.y ?? 0,
+        scaleX: bounds ? dimensions.width / bounds.width : 1,
+        scaleY: bounds ? dimensions.height / bounds.height : 1,
+        deltaX: 0,
+        deltaY: 0,
+      });
+    },
+    [dimensions.height, dimensions.width, onSelectLayer],
+  );
+
+  const moveDrag = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    setDragState((state) => {
+      if (!state || state.pointerId !== event.pointerId) return state;
+
+      return {
+        ...state,
+        deltaX: (event.clientX - state.startPointerX) * state.scaleX,
+        deltaY: (event.clientY - state.startPointerY) * state.scaleY,
+      };
+    });
+  }, []);
+
+  const endDrag = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      setDragState((state) => {
+        if (!state || state.pointerId !== event.pointerId) return state;
+
+        const nextX = Math.round(state.startLayerX + state.deltaX);
+        const nextY = Math.round(state.startLayerY + state.deltaY);
+        onMoveLayer(state.layerId, { x: nextX, y: nextY });
+        return null;
+      });
+    },
+    [onMoveLayer],
+  );
 
   if (!layers.length) return null;
 
@@ -265,7 +327,12 @@ function TimelinePreviewOverlay({
           layer={layer}
           dimensions={dimensions}
           selected={layer.id === selectedLayerId}
+          dragPosition={activeDrag?.layerId === layer.id ? activeDrag : null}
           onSelect={() => onSelectLayer(layer.id)}
+          onPointerDown={(event) => startDrag(layer, event)}
+          onPointerMove={moveDrag}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
         />
       ))}
     </div>
@@ -276,17 +343,33 @@ function TimelinePreviewLayer({
   layer,
   dimensions,
   selected,
+  dragPosition,
   onSelect,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
 }: {
   layer: TimelineLayer;
   dimensions: { width: number; height: number };
   selected: boolean;
+  dragPosition: { x: number; y: number } | null;
   onSelect: () => void;
+  onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
+  onPointerMove: (event: React.PointerEvent<HTMLElement>) => void;
+  onPointerUp: (event: React.PointerEvent<HTMLElement>) => void;
+  onPointerCancel: (event: React.PointerEvent<HTMLElement>) => void;
 }) {
-  const box = getTimelineLayerBox(layer, dimensions);
+  const box = getTimelineLayerBox(layer, dimensions, dragPosition);
   const baseClass =
-    "absolute overflow-hidden transition outline-offset-2 " +
+    "absolute touch-none overflow-hidden transition outline-offset-2 " +
     (selected ? "outline outline-2 outline-[var(--brand)]" : "outline outline-1 outline-transparent hover:outline-white/45");
+  const pointerHandlers = {
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel,
+  };
 
   if (layer.type === "image") {
     if (!layer.src) return null;
@@ -296,6 +379,7 @@ function TimelinePreviewLayer({
         type="button"
         aria-label={`Select ${layer.name}`}
         onClick={onSelect}
+        {...pointerHandlers}
         className={`${baseClass} cursor-pointer border-0 p-0`}
         style={box}
       >
@@ -310,6 +394,7 @@ function TimelinePreviewLayer({
         type="button"
         aria-label={`Select ${layer.name}`}
         onClick={onSelect}
+        {...pointerHandlers}
         className={`${baseClass} cursor-pointer border-0 p-0`}
         style={{
           ...box,
@@ -332,6 +417,7 @@ function TimelinePreviewLayer({
       type="button"
       aria-label={`Select ${layer.name}`}
       onClick={onSelect}
+      {...pointerHandlers}
       className={`${baseClass} grid cursor-pointer place-items-center border-0 px-2 text-center font-black leading-tight`}
       dir={layer.direction ?? "auto"}
       style={{
@@ -361,9 +447,26 @@ function isRenderablePreviewLayer(layer: TimelineLayer, currentTime: number) {
   return false;
 }
 
-function getTimelineLayerBox(layer: TimelineLayer, dimensions: { width: number; height: number }) {
-  const x = layer.x ?? 0;
-  const y = layer.y ?? 0;
+type PreviewDragState = {
+  layerId: string;
+  pointerId: number;
+  startPointerX: number;
+  startPointerY: number;
+  startLayerX: number;
+  startLayerY: number;
+  scaleX: number;
+  scaleY: number;
+  deltaX: number;
+  deltaY: number;
+};
+
+function getTimelineLayerBox(
+  layer: TimelineLayer,
+  dimensions: { width: number; height: number },
+  dragPosition: { x: number; y: number } | null,
+) {
+  const x = dragPosition?.x ?? layer.x ?? 0;
+  const y = dragPosition?.y ?? layer.y ?? 0;
   const width = layer.width ?? dimensions.width;
   const height = layer.height ?? Math.max(120, dimensions.height * 0.08);
 
