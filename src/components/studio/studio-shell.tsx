@@ -73,11 +73,15 @@ import {
   type AdTone,
   type AdVariant,
 } from "@/lib/ad-maker";
+import { storeCustomVideoTemplate } from "@/lib/custom-video-template-store";
 import type {
+  TemplateLayer,
   TemplateProject,
   TemplateScene,
   TemplateTimelineLayer,
   TemplateTimelineTrack,
+  VideoTemplate,
+  VideoTemplateInput,
 } from "@/lib/video-template-engine";
 import { convertScenesToTimeline } from "@/lib/video-template-engine";
 import {
@@ -2952,6 +2956,29 @@ export function ProfessionalVideoStudio() {
     ].slice(0, 12));
   }
 
+  function saveCurrentProjectAsCustomTemplate() {
+    const customTemplate = createCustomTemplateFromTimeline({
+      tracks: timelineTracksRef.current,
+      brandName,
+      brandKit,
+      aspectRatio,
+      durationSeconds: Math.max(1, studioFile?.durationSeconds ?? 0, templateProject?.duration ?? 0, totalTimelineSeconds),
+    });
+
+    storeCustomVideoTemplate(customTemplate);
+    setActiveTemplateId(customTemplate.id);
+    setProjectStatus(`${customTemplate.name} saved to your custom templates`);
+    setAssistantMessages((messages) =>
+      [
+        createAssistantMessage(
+          "assistant",
+          `تم حفظ المشروع كقالب مخصص: ${customTemplate.name}. افتح /templates واختر فلتر "قوالبي" لاستخدامه كـ Template Engine قابل للتعديل.`,
+        ),
+        ...messages,
+      ].slice(0, 12),
+    );
+  }
+
   async function generateAdVersion() {
     const productName = adProductName.trim();
     if (!productName) {
@@ -3461,7 +3488,11 @@ export function ProfessionalVideoStudio() {
               onDelete={deleteProjectRecord}
             />
           ) : activePanel === "templates" ? (
-            <TemplatesPanel activeTemplateId={activeTemplateId} onApply={applyTemplatePreset} />
+            <TemplatesPanel
+              activeTemplateId={activeTemplateId}
+              onApply={applyTemplatePreset}
+              onSaveCurrent={saveCurrentProjectAsCustomTemplate}
+            />
           ) : activePanel === "collaboration" ? (
             <CollaborationPanel />
           ) : (
@@ -4049,6 +4080,239 @@ export function ProfessionalVideoStudio() {
 
     setProjectStatus(`${tool.title} ready`);
   }
+}
+
+function createCustomTemplateFromTimeline({
+  tracks,
+  brandName,
+  brandKit,
+  aspectRatio,
+  durationSeconds,
+}: {
+  tracks: TimelineTrack[];
+  brandName: string;
+  brandKit: BrandKitState;
+  aspectRatio: AspectRatio;
+  durationSeconds: number;
+}): VideoTemplate {
+  const normalizedBrandKit = normalizeBrandKit(brandKit);
+  const dimensions = getTemplateDimensions(aspectRatio);
+  const safeMargins = getStoryboardSafeMargins(aspectRatio);
+  const templateName = `${brandName.trim() || BRAND.displayName} Custom Template`;
+  const requiredInputs: VideoTemplateInput[] = [
+    {
+      key: "brandName",
+      label: "Brand Name",
+      type: "text",
+      default: brandName.trim() || BRAND.displayName,
+    },
+    {
+      key: "brandColor",
+      label: "Brand Color",
+      type: "color",
+      default: normalizedBrandKit.primaryColor,
+    },
+    {
+      key: "accentColor",
+      label: "Accent Color",
+      type: "color",
+      default: normalizedBrandKit.secondaryColor,
+    },
+  ];
+  const layers = timelineTracksToCustomTemplateLayers(tracks, requiredInputs);
+  const duration = Math.max(6, Math.min(120, Math.round(durationSeconds || 18)));
+
+  return {
+    id: `custom-${slugifyTemplateId(templateName)}-${Date.now()}`,
+    name: templateName,
+    category: "Custom Templates",
+    aspectRatio,
+    width: dimensions.width,
+    height: dimensions.height,
+    duration,
+    description: `Saved from Mawj Studio timeline with ${layers.length} editable layer${layers.length === 1 ? "" : "s"}.`,
+    language: "mixed",
+    requiredInputs,
+    scenes: [
+      {
+        id: "custom-scene-1",
+        name: "Saved editable scene",
+        start: 0,
+        duration,
+        background: {
+          type: "gradient",
+          from: "{{brandColor}}",
+          to: "{{accentColor}}",
+        },
+        layers,
+        transition: {
+          type: "fade",
+          duration: 0.35,
+        },
+      },
+    ],
+    animations: ["fadeIn", "slideUp", "zoomIn", "pop"],
+    transitions: ["cut", "fade"],
+    audio: {
+      music: null,
+      volume: 1,
+    },
+    export: {
+      format: "mp4",
+      fps: 30,
+      quality: "1080p",
+    },
+    safeMargins,
+    thumbnailUrl: "",
+    previewUrl: "",
+  };
+}
+
+function timelineTracksToCustomTemplateLayers(
+  tracks: TimelineTrack[],
+  requiredInputs: VideoTemplateInput[],
+): TemplateLayer[] {
+  const counters = { text: 0, media: 0 };
+  return tracks
+    .flatMap((track) => track.layers)
+    .filter((layer) => layer.duration > 0)
+    .filter((layer) => layer.type !== "effect" && layer.type !== "audio")
+    .sort((left, right) => left.start - right.start || layerZOrder(left.type) - layerZOrder(right.type))
+    .slice(0, 24)
+    .map((layer) => timelineLayerToCustomTemplateLayer(layer, counters, requiredInputs))
+    .filter((layer): layer is TemplateLayer => Boolean(layer));
+}
+
+function timelineLayerToCustomTemplateLayer(
+  layer: TimelineLayer,
+  counters: { text: number; media: number },
+  requiredInputs: VideoTemplateInput[],
+): TemplateLayer | null {
+  const baseLayer = {
+    id: sanitizeTemplateLayerId(layer.id),
+    name: layer.name,
+    start: roundTimelineSeconds(Math.max(0, layer.start)),
+    duration: roundTimelineSeconds(Math.max(0.4, layer.duration)),
+    x: layer.x,
+    y: layer.y,
+    width: layer.width,
+    height: layer.height,
+    borderRadius: layer.borderRadius,
+    opacity: layer.opacity,
+    editable: true,
+  };
+
+  if (layer.type === "text" || layer.type === "caption") {
+    const isBrandLayer = layer.id === "brand-kit-bug";
+    const inputKey = isBrandLayer ? "brandName" : `${layer.type === "caption" ? "caption" : "text"}${++counters.text}`;
+    if (!isBrandLayer) {
+      requiredInputs.push({
+        key: inputKey,
+        label: layer.name || `Text ${counters.text}`,
+        type: "textarea",
+        default: layer.content || layer.name,
+      });
+    }
+
+    return {
+      ...baseLayer,
+      id: `${baseLayer.id || layer.type}-${inputKey}`,
+      type: layer.type === "caption" ? "captions" : "text",
+      content: `{{${inputKey}}}`,
+      color: layer.textColor ?? layer.color ?? "#ffffff",
+      backgroundColor: layer.type === "caption" ? "{{brandColor}}" : layer.backgroundColor,
+      fontSize: layer.fontSize,
+      fontWeight: layer.fontWeight,
+      align: "center",
+      direction: "auto",
+      animationIn: {
+        type: layer.type === "caption" ? "pop" : "slideUp",
+        duration: 0.45,
+      },
+    };
+  }
+
+  if (layer.type === "image" || layer.type === "video") {
+    const inputKey = `${layer.type}${++counters.media}`;
+    const defaultSource = layer.src && !layer.src.startsWith("blob:") && !layer.src.startsWith("data:") ? layer.src : undefined;
+    requiredInputs.push({
+      key: inputKey,
+      label: layer.name || `${layer.type} ${counters.media}`,
+      type: layer.type,
+      default: defaultSource,
+    });
+
+    return {
+      ...baseLayer,
+      type: layer.type,
+      src: `{{${inputKey}}}`,
+      fit: layer.fit ?? (layer.type === "video" ? "cover" : "contain"),
+      animationIn: {
+        type: layer.type === "video" ? "fadeIn" : "zoomIn",
+        duration: 0.55,
+      },
+    };
+  }
+
+  if (layer.type === "shape") {
+    return {
+      ...baseLayer,
+      type: "shape",
+      shape: "rect",
+      color: "{{accentColor}}",
+      backgroundColor: "{{accentColor}}",
+      animationIn: {
+        type: "pop",
+        duration: 0.4,
+      },
+    };
+  }
+
+  if (layer.type === "background") {
+    return {
+      ...baseLayer,
+      type: "background",
+      color: "{{brandColor}}",
+      backgroundColor: "{{brandColor}}",
+      gradientFrom: "{{brandColor}}",
+      gradientTo: "{{accentColor}}",
+    };
+  }
+
+  if (layer.type === "waveform") {
+    return {
+      ...baseLayer,
+      type: "waveform",
+      color: "{{accentColor}}",
+      backgroundColor: "rgba(255,255,255,0.08)",
+    };
+  }
+
+  return null;
+}
+
+function layerZOrder(type: TimelineLayer["type"]) {
+  const order: Record<TimelineLayer["type"], number> = {
+    background: 0,
+    video: 1,
+    image: 2,
+    shape: 3,
+    text: 4,
+    caption: 5,
+    waveform: 6,
+    audio: 7,
+    effect: 8,
+  };
+
+  return order[type] ?? 9;
+}
+
+function sanitizeTemplateLayerId(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "layer";
+}
+
+function slugifyTemplateId(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "mawj-template";
 }
 
 type StoredBrandIdentity = {

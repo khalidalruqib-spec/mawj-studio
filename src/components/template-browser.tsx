@@ -49,6 +49,7 @@ import {
   type VideoTemplate,
   type VideoTemplateInput,
 } from "@/lib/video-template-engine";
+import { isCustomVideoTemplate, listCustomVideoTemplates } from "@/lib/custom-video-template-store";
 
 /* ─────────────────────────────────────────────────────────────────────
    Category metadata — colour, icon, Arabic label
@@ -79,6 +80,7 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
   "Before / After":         { label: "قبل وبعد",         icon: ArrowRight,     accent: "#7ef2bc", gradFrom: "rgba(126,242,188,0.18)" },
   "YouTube Shorts":         { label: "يوتيوب شورتس",    icon: Film,           accent: "#ff647c", gradFrom: "rgba(255,100,124,0.18)" },
   "Clinics":                { label: "عيادات",           icon: BadgeCheck,     accent: "#2dd4bf", gradFrom: "rgba(45,212,191,0.18)"  },
+  "Custom Templates":       { label: "قوالبي",           icon: Layers3,        accent: "#7ef2bc", gradFrom: "rgba(126,242,188,0.18)" },
 };
 
 function getCategoryMeta(category: string): CategoryMeta {
@@ -105,7 +107,7 @@ const FEATURED_IDS = new Set([
   "market-podcast-launch",
 ]);
 
-type TemplatePackFilter = "all" | "market" | "featured" | "favorites" | "classic";
+type TemplatePackFilter = "all" | "market" | "custom" | "featured" | "favorites" | "classic";
 type TemplateSortOption = "recommended" | "newest" | "duration-asc" | "duration-desc" | "editable-desc";
 type AspectRatioFilter = "All" | VideoTemplate["aspectRatio"];
 const FAVORITE_TEMPLATES_STORAGE_KEY = "mawj-favorite-template-ids";
@@ -157,6 +159,7 @@ function templatePackLabel(value: TemplatePackFilter) {
   const labels: Record<TemplatePackFilter, string> = {
     all: "كل الحزم",
     market: "Market Pack",
+    custom: "قوالبي",
     featured: "مميز",
     favorites: "المفضلة",
     classic: "كلاسيك",
@@ -172,10 +175,15 @@ function sortTemplates(templates: VideoTemplate[], sortBy: TemplateSortOption) {
       return countEditableLayers(right) - countEditableLayers(left) || right.scenes.length - left.scenes.length || left.name.localeCompare(right.name);
     }
     if (sortBy === "newest") {
-      return Number(isMarketTemplate(right)) - Number(isMarketTemplate(left)) || left.name.localeCompare(right.name);
+      return (
+        Number(isCustomVideoTemplate(right)) - Number(isCustomVideoTemplate(left)) ||
+        Number(isMarketTemplate(right)) - Number(isMarketTemplate(left)) ||
+        left.name.localeCompare(right.name)
+      );
     }
 
     return (
+      Number(isCustomVideoTemplate(right)) - Number(isCustomVideoTemplate(left)) ||
       Number(FEATURED_IDS.has(right.id)) - Number(FEATURED_IDS.has(left.id)) ||
       Number(isMarketTemplate(right)) - Number(isMarketTemplate(left)) ||
       countMotionTypes(right) - countMotionTypes(left) ||
@@ -216,75 +224,87 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
   const [previewTemplate, setPreviewTemplate] = useState<VideoTemplate | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<VideoTemplate | null>(null);
   const [inputValues, setInputValues] = useState<TemplateUserInputs>({});
+  const [customTemplates] = useState<VideoTemplate[]>(listCustomVideoTemplates);
+
+  const availableTemplates = useMemo(() => {
+    const seenIds = new Set<string>();
+    return [...customTemplates, ...templates].filter((template) => {
+      if (seenIds.has(template.id)) return false;
+      seenIds.add(template.id);
+      return true;
+    });
+  }, [customTemplates, templates]);
 
   const filteredTemplates = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const matches = templates.filter((t) => {
+    const matches = availableTemplates.filter((t) => {
       const matchCat = category === "All" || t.category === category;
       const matchQ = !q || [t.name, t.description, t.category].some((v) => v.toLowerCase().includes(q));
       const matchAspect = aspectRatio === "All" || t.aspectRatio === aspectRatio;
       const matchPack =
         templatePack === "all" ||
         (templatePack === "market" && isMarketTemplate(t)) ||
+        (templatePack === "custom" && isCustomVideoTemplate(t)) ||
         (templatePack === "featured" && FEATURED_IDS.has(t.id)) ||
         (templatePack === "favorites" && favoriteTemplateIds.has(t.id)) ||
-        (templatePack === "classic" && !isMarketTemplate(t));
+        (templatePack === "classic" && !isMarketTemplate(t) && !isCustomVideoTemplate(t));
       return matchCat && matchQ && matchAspect && matchPack;
     });
 
     return sortTemplates(matches, sortBy);
-  }, [aspectRatio, category, favoriteTemplateIds, query, sortBy, templatePack, templates]);
+  }, [aspectRatio, availableTemplates, category, favoriteTemplateIds, query, sortBy, templatePack]);
 
   const categoryOptions = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const t of templates) counts.set(t.category, (counts.get(t.category) ?? 0) + 1);
+    for (const t of availableTemplates) counts.set(t.category, (counts.get(t.category) ?? 0) + 1);
     const known = Object.keys(CATEGORY_META).filter((k) => k !== "All" && counts.has(k));
     const extra = Array.from(counts.keys()).filter((k) => !CATEGORY_META[k]);
     return [
-      { value: "All", label: "الكل", count: templates.length },
+      { value: "All", label: "الكل", count: availableTemplates.length },
       ...known.map((v) => ({ value: v, label: getCategoryMeta(v).label, count: counts.get(v) ?? 0 })),
       ...extra.map((v) => ({ value: v, label: v, count: counts.get(v) ?? 0 })),
     ];
-  }, [templates]);
+  }, [availableTemplates]);
 
   const aspectRatioOptions = useMemo(() => {
     const counts = new Map<VideoTemplate["aspectRatio"], number>();
-    templates.forEach((template) => counts.set(template.aspectRatio, (counts.get(template.aspectRatio) ?? 0) + 1));
+    availableTemplates.forEach((template) => counts.set(template.aspectRatio, (counts.get(template.aspectRatio) ?? 0) + 1));
     const order: VideoTemplate["aspectRatio"][] = ["9:16", "16:9", "1:1", "4:5"];
     return [
-      { value: "All" as const, label: "كل المقاسات", count: templates.length },
+      { value: "All" as const, label: "كل المقاسات", count: availableTemplates.length },
       ...order
         .filter((value) => counts.has(value))
         .map((value) => ({ value, label: value, count: counts.get(value) ?? 0 })),
     ];
-  }, [templates]);
+  }, [availableTemplates]);
 
   const packOptions = useMemo(
     () => [
-      { value: "all" as const, count: templates.length },
-      { value: "market" as const, count: templates.filter(isMarketTemplate).length },
-      { value: "featured" as const, count: templates.filter((template) => FEATURED_IDS.has(template.id)).length },
+      { value: "all" as const, count: availableTemplates.length },
+      { value: "market" as const, count: availableTemplates.filter(isMarketTemplate).length },
+      { value: "custom" as const, count: availableTemplates.filter(isCustomVideoTemplate).length },
+      { value: "featured" as const, count: availableTemplates.filter((template) => FEATURED_IDS.has(template.id)).length },
       { value: "favorites" as const, count: favoriteTemplateIds.size },
-      { value: "classic" as const, count: templates.filter((template) => !isMarketTemplate(template)).length },
+      { value: "classic" as const, count: availableTemplates.filter((template) => !isMarketTemplate(template) && !isCustomVideoTemplate(template)).length },
     ],
-    [favoriteTemplateIds.size, templates],
+    [availableTemplates, favoriteTemplateIds.size],
   );
 
   const hasActiveFilters = query || category !== "All" || aspectRatio !== "All" || templatePack !== "all" || sortBy !== "recommended";
 
   const marketplaceStats = useMemo(() => {
-    const sceneCount = templates.reduce((n, t) => n + t.scenes.length, 0);
-    const layerCount = templates.reduce((n, t) => n + countTemplateLayers(t), 0);
-    const inputCount = templates.reduce((n, t) => n + t.requiredInputs.length, 0);
-    const catCount   = new Set(templates.map((t) => t.category)).size;
+    const sceneCount = availableTemplates.reduce((n, t) => n + t.scenes.length, 0);
+    const layerCount = availableTemplates.reduce((n, t) => n + countTemplateLayers(t), 0);
+    const inputCount = availableTemplates.reduce((n, t) => n + t.requiredInputs.length, 0);
+    const catCount   = new Set(availableTemplates.map((t) => t.category)).size;
     return [
-      { label: "قالب جاهز",          value: templates.length, icon: Code2 },
+      { label: "قالب جاهز",          value: availableTemplates.length, icon: Code2 },
       { label: "فئة محتوى",          value: catCount,         icon: Tags },
       { label: "مشهد قابل للتعديل",  value: sceneCount,       icon: Film },
       { label: "طبقة ديناميكية",     value: layerCount,       icon: Layers3 },
       { label: "مدخل مخصص",          value: inputCount,       icon: Database },
     ];
-  }, [templates]);
+  }, [availableTemplates]);
 
   function openTemplateForm(template: VideoTemplate) {
     setSelectedTemplate(template);
