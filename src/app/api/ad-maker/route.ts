@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import type { AdCampaign } from "@/lib/ad-maker";
+import { generateStructuredJson, getAIProviderDisplayName, getMissingAIProviderMessage } from "@/lib/ai-provider";
 
 const adMakerSchema = z.object({
   productName: z.string().min(2).max(120),
@@ -89,26 +90,18 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json(
-      { error: "OPENAI_API_KEY غير مضاف في Vercel، لذلك لا يمكن توليد إعلان حقيقي." },
-      { status: 503 },
-    );
-  }
+  const missingProviderMessage = getMissingAIProviderMessage();
+  const system =
+    "You are Mawj Studio's senior creative strategist for Saudi and Arabic social video ads. Generate a practical ad package that can be applied directly to a browser video timeline. Use Arabic-first copy unless the requested language is English. Do not mention that you are an AI. Return valid JSON only.";
 
-  const model = process.env.OPENAI_MODEL ?? "gpt-5.4-mini";
-
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      instructions:
-        "You are Mawj Studio's senior creative strategist for Saudi and Arabic social video ads. Generate a practical ad package that can be applied directly to a browser video timeline. Use Arabic-first copy unless the requested language is English. Do not mention that you are an AI. Return valid JSON only.",
-      input: JSON.stringify({
+  try {
+    const result = await generateStructuredJson<AdCampaign>({
+      taskName: "mawj_ad_campaign",
+      schema: adCampaignSchema,
+      maxTokens: 2600,
+      openAIModel: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      system,
+      input: {
         request: parsed.data,
         requiredOutput:
           "Create three ad versions for 15s, 30s, and 60s. Each version needs timestamped scenes, captions, overlays, voiceover script, CTA, platform notes, brand directions, and hashtags. The scenes should use uploaded media names when useful.",
@@ -119,57 +112,31 @@ export async function POST(request: Request) {
           noRenderedUrls: true,
           applyToTimeline: true,
         },
-      }),
-      text: {
-        format: {
-          type: "json_schema",
-          name: "mawj_ad_campaign",
-          strict: true,
-          schema: adCampaignSchema,
-        },
       },
-    }),
-  });
+    });
 
-  if (!response.ok) {
+    if (!result) {
+      return NextResponse.json(
+        { error: missingProviderMessage },
+        { status: 503 },
+      );
+    }
+
+    const campaign = normalizeCampaign(result.data);
+
     return NextResponse.json(
-      { error: await response.text() },
-      { status: response.status },
+      {
+        campaign,
+        model: result.model,
+        provider: getAIProviderDisplayName(result.provider),
+      },
     );
-  }
-
-  const data = await response.json();
-  const text = extractResponseText(data);
-
-  if (!text) {
+  } catch (error) {
     return NextResponse.json(
-      { error: "OpenAI لم يرجع خطة إعلان قابلة للقراءة." },
+      { error: error instanceof Error ? error.message : "تعذر توليد حملة الإعلان." },
       { status: 502 },
     );
   }
-
-  const campaign = normalizeCampaign(JSON.parse(text) as AdCampaign);
-
-  return NextResponse.json({
-    campaign,
-    model,
-  });
-}
-
-function extractResponseText(data: unknown) {
-  if (typeof data !== "object" || !data) return null;
-
-  const withOutputText = data as { output_text?: string };
-  if (withOutputText.output_text) return withOutputText.output_text;
-
-  const withOutput = data as {
-    output?: Array<{ content?: Array<{ text?: string }> }>;
-  };
-
-  return withOutput.output
-    ?.flatMap((item) => item.content ?? [])
-    .map((item) => item.text)
-    .find(Boolean);
 }
 
 function normalizeCampaign(campaign: AdCampaign): AdCampaign {

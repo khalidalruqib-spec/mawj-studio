@@ -38,7 +38,7 @@ export type AICommandResponse = {
   engine: string;
   confidence: number;
   targetCut: string;
-  mode: "openai" | "local";
+  mode: "anthropic" | "openai" | "local";
   model?: string;
 };
 

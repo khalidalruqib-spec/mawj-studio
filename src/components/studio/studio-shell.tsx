@@ -2336,7 +2336,7 @@ export function ProfessionalVideoStudio() {
       setAdCampaign(campaign);
       setAdOutput(formatAdCampaign(campaign));
       applyAdCampaignToProject(campaign);
-      setProjectStatus(`AI Ad Maker generated and applied using ${data.model ?? "OpenAI"}`);
+      setProjectStatus(`AI Ad Maker generated and applied using ${data.provider ?? "AI"} ${data.model ?? ""}`.trim());
       setAssistantMessages((messages) => [
         createAssistantMessage(
           "assistant",

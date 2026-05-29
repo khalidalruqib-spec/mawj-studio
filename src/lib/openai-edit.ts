@@ -1,4 +1,5 @@
 import type { EditPlan, EditPlanRequest } from "@/lib/edit-plan";
+import { generateStructuredJson } from "@/lib/ai-provider";
 
 type AiEditPlan = Pick<
   EditPlan,
@@ -6,8 +7,6 @@ type AiEditPlan = Pick<
 >;
 
 export async function enhanceEditPlanWithOpenAI(plan: EditPlan, request: EditPlanRequest) {
-  if (!process.env.OPENAI_API_KEY) return plan;
-
   const schema = {
     type: "object",
     additionalProperties: false,
@@ -95,72 +94,35 @@ export async function enhanceEditPlanWithOpenAI(plan: EditPlan, request: EditPla
   };
 
   try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
-        instructions:
-          "You are the editing brain of Mawj Studio, a professional AI video editing platform for Arabic and Saudi creators. Return a precise edit plan in JSON only. Do not invent rendered URLs. Focus on hook, pacing, captions, safe mobile layout, and platform-specific exports.",
-        input: JSON.stringify({
-          request,
-          basePlan: plan,
-          constraints: {
-            keepAspectRatio: request.aspectRatio,
-            keepStyleId: request.styleId,
-            mobileFirst: true,
-            arabicCaptionsNeedReadableRTL: true,
-          },
-        }),
-        text: {
-          format: {
-            type: "json_schema",
-            name: "mawj_edit_plan",
-            strict: true,
-            schema,
-          },
+    const result = await generateStructuredJson<AiEditPlan>({
+      taskName: "mawj_edit_plan",
+      schema,
+      openAIModel: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      maxTokens: 2200,
+      system:
+        "You are the editing brain of Mawj Studio, a professional AI video editing platform for Arabic and Saudi creators. Return a precise edit plan as JSON only. Do not invent rendered URLs. Focus on hook, pacing, captions, safe mobile layout, and platform-specific exports.",
+      input: {
+        request,
+        basePlan: plan,
+        constraints: {
+          keepAspectRatio: request.aspectRatio,
+          keepStyleId: request.styleId,
+          mobileFirst: true,
+          arabicCaptionsNeedReadableRTL: true,
         },
-      }),
+      },
     });
 
-    if (!response.ok) {
-      console.warn("OpenAI edit plan enhancement failed:", await response.text());
-      return plan;
-    }
-
-    const data = await response.json();
-    const text = extractResponseText(data);
-    if (!text) return plan;
-
-    const aiPlan = JSON.parse(text) as AiEditPlan;
+    if (!result) return plan;
 
     return {
       ...plan,
-      ...aiPlan,
+      ...result.data,
       styleId: request.styleId,
       renderSettings: plan.renderSettings,
     };
   } catch (error) {
-    console.warn("OpenAI edit plan enhancement error:", error);
+    console.warn("AI edit plan enhancement error:", error);
     return plan;
   }
-}
-
-function extractResponseText(data: unknown) {
-  if (typeof data !== "object" || !data) return null;
-
-  const withOutputText = data as { output_text?: string };
-  if (withOutputText.output_text) return withOutputText.output_text;
-
-  const withOutput = data as {
-    output?: Array<{ content?: Array<{ text?: string }> }>;
-  };
-
-  return withOutput.output
-    ?.flatMap((item) => item.content ?? [])
-    .map((item) => item.text)
-    .find(Boolean);
 }

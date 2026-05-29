@@ -261,6 +261,7 @@ export type TranscribeStatusResponse = {
 export type AdMakerResponse = {
   campaign?: AdCampaign;
   model?: string;
+  provider?: string;
   error?: string;
 };
 

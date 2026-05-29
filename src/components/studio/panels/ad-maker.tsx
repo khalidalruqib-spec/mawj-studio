@@ -68,7 +68,7 @@ export function AdMakerPanel({
           </pre>
         </div>
       ) : (
-        <EmptyMini label="Uses OpenAI to create 15s, 30s, and 60s ad scripts, captions, scenes, CTA, hashtags, then applies the 30s version to the timeline." />
+        <EmptyMini label="Uses Claude or OpenAI to create 15s, 30s, and 60s ad scripts, captions, scenes, CTA, hashtags, then applies the 30s version to the timeline." />
       )}
     </section>
   );

@@ -5,6 +5,7 @@ import {
   type AICommandContext,
   type AICommandResponse,
 } from "@/lib/ai-command";
+import { generateStructuredJson, getAIProviderEngineLabel } from "@/lib/ai-provider";
 
 const aiCommandSchema = {
   type: "object",
@@ -47,84 +48,43 @@ export async function POST(request: Request) {
   }
 
   const localResponse = resolveLocalAICommand(message, context);
-  const openAIResponse = await enhanceCommandWithOpenAI(message, context, localResponse);
+  const aiResponse = await enhanceCommandWithAI(message, context, localResponse);
 
-  return NextResponse.json(openAIResponse ?? localResponse);
+  return NextResponse.json(aiResponse ?? localResponse);
 }
 
-async function enhanceCommandWithOpenAI(
+async function enhanceCommandWithAI(
   message: string,
   context: AICommandContext,
   localResponse: AICommandResponse,
 ): Promise<AICommandResponse | null> {
-  if (!process.env.OPENAI_API_KEY) return null;
-
-  const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
-
   try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
+    const result = await generateStructuredJson<Pick<AICommandResponse, "message" | "actions" | "confidence" | "targetCut">>({
+      taskName: "mawj_ai_command",
+      schema: aiCommandSchema,
+      maxTokens: 1400,
+      openAIModel: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      system:
+        "You are the command brain inside Mawj Studio, a professional AI video editor for Arabic and Saudi creators. Convert the user's natural-language editing request into safe executable editor actions. If the context has uploaded images but no video and the user asks to make/create/generate a video, choose CREATE_IMAGE_STORYBOARD. Prefer Arabic user-facing messages. Never claim that final rendering happened unless an action only prepares it. Return valid JSON only.",
+      input: {
+        userCommand: message,
+        editorContext: context,
+        availableActions: AI_COMMAND_ACTION_TYPES,
+        localFallback: localResponse,
       },
-      body: JSON.stringify({
-        model,
-        instructions:
-          "You are the command brain inside Mawj Studio, a professional AI video editor for Arabic and Saudi creators. Convert the user's natural-language editing request into safe executable editor actions. If the context has uploaded images but no video and the user asks to make/create/generate a video, choose CREATE_IMAGE_STORYBOARD. Prefer Arabic user-facing messages. Never claim that final rendering happened unless an action only prepares it. Return valid JSON only.",
-        input: JSON.stringify({
-          userCommand: message,
-          editorContext: context,
-          availableActions: AI_COMMAND_ACTION_TYPES,
-          localFallback: localResponse,
-        }),
-        text: {
-          format: {
-            type: "json_schema",
-            name: "mawj_ai_command",
-            strict: true,
-            schema: aiCommandSchema,
-          },
-        },
-      }),
     });
 
-    if (!response.ok) {
-      console.warn("OpenAI AI command failed:", await response.text());
-      return null;
-    }
-
-    const data = await response.json();
-    const output = extractResponseText(data);
-    if (!output) return null;
-
-    const parsed = JSON.parse(output) as Pick<AICommandResponse, "message" | "actions" | "confidence" | "targetCut">;
+    if (!result) return null;
 
     return {
-      ...parsed,
-      engine: "OpenAI command engine",
-      confidence: Math.max(0, Math.min(100, Math.round(parsed.confidence))),
-      mode: "openai",
-      model,
+      ...result.data,
+      engine: getAIProviderEngineLabel(result.provider),
+      confidence: Math.max(0, Math.min(100, Math.round(result.data.confidence))),
+      mode: result.provider,
+      model: result.model,
     };
   } catch (error) {
-    console.warn("OpenAI AI command error:", error);
+    console.warn("AI command enhancement error:", error);
     return null;
   }
-}
-
-function extractResponseText(data: unknown) {
-  if (typeof data !== "object" || !data) return null;
-
-  const withOutputText = data as { output_text?: string };
-  if (withOutputText.output_text) return withOutputText.output_text;
-
-  const withOutput = data as {
-    output?: Array<{ content?: Array<{ text?: string }> }>;
-  };
-
-  return withOutput.output
-    ?.flatMap((item) => item.content ?? [])
-    .map((item) => item.text)
-    .find(Boolean);
 }

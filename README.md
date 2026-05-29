@@ -14,7 +14,7 @@ Mawj Studio is a professional AI video editing platform for short-form content. 
 - Supabase Storage signed upload URL flow for source videos
 - Editing styles for Saudi viral clips, premium brand films, podcasts, products, education, and restaurants
 - `/api/edit-plan` route with local deterministic fallback
-- OpenAI Responses API enhancement when `OPENAI_API_KEY` is available
+- Claude or OpenAI structured AI enhancement for edit plans, AI commands, and Ad Maker
 - Optional Python/FastAPI AI processing service for heavier Arabic Whisper captions
 - Professional editor UI with settings, timeline, caption script, tool stack, and export variants
 
@@ -32,8 +32,11 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```bash
 OPENAI_API_KEY=
-OPENAI_MODEL=gpt-5.4-mini
+OPENAI_MODEL=gpt-4o-mini
 OPENAI_TRANSCRIBE_MODEL=gpt-4o-mini-transcribe
+
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-sonnet-4-20250514
 
 PYTHON_AI_SERVICE_URL=
 PYTHON_AI_SERVICE_TOKEN=
@@ -48,7 +51,7 @@ VIDEO_STORAGE_PROVIDER=supabase
 VIDEO_WORKER_QUEUE=demo
 ```
 
-Without `OPENAI_API_KEY`, the platform still generates a demo edit plan. With the key, the API asks OpenAI to enhance the edit plan using structured JSON output.
+Without `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, the platform still generates a deterministic local edit plan. When both are available, Mawj prefers Claude for edit planning, AI commands, and Ad Maker, then falls back to OpenAI. Automatic captions still use the Python Whisper service first, then OpenAI transcription, then demo captions.
 
 For automatic captions, the app uses this order:
 
