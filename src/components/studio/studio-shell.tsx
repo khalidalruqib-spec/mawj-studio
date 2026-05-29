@@ -19,6 +19,7 @@ import {
   LayoutTemplate,
   Loader2,
   Lock,
+  Megaphone,
   Plus,
   Redo2,
   Save,
@@ -1616,6 +1617,7 @@ export function ProfessionalVideoStudio() {
     const shapeLayer = createManualShapeLayer({
       start: Math.max(0, roundTime(previewTime)),
       aspectRatio,
+      brandColor: brandKit.primaryColor,
     });
     const targetTrack =
       timelineTracks.find((track) => track.kind === "overlay" || track.kind === "shape") ??
@@ -1643,6 +1645,41 @@ export function ProfessionalVideoStudio() {
     setSelectedLayerId(shapeLayer.id);
     selectEngineLayer(shapeLayer.id);
     setProjectStatus("Editable shape layer added and selected");
+  }
+
+  function addCtaLayerGroup() {
+    const ctaLayers = createManualCtaLayers({
+      start: Math.max(0, roundTime(previewTime)),
+      aspectRatio,
+      brandColor: brandKit.primaryColor,
+    });
+    const textLayer = ctaLayers.find((layer) => layer.type === "text") ?? ctaLayers[ctaLayers.length - 1];
+    const targetTrack =
+      timelineTracks.find((track) => track.kind === "overlay" || track.kind === "shape") ??
+      timelineTracks.find((track) => track.kind === "text" || track.kind === "image");
+    const nextTracks = targetTrack
+      ? timelineTracks.map((track) =>
+          track.id === targetTrack.id
+            ? {
+                ...track,
+                layers: [...track.layers, ...ctaLayers],
+              }
+            : track,
+        )
+      : [
+          ...timelineTracks,
+          {
+            id: `track-cta-${crypto.randomUUID().slice(0, 8)}`,
+            name: "CTA",
+            kind: "overlay" as const,
+            layers: ctaLayers,
+          },
+        ];
+
+    commitTimeline(nextTracks);
+    setSelectedLayerId(textLayer.id);
+    selectEngineLayer(textLayer.id);
+    setProjectStatus("Editable CTA button added and selected");
   }
 
   function duplicateSelectedLayer() {
@@ -2641,6 +2678,7 @@ export function ProfessionalVideoStudio() {
                     <ToolbarButton label="Merge" icon={Layers3} onClick={mergeVideoLayers} />
                     <ToolbarButton label="Text" icon={Type} onClick={addTextLayer} />
                     <ToolbarButton label="Shape" icon={Square} onClick={addShapeLayer} />
+                    <ToolbarButton label="CTA" icon={Megaphone} onClick={addCtaLayerGroup} />
                     <ToolbarButton
                       label="Duplicate"
                       icon={Copy}
@@ -3289,11 +3327,14 @@ function getManualTextLayerBox(aspectRatio: AspectRatio) {
 function createManualShapeLayer({
   start,
   aspectRatio,
+  brandColor,
 }: {
   start: number;
   aspectRatio: AspectRatio;
+  brandColor?: string;
 }): TimelineLayer {
   const box = getManualShapeLayerBox(aspectRatio);
+  const color = normalizeHexColor(brandColor ?? "#8ef7c2");
 
   return {
     id: `shape-${crypto.randomUUID()}`,
@@ -3301,8 +3342,8 @@ function createManualShapeLayer({
     name: "CTA badge shape",
     start,
     duration: 5,
-    color: "#8ef7c2",
-    backgroundColor: "#8ef7c2",
+    color,
+    backgroundColor: color,
     borderRadius: aspectRatio === "16:9" ? 32 : 42,
     opacity: 0.86,
     ...box,
@@ -3319,6 +3360,56 @@ function getManualShapeLayerBox(aspectRatio: AspectRatio) {
   }
 
   return { x: 140, y: 1420, width: 800, height: 150 };
+}
+
+function createManualCtaLayers({
+  start,
+  aspectRatio,
+  brandColor,
+}: {
+  start: number;
+  aspectRatio: AspectRatio;
+  brandColor?: string;
+}): TimelineLayer[] {
+  const shapeBox = getManualShapeLayerBox(aspectRatio);
+  const color = normalizeHexColor(brandColor ?? "#8ef7c2");
+  const textInset = aspectRatio === "16:9" ? 34 : 42;
+  const textLayer: TimelineLayer = {
+    id: `cta-text-${crypto.randomUUID()}`,
+    type: "text",
+    name: "اطلب الآن",
+    content: "اطلب الآن",
+    start,
+    duration: 5,
+    color: "#050608",
+    textColor: "#050608",
+    fontFamily: TEMPLATE_FONT_PRESETS[1].cssStack,
+    fontSize: aspectRatio === "16:9" ? 58 : 68,
+    fontWeight: "900",
+    align: "center",
+    direction: "auto",
+    backgroundColor: "transparent",
+    borderRadius: 0,
+    opacity: 1,
+    x: shapeBox.x + textInset,
+    y: shapeBox.y + Math.round(textInset * 0.52),
+    width: shapeBox.width - textInset * 2,
+    height: shapeBox.height - textInset,
+  };
+  const shapeLayer: TimelineLayer = {
+    id: `cta-shape-${crypto.randomUUID()}`,
+    type: "shape",
+    name: "CTA button background",
+    start,
+    duration: 5,
+    color,
+    backgroundColor: color,
+    borderRadius: aspectRatio === "16:9" ? 34 : 46,
+    opacity: 0.92,
+    ...shapeBox,
+  };
+
+  return [shapeLayer, textLayer];
 }
 
 function duplicateTimelineLayer(layer: TimelineLayer, aspectRatio: AspectRatio): TimelineLayer {
