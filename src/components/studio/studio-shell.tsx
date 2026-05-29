@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Captions,
   Cloud,
+  Copy,
   Crop,
   Download,
   FolderOpen,
@@ -491,6 +492,54 @@ export function ProfessionalVideoStudio() {
 
     updateEngineLayer(layerId, editorLayerPatchToVideoLayerPatch(patch));
   }
+
+  useEffect(() => {
+    function handleEditorKeyDown(event: KeyboardEvent) {
+      if (activePanel !== "editor" || isEditableKeyboardTarget(event.target)) return;
+
+      const key = event.key.toLowerCase();
+      const commandPressed = event.metaKey || event.ctrlKey;
+
+      if (commandPressed && key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) {
+          redoTimeline();
+        } else {
+          undoTimeline();
+        }
+        return;
+      }
+
+      if (commandPressed && key === "d") {
+        event.preventDefault();
+        duplicateSelectedLayer();
+        return;
+      }
+
+      if ((event.key === "Delete" || event.key === "Backspace") && selectedLayer) {
+        event.preventDefault();
+        deleteSelectedLayer();
+        return;
+      }
+
+      const nudgeAmount = event.shiftKey ? 10 : 1;
+      const movement: Record<string, { x: number; y: number } | undefined> = {
+        ArrowLeft: { x: -nudgeAmount, y: 0 },
+        ArrowRight: { x: nudgeAmount, y: 0 },
+        ArrowUp: { x: 0, y: -nudgeAmount },
+        ArrowDown: { x: 0, y: nudgeAmount },
+      };
+      const delta = movement[event.key];
+
+      if (delta) {
+        event.preventDefault();
+        nudgeSelectedLayer(delta.x, delta.y);
+      }
+    }
+
+    window.addEventListener("keydown", handleEditorKeyDown);
+    return () => window.removeEventListener("keydown", handleEditorKeyDown);
+  });
 
   const applyTemplateProject = useCallback((
     project: TemplateProject,
@@ -1424,6 +1473,45 @@ export function ProfessionalVideoStudio() {
     setProjectStatus("Editable text layer added and selected");
   }
 
+  function duplicateSelectedLayer() {
+    if (!selectedLayer || !isDuplicableEditorLayer(selectedLayer)) {
+      setProjectStatus("Select a text, image, shape, or caption layer to duplicate");
+      return;
+    }
+
+    const duplicate = duplicateTimelineLayer(selectedLayer, aspectRatio);
+    const nextTracks = timelineTracks.map((track) => {
+      const layerIndex = track.layers.findIndex((layer) => layer.id === selectedLayer.id);
+      if (layerIndex === -1) return track;
+
+      return {
+        ...track,
+        layers: [
+          ...track.layers.slice(0, layerIndex + 1),
+          duplicate,
+          ...track.layers.slice(layerIndex + 1),
+        ],
+      };
+    });
+
+    commitTimeline(nextTracks);
+    setSelectedLayerId(duplicate.id);
+    selectEngineLayer(duplicate.id);
+    setProjectStatus(`${selectedLayer.name} duplicated`);
+  }
+
+  function nudgeSelectedLayer(deltaX: number, deltaY: number) {
+    if (!selectedLayer || !isPositionableEditorLayer(selectedLayer)) return;
+
+    const dimensions = getTemplateDimensions(aspectRatio);
+    const width = selectedLayer.width ?? dimensions.width;
+    const height = selectedLayer.height ?? Math.max(120, dimensions.height * 0.08);
+    const nextX = clampNumber((selectedLayer.x ?? 0) + deltaX, 0, Math.max(0, dimensions.width - width));
+    const nextY = clampNumber((selectedLayer.y ?? 0) + deltaY, 0, Math.max(0, dimensions.height - height));
+
+    updateTimelineLayer(selectedLayer.id, { x: nextX, y: nextY });
+  }
+
   function markTranscriptDeleted(segmentId: string) {
     const segment = transcript.find((item) => item.id === segmentId);
     setTranscript((items) =>
@@ -2255,6 +2343,12 @@ export function ProfessionalVideoStudio() {
                     <ToolbarButton label="Split" icon={Crop} onClick={splitSelectedLayer} />
                     <ToolbarButton label="Merge" icon={Layers3} onClick={mergeVideoLayers} />
                     <ToolbarButton label="Text" icon={Type} onClick={addTextLayer} />
+                    <ToolbarButton
+                      label="Duplicate"
+                      icon={Copy}
+                      onClick={duplicateSelectedLayer}
+                      disabled={!isDuplicableEditorLayer(selectedLayer)}
+                    />
                     <ToolbarButton label="Update" icon={Save} onClick={saveProjectSnapshot} />
                     <ToolbarButton
                       label={selectedLayer ? "Delete" : "Clear"}
@@ -2855,6 +2949,37 @@ function getManualTextLayerBox(aspectRatio: AspectRatio) {
   return { x: 70, y: 1280, width: 940, height: 190 };
 }
 
+function duplicateTimelineLayer(layer: TimelineLayer, aspectRatio: AspectRatio): TimelineLayer {
+  const dimensions = getTemplateDimensions(aspectRatio);
+  const width = layer.width ?? (layer.type === "image" ? dimensions.width * 0.45 : dimensions.width * 0.82);
+  const height = layer.height ?? (layer.type === "image" ? dimensions.height * 0.28 : dimensions.height * 0.1);
+  const offset = aspectRatio === "16:9" ? 42 : 56;
+
+  return {
+    ...layer,
+    id: `${layer.type}-${crypto.randomUUID()}`,
+    name: `${layer.name} copy`,
+    x: clampNumber((layer.x ?? 0) + offset, 0, Math.max(0, dimensions.width - width)),
+    y: clampNumber((layer.y ?? 0) + offset, 0, Math.max(0, dimensions.height - height)),
+    width,
+    height,
+  };
+}
+
+function isPositionableEditorLayer(layer: TimelineLayer | null) {
+  return Boolean(
+    layer &&
+      (layer.type === "text" ||
+        layer.type === "caption" ||
+        layer.type === "image" ||
+        layer.type === "shape"),
+  );
+}
+
+function isDuplicableEditorLayer(layer: TimelineLayer | null) {
+  return isPositionableEditorLayer(layer);
+}
+
 function createImageStoryboardTemplateProject({
   assets,
   plan,
@@ -3045,6 +3170,21 @@ function getStoryboardSafeMargins(aspectRatio: AspectRatio) {
 
 function roundTime(seconds: number) {
   return Math.round(seconds * 100) / 100;
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function isEditableKeyboardTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName.toLowerCase();
+  return (
+    target.isContentEditable ||
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select"
+  );
 }
 
 function createTimelineForAssets(assets: MediaAsset[], primaryVideoAssetId: string): TimelineTrack[] {
