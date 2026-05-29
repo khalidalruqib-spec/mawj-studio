@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createRenderJob, listRenderJobs } from "@/lib/render-jobs";
+import { createRenderJob, getRenderCapabilities, listRenderJobs } from "@/lib/render-jobs";
 
 const renderJobSchema = z.object({
   projectId: z.string().optional(),
@@ -14,7 +14,10 @@ const renderJobSchema = z.object({
 });
 
 export async function GET() {
-  return NextResponse.json({ jobs: listRenderJobs() });
+  return NextResponse.json({
+    capabilities: getRenderCapabilities(),
+    jobs: listRenderJobs(),
+  });
 }
 
 export async function POST(request: Request) {
@@ -26,5 +29,11 @@ export async function POST(request: Request) {
   }
 
   const job = createRenderJob(parsed.data);
-  return NextResponse.json({ job }, { status: 202 });
+  return NextResponse.json(
+    {
+      capabilities: getRenderCapabilities(),
+      job,
+    },
+    { status: 202 },
+  );
 }

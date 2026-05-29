@@ -1,7 +1,7 @@
 import { Download, Loader2, MonitorUp } from "lucide-react";
 import type { BrowserRenderProgress, BrowserRenderResult } from "@/lib/browser-video-renderer";
 import type { AspectRatio } from "@/lib/video-styles";
-import { EXPORT_TIERS } from "../foundation";
+import { EXPORT_TIERS, type RenderCapabilities } from "../foundation";
 import { PanelHeading, SmallSetting } from "../ui";
 import { formatDuration } from "../utils";
 
@@ -10,6 +10,7 @@ export function ExportsPanel({
   format,
   renderResult,
   renderProgress,
+  renderCapabilities,
   isRendering,
   aspectRatio,
   onTierChange,
@@ -21,6 +22,7 @@ export function ExportsPanel({
   format: string;
   renderResult: BrowserRenderResult | null;
   renderProgress: BrowserRenderProgress | null;
+  renderCapabilities: RenderCapabilities | null;
   isRendering: boolean;
   aspectRatio: AspectRatio;
   onTierChange: (tier: string) => void;
@@ -31,6 +33,35 @@ export function ExportsPanel({
   return (
     <section className="panel p-4">
       <PanelHeading icon={MonitorUp} title="Export center" />
+      <div
+        className={`mb-3 rounded-lg border p-3 ${
+          renderCapabilities?.serverRenderAvailable
+            ? "border-[var(--brand)] bg-[var(--brand-soft)]"
+            : "border-amber-400/30 bg-amber-400/10"
+        }`}
+      >
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-xs font-black text-[var(--foreground)]">Render engine</p>
+          <span className="rounded-full border border-[var(--line)] bg-black/20 px-2 py-1 text-[10px] font-black uppercase text-[var(--muted)]">
+            {renderCapabilities?.mode ?? "checking"}
+          </span>
+        </div>
+        <p className="text-xs font-black text-[var(--foreground)]">
+          {renderCapabilities ? formatRenderEngine(renderCapabilities.preferredEngine) : "Checking render pipeline..."}
+        </p>
+        <p className="mt-1 text-[11px] font-semibold leading-5 text-[var(--muted)]">
+          {renderCapabilities?.serverRenderAvailable
+            ? "Cloud/server rendering is configured for production exports."
+            : "Current exports use the browser renderer. This is useful for testing, but Remotion/worker rendering is the production path for high-quality MP4."}
+        </p>
+        {renderCapabilities?.nextSteps.length ? (
+          <ul className="mt-2 space-y-1 text-[11px] font-semibold leading-5 text-amber-200">
+            {renderCapabilities.nextSteps.slice(0, 2).map((step) => (
+              <li key={step}>- {step}</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
       <div className="mb-3 grid grid-cols-3 gap-2">
         {EXPORT_TIERS.map((item) => (
           <button
@@ -109,4 +140,10 @@ export function ExportsPanel({
       ) : null}
     </section>
   );
+}
+
+function formatRenderEngine(engine: RenderCapabilities["preferredEngine"]) {
+  if (engine === "remotion-worker") return "Remotion Worker";
+  if (engine === "ffmpeg-worker") return "FFmpeg Worker";
+  return "Browser Canvas Renderer";
 }

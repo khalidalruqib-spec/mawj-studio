@@ -116,6 +116,7 @@ import type {
   Goal,
   MediaAsset,
   PanelId,
+  RenderCapabilities,
   StudioFile,
   TemplatePreset,
   TimelineLayer,
@@ -217,6 +218,7 @@ export function ProfessionalVideoStudio() {
   const [previewTime, setPreviewTime] = useState(0);
   const [renderProgress, setRenderProgress] = useState<BrowserRenderProgress | null>(null);
   const [renderResult, setRenderResult] = useState<BrowserRenderResult | null>(null);
+  const [renderCapabilities, setRenderCapabilities] = useState<RenderCapabilities | null>(null);
   const [error, setError] = useState("");
   const [projectStatus, setProjectStatus] = useState("Autosave ready");
   const engineProject = useVideoProjectStore((state) => state.currentProject);
@@ -321,6 +323,26 @@ export function ProfessionalVideoStudio() {
   );
 
   const displayedEngineState = assistantEngineState ?? computedEngineState;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRenderCapabilities() {
+      try {
+        const response = await fetch("/api/render-jobs", { method: "GET" });
+        const data = (await response.json()) as { capabilities?: RenderCapabilities };
+        if (!cancelled) setRenderCapabilities(data.capabilities ?? null);
+      } catch {
+        if (!cancelled) setRenderCapabilities(null);
+      }
+    }
+
+    void loadRenderCapabilities();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (useVideoProjectStore.getState().currentProject) return;
@@ -1422,6 +1444,43 @@ export function ProfessionalVideoStudio() {
     selectEngineLayer(layerId);
   }
 
+  async function prepareRenderJobForExport() {
+    try {
+      const response = await fetch("/api/render-jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: activeProject?.id,
+          sourcePath: activeProject?.storagePath ?? undefined,
+          format: mapExportFormatForJob(exportFormat),
+          quality: mapExportTierForJob(exportTier),
+          aspectRatio,
+          burnCaptions: captions.length > 0,
+          removeBackground: hasBackgroundReplacementEffect(timelineTracks),
+          audioEnhancement: Object.entries(activeAudioTools)
+            .filter(([, enabled]) => enabled)
+            .map(([name]) => name),
+        }),
+      });
+
+      const data = (await response.json()) as {
+        capabilities?: RenderCapabilities;
+        job?: { id: string; mode: string; engine: string };
+      };
+
+      setRenderCapabilities((current) => data.capabilities ?? current);
+      if (response.ok && data.job) {
+        setProjectStatus(
+          data.job.mode === "production"
+            ? `Render job ${data.job.id.slice(0, 8)} queued on ${data.job.engine}`
+            : `Browser export prepared; render job ${data.job.id.slice(0, 8)} is tracking the local export`,
+        );
+      }
+    } catch {
+      setProjectStatus("Browser export continuing without render job tracking");
+    }
+  }
+
   async function renderVideo() {
     if (!studioFile && !templateProject) {
       setError("Upload a source video or generate an image storyboard first.");
@@ -1441,6 +1500,7 @@ export function ProfessionalVideoStudio() {
       setProjectStatus("Rendering template export...");
 
       try {
+        await prepareRenderJobForExport();
         const result = await renderTemplateProject({
           project: templateProject,
           onProgress: setRenderProgress,
@@ -1488,6 +1548,7 @@ export function ProfessionalVideoStudio() {
     setProjectStatus("Rendering export...");
 
     try {
+      await prepareRenderJobForExport();
       const result = await renderEditedVideo({
         sourceFile: studioFile.file,
         sourceUrl: studioFile.url,
@@ -3060,6 +3121,7 @@ export function ProfessionalVideoStudio() {
           format={exportFormat}
           renderResult={renderResult}
           renderProgress={renderProgress}
+          renderCapabilities={renderCapabilities}
           isRendering={isRendering}
           aspectRatio={aspectRatio}
           onTierChange={setExportTier}
@@ -4742,6 +4804,26 @@ function cleanOpenAIError(message: string) {
   }
 
   return message.replace(/sk-[A-Za-z0-9_-]+/g, "sk-***");
+}
+
+function mapExportFormatForJob(format: string) {
+  if (format === "GIF") return "gif";
+  if (format === "MP3") return "mp3";
+  if (format === "SRT") return "srt";
+  if (format === "Thumbnail") return "thumbnail";
+  return "mp4";
+}
+
+function mapExportTierForJob(tier: string) {
+  if (tier === "Free") return "720p";
+  if (tier === "Pro") return "4k";
+  return "1080p";
+}
+
+function hasBackgroundReplacementEffect(tracks: TimelineTrack[]) {
+  return tracks.some((track) =>
+    track.layers.some((layer) => layer.type === "effect" && layer.name.startsWith("Background replacement")),
+  );
 }
 
 function editorLayerToTemplateTimelineLayer(

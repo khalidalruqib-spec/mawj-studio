@@ -48,7 +48,9 @@ SUPABASE_SERVICE_ROLE_KEY=
 SUPABASE_VIDEO_BUCKET=mawj-source-videos
 
 VIDEO_STORAGE_PROVIDER=supabase
+VIDEO_RENDER_ENGINE=browser-canvas
 VIDEO_WORKER_QUEUE=demo
+RENDER_OUTPUT_BUCKET=
 ```
 
 Without `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, the platform still generates a deterministic local edit plan. When both are available, Mawj prefers Claude for edit planning, AI commands, and Ad Maker, then falls back to OpenAI. Automatic captions still use the Python Whisper service first, then OpenAI transcription, then demo captions.
@@ -60,6 +62,8 @@ For automatic captions, the app uses this order:
 3. Demo captions when no transcription provider is configured.
 
 Without Supabase variables, projects use an in-memory local fallback. To enable real persistence and source video uploads, run the migration in `supabase/migrations/202605250001_projects_and_video_storage.sql` and set the Supabase environment variables above.
+
+The Export Center reads `/api/render-jobs` to show the active render pipeline. The current default is `VIDEO_RENDER_ENGINE=browser-canvas`, which keeps local browser exports working. For production Remotion/cloud exports, deploy a worker, set `VIDEO_RENDER_ENGINE=remotion-worker`, configure `VIDEO_WORKER_QUEUE`, and provide `RENDER_OUTPUT_BUCKET` storage for generated MP4 files.
 
 ## Optional Python AI Service
 

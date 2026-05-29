@@ -1,6 +1,8 @@
 import type { AspectRatio } from "@/lib/video-styles";
 
 export type RenderJobStatus = "queued" | "running" | "completed" | "failed";
+export type RenderEngine = "browser-canvas" | "remotion-worker" | "ffmpeg-worker";
+export type RenderMode = "demo" | "production";
 
 export type RenderJobInput = {
   projectId?: string;
@@ -16,13 +18,27 @@ export type RenderJobInput = {
 export type RenderJob = {
   id: string;
   status: RenderJobStatus;
+  engine: RenderEngine;
+  mode: RenderMode;
   input: RenderJobInput;
   ffmpegPlan: string[];
   progress: number;
   outputUrl: string | null;
   errorMessage: string | null;
+  warnings: string[];
   createdAt: string;
   updatedAt: string;
+};
+
+export type RenderCapabilities = {
+  preferredEngine: RenderEngine;
+  mode: RenderMode;
+  browserFallbackAvailable: boolean;
+  serverRenderAvailable: boolean;
+  queueConfigured: boolean;
+  outputStorageConfigured: boolean;
+  warnings: string[];
+  nextSteps: string[];
 };
 
 const renderJobs = new Map<string, RenderJob>();
@@ -33,20 +49,65 @@ export function listRenderJobs() {
 
 export function createRenderJob(input: RenderJobInput) {
   const now = new Date().toISOString();
+  const capabilities = getRenderCapabilities();
   const job: RenderJob = {
     id: crypto.randomUUID(),
     status: "queued",
+    engine: capabilities.preferredEngine,
+    mode: capabilities.mode,
     input,
     ffmpegPlan: buildFfmpegPlan(input),
     progress: 0,
     outputUrl: null,
     errorMessage: null,
+    warnings: capabilities.warnings,
     createdAt: now,
     updatedAt: now,
   };
 
   renderJobs.set(job.id, job);
   return job;
+}
+
+export function getRenderCapabilities(): RenderCapabilities {
+  const preferredEngine = normalizeRenderEngine(process.env.VIDEO_RENDER_ENGINE);
+  const queueConfigured = Boolean(process.env.VIDEO_WORKER_QUEUE && process.env.VIDEO_WORKER_QUEUE !== "demo");
+  const outputStorageConfigured = Boolean(process.env.RENDER_OUTPUT_BUCKET);
+  const serverRenderAvailable = preferredEngine !== "browser-canvas" && queueConfigured && outputStorageConfigured;
+  const warnings: string[] = [];
+  const nextSteps: string[] = [];
+
+  if (!serverRenderAvailable) {
+    warnings.push("Final exports currently use the browser canvas renderer. It works for previews and short clips, but it is not the production Remotion/cloud path yet.");
+  }
+
+  if (preferredEngine === "browser-canvas") {
+    nextSteps.push("Set VIDEO_RENDER_ENGINE=remotion-worker when the Remotion worker is deployed.");
+  }
+
+  if (!queueConfigured) {
+    nextSteps.push("Connect VIDEO_WORKER_QUEUE to a real queue such as BullMQ, Redis, Temporal, or a render worker endpoint.");
+  }
+
+  if (!outputStorageConfigured) {
+    nextSteps.push("Configure RENDER_OUTPUT_BUCKET or Supabase/R2/S3 storage for final MP4 download URLs.");
+  }
+
+  return {
+    preferredEngine,
+    mode: serverRenderAvailable ? "production" : "demo",
+    browserFallbackAvailable: true,
+    serverRenderAvailable,
+    queueConfigured,
+    outputStorageConfigured,
+    warnings,
+    nextSteps,
+  };
+}
+
+function normalizeRenderEngine(value: string | undefined): RenderEngine {
+  if (value === "remotion-worker" || value === "ffmpeg-worker" || value === "browser-canvas") return value;
+  return "browser-canvas";
 }
 
 function buildFfmpegPlan(input: RenderJobInput) {

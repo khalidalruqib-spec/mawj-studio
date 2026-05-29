@@ -265,6 +265,17 @@ export type AdMakerResponse = {
   error?: string;
 };
 
+export type RenderCapabilities = {
+  preferredEngine: "browser-canvas" | "remotion-worker" | "ffmpeg-worker";
+  mode: "demo" | "production";
+  browserFallbackAvailable: boolean;
+  serverRenderAvailable: boolean;
+  queueConfigured: boolean;
+  outputStorageConfigured: boolean;
+  warnings: string[];
+  nextSteps: string[];
+};
+
 export const GOAL_LABELS: Record<Goal, string> = {
   engagement: "Engagement / تفاعل",
   sales: "Sales / مبيعات",
