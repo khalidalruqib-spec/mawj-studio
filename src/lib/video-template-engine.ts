@@ -1,3 +1,8 @@
+import {
+  TEMPLATE_FONT_PRESET_INPUT_KEY,
+  resolveLayerFontFamily,
+} from "@/lib/template-typography";
+
 export type TemplateInputType =
   | "text"
   | "textarea"
@@ -231,7 +236,7 @@ export function hydrateTemplate(
   userInputs: TemplateUserInputs,
 ): VideoTemplate {
   const inputs = buildTemplateInputs(template, userInputs);
-  return replacePlaceholders(template, inputs) as VideoTemplate;
+  return applyTypographyPreset(replacePlaceholders(template, inputs) as VideoTemplate, inputs);
 }
 
 export function createProjectFromTemplate(
@@ -335,7 +340,27 @@ export function buildTemplateInputs(
   return template.requiredInputs.reduce<TemplateUserInputs>((inputs, input) => {
     inputs[input.key] = userInputs[input.key] ?? input.default ?? getDemoMediaDefault(template, input) ?? "";
     return inputs;
-  }, {});
+  }, { ...userInputs });
+}
+
+function applyTypographyPreset(template: VideoTemplate, inputs: TemplateUserInputs): VideoTemplate {
+  const presetId = inputs[TEMPLATE_FONT_PRESET_INPUT_KEY];
+  if (!presetId) return template;
+
+  return {
+    ...template,
+    scenes: template.scenes.map((scene) => ({
+      ...scene,
+      layers: scene.layers.map((layer) => {
+        if (layer.type !== "text" && layer.type !== "captions") return layer;
+
+        return {
+          ...layer,
+          fontFamily: resolveLayerFontFamily({ layer, template, presetId }),
+        };
+      }),
+    })),
+  };
 }
 
 function getDemoMediaDefault(template: VideoTemplate, input: VideoTemplateInput) {

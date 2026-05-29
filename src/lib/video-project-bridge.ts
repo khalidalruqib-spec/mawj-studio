@@ -18,6 +18,7 @@ import type {
   TemplateProject,
   TemplateTimelineTrack,
 } from "@/lib/video-template-engine";
+import { resolveLayerFontFamily } from "@/lib/template-typography";
 
 export type EditorTimelineLayerInput = {
   id: string;
@@ -713,9 +714,7 @@ function templateAnimationToProjectAnimation(animation?: TemplateLayer["animatio
 }
 
 function defaultFontForDirection(direction?: "ltr" | "rtl" | "auto") {
-  return direction === "ltr"
-    ? "Inter, system-ui, sans-serif"
-    : "IBM Plex Sans Arabic, Cairo, Tajawal, Noto Sans Arabic, Inter, system-ui, sans-serif";
+  return resolveLayerFontFamily({ layer: { direction } });
 }
 
 function findTimelineItemId(tracks: Track[], layerId: string) {

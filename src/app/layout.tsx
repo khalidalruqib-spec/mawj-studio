@@ -1,5 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Cairo, Geist, Geist_Mono } from "next/font/google";
+import {
+  Almarai,
+  Cairo,
+  Geist,
+  Geist_Mono,
+  IBM_Plex_Sans_Arabic,
+  Noto_Kufi_Arabic,
+  Noto_Naskh_Arabic,
+  Tajawal,
+} from "next/font/google";
 import { BRAND } from "@/lib/brand";
 import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
@@ -23,6 +32,46 @@ const cairo = Cairo({
   subsets: ["arabic", "latin"],
   weight: ["300", "400", "600", "700", "900"],
   display: "swap",
+});
+
+const ibmArabic = IBM_Plex_Sans_Arabic({
+  variable: "--font-ibm-arabic",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  preload: false,
+});
+
+const tajawal = Tajawal({
+  variable: "--font-tajawal",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "700", "800", "900"],
+  display: "swap",
+  preload: false,
+});
+
+const almarai = Almarai({
+  variable: "--font-almarai",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700", "800"],
+  display: "swap",
+  preload: false,
+});
+
+const kufi = Noto_Kufi_Arabic({
+  variable: "--font-kufi",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "600", "700", "800", "900"],
+  display: "swap",
+  preload: false,
+});
+
+const naskh = Noto_Naskh_Arabic({
+  variable: "--font-naskh",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  preload: false,
 });
 
 export const viewport: Viewport = {
@@ -91,7 +140,7 @@ export default function RootLayout({
     <html
       lang="ar"
       dir="rtl"
-      className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} ${ibmArabic.variable} ${tajawal.variable} ${almarai.variable} ${kufi.variable} ${naskh.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[--background] text-[--foreground]">
         {children}

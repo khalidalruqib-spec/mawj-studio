@@ -47,6 +47,14 @@ import {
   type VideoTemplate,
   type VideoTemplateInput,
 } from "@/lib/video-template-engine";
+import {
+  TEMPLATE_FONT_PRESET_INPUT_KEY,
+  TEMPLATE_FONT_PRESETS,
+  inferTemplateFontPreset,
+  normalizeTemplateFontWeight,
+  resolveLayerFontFamily,
+  resolveTemplateFontPreset,
+} from "@/lib/template-typography";
 
 /* ─────────────────────────────────────────────────────────────────────
    Category metadata — colour, icon, Arabic label
@@ -205,7 +213,10 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
 
   function openTemplateForm(template: VideoTemplate) {
     setSelectedTemplate(template);
-    setInputValues(buildTemplateInputs(template, {}));
+    setInputValues({
+      ...buildTemplateInputs(template, {}),
+      [TEMPLATE_FONT_PRESET_INPUT_KEY]: inferTemplateFontPreset(template),
+    });
   }
 
   function closeTemplateForm() {
@@ -772,6 +783,14 @@ function TemplateFormModal({
             ))}
           </div>
 
+          {hasTypographyLayers(template) && (
+            <TemplateTypographyPicker
+              template={template}
+              value={values[TEMPLATE_FONT_PRESET_INPUT_KEY] ?? inferTemplateFontPreset(template)}
+              onChange={(value) => onUpdate(TEMPLATE_FONT_PRESET_INPUT_KEY, value)}
+            />
+          )}
+
           <div className="mt-5 flex flex-wrap justify-end gap-2">
             <button type="button" onClick={onClose} className="btn-ghost">
               إلغاء
@@ -806,6 +825,62 @@ function TemplateFormModal({
         </div>
       </div>
     </ModalFrame>
+  );
+}
+
+function TemplateTypographyPicker({
+  template,
+  value,
+  onChange,
+}: {
+  template: VideoTemplate;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const activePreset = resolveTemplateFontPreset(value, template);
+
+  return (
+    <section className="mt-4 rounded-xl border border-[var(--line)] bg-[var(--panel-soft)] p-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black text-[var(--brand)]">خط القالب</p>
+          <p className="mt-1 text-[11px] font-semibold leading-5 text-[var(--muted)]">
+            يطبق على كل طبقات النص والكابشن عند إنشاء المشروع.
+          </p>
+        </div>
+        <span
+          className="rounded-md border border-[var(--line)] bg-black/25 px-2 py-1 text-[10px] font-black text-white"
+          style={{ fontFamily: activePreset.cssStack }}
+        >
+          {activePreset.label}
+        </span>
+      </div>
+
+      <div className="grid gap-2 md:grid-cols-3">
+        {TEMPLATE_FONT_PRESETS.map((preset) => {
+          const active = preset.id === activePreset.id;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => onChange(preset.id)}
+              className={`rounded-lg border p-2 text-right transition ${
+                active
+                  ? "border-[var(--brand)] bg-[var(--brand-soft)] text-white"
+                  : "border-[var(--line)] bg-black/20 text-[var(--muted)] hover:border-[var(--brand)] hover:text-white"
+              }`}
+            >
+              <span className="block text-sm font-black" style={{ fontFamily: preset.cssStack }}>
+                {preset.label}
+              </span>
+              <span className="mt-1 block text-[10px] font-semibold leading-4">
+                {preset.description}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -948,7 +1023,11 @@ function TemplateMotionPreview({
   const [sceneIndex, setSceneIndex] = useState(0);
   const scene = template.scenes[sceneIndex] ?? template.scenes[0];
   const previewInputs = useMemo(
-    () => buildTemplateInputs(template, inputs ?? {}),
+    () => ({
+      ...buildTemplateInputs(template, inputs ?? {}),
+      [TEMPLATE_FONT_PRESET_INPUT_KEY]:
+        inputs?.[TEMPLATE_FONT_PRESET_INPUT_KEY] ?? inferTemplateFontPreset(template),
+    }),
     [inputs, template],
   );
 
@@ -1095,7 +1174,12 @@ function PreviewLayer({
           ...style,
           color: resolvePreviewValue(layer.color, inputs) || "#ffffff",
           fontSize: `${Math.max(compact ? 8 : 10, (layer.fontSize ?? 42) * (compact ? 0.12 : 0.18))}px`,
-          fontWeight: layer.fontWeight ?? 900,
+          fontFamily: resolveLayerFontFamily({
+            layer,
+            template,
+            presetId: inputs[TEMPLATE_FONT_PRESET_INPUT_KEY],
+          }),
+          fontWeight: normalizeTemplateFontWeight(layer.fontWeight),
           direction: layer.direction === "ltr" ? "ltr" : "rtl",
           justifyItems: textAlign === "right" ? "end" : textAlign === "left" ? "start" : "center",
           opacity: layer.opacity ?? 1,
@@ -1292,6 +1376,12 @@ function layerToPreviewStyle(layer: TemplateLayer, template: VideoTemplate): Rea
     width:  `${((layer.width  ?? template.width)  / template.width)  * 100}%`,
     height: `${((layer.height ?? template.height) / template.height) * 100}%`,
   };
+}
+
+function hasTypographyLayers(template: VideoTemplate) {
+  return template.scenes.some((scene) =>
+    scene.layers.some((layer) => layer.type === "text" || layer.type === "captions"),
+  );
 }
 
 function resolvePreviewValue(value: string | undefined, inputs: TemplateUserInputs) {

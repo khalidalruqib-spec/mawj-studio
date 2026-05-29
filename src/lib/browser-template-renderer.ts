@@ -7,6 +7,11 @@ import type {
   BrowserRenderProgress,
   BrowserRenderResult,
 } from "@/lib/browser-video-renderer";
+import {
+  TEMPLATE_FONT_PRESET_INPUT_KEY,
+  normalizeTemplateFontWeight,
+  resolveLayerFontFamily,
+} from "@/lib/template-typography";
 
 const FPS = 30;
 
@@ -127,7 +132,7 @@ function drawTemplateFrame(
     .sort((left, right) => getLayerZIndex(left.type) - getLayerZIndex(right.type));
 
   for (const layer of activeLayers) {
-    drawLayer(context, layer, assets, time);
+    drawLayer(context, layer, assets, time, project.inputs[TEMPLATE_FONT_PRESET_INPUT_KEY]);
   }
 }
 
@@ -136,6 +141,7 @@ function drawLayer(
   layer: TemplateTimelineLayer,
   assets: Map<string, LoadedAsset>,
   time: number,
+  presetId?: string,
 ) {
   const x = layer.x ?? 0;
   const y = layer.y ?? 0;
@@ -170,7 +176,7 @@ function drawLayer(
       drawMissingMedia(context, x, y, width, height, layer.type);
     }
   } else if (layer.type === "text" || layer.type === "captions") {
-    drawTextLayer(context, layer, time);
+    drawTextLayer(context, layer, time, presetId);
   } else if (layer.type === "waveform") {
     drawWaveform(context, layer, time);
   }
@@ -278,18 +284,25 @@ function easeOut(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
-function drawTextLayer(context: CanvasRenderingContext2D, layer: TemplateTimelineLayer, time: number) {
+function drawTextLayer(
+  context: CanvasRenderingContext2D,
+  layer: TemplateTimelineLayer,
+  time: number,
+  presetId?: string,
+) {
   const x = layer.x ?? 0;
   const y = layer.y ?? 0;
   const width = layer.width ?? context.canvas.width;
   const height = layer.height ?? 120;
   const fontSize = layer.fontSize ?? 48;
-  const fontWeight = layer.fontWeight ?? "800";
+  const fontWeight = normalizeTemplateFontWeight(layer.fontWeight);
+  const fontFamily = resolveLayerFontFamily({ layer, presetId, canvas: true });
+
+  context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
   const rawText = resolveTemplateTextForRender(layer, time);
   const lines = wrapText(context, rawText, width * 0.92, fontSize);
   const lineHeight = fontSize * 1.22;
 
-  context.font = `${fontWeight} ${fontSize}px "IBM Plex Sans Arabic", "Noto Sans Arabic", Tahoma, Arial, sans-serif`;
   context.textAlign = layer.align ?? "center";
   context.textBaseline = "middle";
   context.direction = layer.direction === "ltr" ? "ltr" : "rtl";
