@@ -185,7 +185,7 @@ export function ProfessionalVideoStudio() {
     logoName: "mawj-logo.svg",
     primaryColor: "#8ef7c2",
     secondaryColor: "#a78bfa",
-    font: "IBM Plex Sans Arabic",
+    font: TEMPLATE_FONT_PRESETS[0].cssStack,
     captionStyle: "Saudi Viral Bold",
     intro: "2s animated logo",
     outro: "Follow / CTA screen",
@@ -535,6 +535,25 @@ export function ProfessionalVideoStudio() {
     );
 
     updateEngineLayer(layerId, editorLayerPatchToVideoLayerPatch(patch));
+  }
+
+  function applyBrandKitToSelectedLayer() {
+    if (!selectedLayer || (selectedLayer.type !== "text" && selectedLayer.type !== "caption")) {
+      setProjectStatus("Select a text or caption layer before applying Brand Kit");
+      return;
+    }
+
+    if (selectedLayer.locked) {
+      setProjectStatus(`${selectedLayer.name} is locked`);
+      return;
+    }
+
+    updateTimelineLayer(selectedLayer.id, {
+      fontFamily: resolveBrandKitFontValue(brandKit.font),
+      textColor: brandKit.primaryColor,
+      color: brandKit.primaryColor,
+    });
+    setProjectStatus(`Brand Kit applied to ${selectedLayer.name}`);
   }
 
   useEffect(() => {
@@ -2916,7 +2935,16 @@ export function ProfessionalVideoStudio() {
     }
 
     if (activePanel === "brand") {
-      return <BrandKitPanel brandKit={brandKit} onChange={setBrandKit} brandName={brandName} onBrandNameChange={setBrandName} />;
+      return (
+        <BrandKitPanel
+          brandKit={brandKit}
+          onChange={setBrandKit}
+          brandName={brandName}
+          selectedLayerName={selectedLayer?.name}
+          onBrandNameChange={setBrandName}
+          onApplyToSelectedLayer={applyBrandKitToSelectedLayer}
+        />
+      );
     }
 
     if (activePanel === "stock") {
@@ -4920,6 +4948,13 @@ function mediaAssetToBridgeAsset(asset: MediaAsset): MediaAssetInput {
     mimeType: asset.file.type,
     duration: asset.durationSeconds,
   };
+}
+
+function resolveBrandKitFontValue(font: string) {
+  const matchingPreset = TEMPLATE_FONT_PRESETS.find(
+    (preset) => preset.cssStack === font || preset.cssStack.includes(font) || preset.canvasStack.includes(font),
+  );
+  return matchingPreset?.cssStack ?? TEMPLATE_FONT_PRESETS[0].cssStack;
 }
 
 function storedMediaRecordToAsset(record: StoredMediaRecord): MediaAsset {
