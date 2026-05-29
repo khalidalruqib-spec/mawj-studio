@@ -172,22 +172,36 @@ export function LayerInspector({
         </Field>
       ) : null}
       {layer.type === "image" || layer.type === "video" ? (
-        <Field label="Replace media">
-          <label className={`flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--line-strong)] bg-[var(--panel-soft)] p-3 text-center transition ${locked ? "cursor-not-allowed opacity-50" : "hover:border-[var(--brand)]"}`}>
-            <UploadCloud className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
-            <span className="text-xs font-black">{layer.src ? "Media attached" : "Upload replacement"}</span>
-            <input
-              type="file"
-              accept={layer.type === "image" ? "image/*" : "video/*"}
+        <>
+          <Field label="Replace media">
+            <label className={`flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--line-strong)] bg-[var(--panel-soft)] p-3 text-center transition ${locked ? "cursor-not-allowed opacity-50" : "hover:border-[var(--brand)]"}`}>
+              <UploadCloud className="h-5 w-5 text-[var(--brand)]" aria-hidden="true" />
+              <span className="text-xs font-black">{layer.src ? "Media attached" : "Upload replacement"}</span>
+              <input
+                type="file"
+                accept={layer.type === "image" ? "image/*" : "video/*"}
+                disabled={locked}
+                className="sr-only"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) onChange({ src: URL.createObjectURL(file), name: file.name });
+                }}
+              />
+            </label>
+          </Field>
+          <Field label="Media fit">
+            <select
+              value={layer.fit ?? "cover"}
               disabled={locked}
-              className="sr-only"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) onChange({ src: URL.createObjectURL(file), name: file.name });
-              }}
-            />
-          </label>
-        </Field>
+              onChange={(event) => onChange({ fit: event.target.value as TimelineLayer["fit"] })}
+              className="control-select disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="cover">Cover - fill frame</option>
+              <option value="contain">Contain - show all</option>
+              <option value="fill">Fill - stretch</option>
+            </select>
+          </Field>
+        </>
       ) : null}
       <div className="grid grid-cols-2 gap-2">
         <NumberField label="Start" value={layer.start} disabled={locked} onChange={(start) => onChange({ start })} />

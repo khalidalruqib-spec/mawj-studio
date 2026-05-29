@@ -4732,6 +4732,7 @@ function templateTimelineToEditorTracks(templateTracks: TemplateTimelineTrack[])
       backgroundColor: layer.backgroundColor,
       borderRadius: layer.borderRadius,
       opacity: layer.opacity,
+      fit: layer.fit,
       locked: layer.locked,
       hidden: layer.hidden,
     })),
@@ -4758,6 +4759,7 @@ function toTemplateTimelinePatch(patch: Partial<TimelineLayer>): Partial<Templat
     direction: patch.direction,
     borderRadius: patch.borderRadius,
     opacity: patch.opacity,
+    fit: patch.fit,
     locked: patch.locked,
     hidden: patch.hidden,
   };

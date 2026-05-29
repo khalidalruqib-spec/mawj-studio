@@ -56,6 +56,7 @@ export type BrowserTimelineLayer = {
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
+  fit?: "cover" | "contain" | "fill";
   hidden?: boolean;
 };
 
@@ -424,7 +425,7 @@ function drawTimelineOverlays(
 
     if (layer.type === "image" && layer.src) {
       const image = assets.get(layer.src);
-      if (image) drawImageCover(context, image, x, y, width, height, radius);
+      if (image) drawImageFitted(context, image, x, y, width, height, radius, layer.fit ?? "cover");
     } else if (layer.type === "shape") {
       roundedRect(context, x, y, width, height, radius);
       context.fillStyle = layer.backgroundColor ?? layer.color ?? "rgba(255,255,255,0.16)";
@@ -486,7 +487,7 @@ function drawTimelineTextLayer(
   context.restore();
 }
 
-function drawImageCover(
+function drawImageFitted(
   context: CanvasRenderingContext2D,
   image: HTMLImageElement,
   x: number,
@@ -494,13 +495,8 @@ function drawImageCover(
   width: number,
   height: number,
   radius = 0,
+  fit: "cover" | "contain" | "fill" = "cover",
 ) {
-  const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
-  const drawWidth = image.naturalWidth * scale;
-  const drawHeight = image.naturalHeight * scale;
-  const drawX = x + (width - drawWidth) / 2;
-  const drawY = y + (height - drawHeight) / 2;
-
   context.save();
   context.beginPath();
   if (radius > 0) {
@@ -509,6 +505,20 @@ function drawImageCover(
     context.rect(x, y, width, height);
   }
   context.clip();
+
+  if (fit === "fill") {
+    context.drawImage(image, x, y, width, height);
+    context.restore();
+    return;
+  }
+
+  const scale = fit === "cover"
+    ? Math.max(width / image.naturalWidth, height / image.naturalHeight)
+    : Math.min(width / image.naturalWidth, height / image.naturalHeight);
+  const drawWidth = image.naturalWidth * scale;
+  const drawHeight = image.naturalHeight * scale;
+  const drawX = x + (width - drawWidth) / 2;
+  const drawY = y + (height - drawHeight) / 2;
   context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
   context.restore();
 }

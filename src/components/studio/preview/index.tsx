@@ -470,7 +470,12 @@ function TimelinePreviewLayer({
           opacity: layer.opacity ?? 1,
         }}
       >
-        <img src={layer.src} alt={layer.name} className="h-full w-full object-cover" />
+        <img
+          src={layer.src}
+          alt={layer.name}
+          className="h-full w-full"
+          style={{ objectFit: layer.fit ?? "cover" }}
+        />
         <ResizeHandles selected={selected && !locked} onResizePointerDown={onResizePointerDown} />
       </button>
     );
@@ -792,7 +797,17 @@ export function TemplatePreviewLayer({
     const src = layer.src && !layer.src.includes("{{") ? layer.src : "";
 
     return src && layer.type === "image" ? (
-      <img src={src} alt={layer.name ?? layer.id} className="absolute object-cover" style={style} />
+      <img
+        src={src}
+        alt={layer.name ?? layer.id}
+        className="absolute"
+        style={{
+          ...style,
+          objectFit: layer.fit ?? "cover",
+          borderRadius: layer.borderRadius ? `${Math.max(4, layer.borderRadius * 0.2)}px` : undefined,
+          opacity: layer.opacity ?? 1,
+        }}
+      />
     ) : (
       <div className="absolute grid place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70" style={style}>
         {layer.type.toUpperCase()}
