@@ -211,6 +211,38 @@ const LAYER_BORDER_PRESETS: Array<{
   },
 ];
 
+const LAYER_SHADOW_PRESETS: Array<{
+  id: string;
+  label: string;
+  detail: string;
+  patch: Pick<TimelineLayer, "shadowColor" | "shadowBlur" | "shadowOffsetX" | "shadowOffsetY">;
+}> = [
+  {
+    id: "none",
+    label: "No shadow",
+    detail: "بدون عمق بصري",
+    patch: { shadowColor: "#000000", shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0 },
+  },
+  {
+    id: "soft-depth",
+    label: "Soft depth",
+    detail: "ظل ناعم للصور",
+    patch: { shadowColor: "#000000", shadowBlur: 28, shadowOffsetX: 0, shadowOffsetY: 18 },
+  },
+  {
+    id: "floating-card",
+    label: "Floating card",
+    detail: "عمق واضح للقوالب",
+    patch: { shadowColor: "#000000", shadowBlur: 42, shadowOffsetX: 0, shadowOffsetY: 28 },
+  },
+  {
+    id: "brand-glow",
+    label: "Brand glow",
+    detail: "إضاءة بلون موج",
+    patch: { shadowColor: "#8ef7c2", shadowBlur: 30, shadowOffsetX: 0, shadowOffsetY: 0 },
+  },
+];
+
 export function ProjectSettingsPanel({
   brandName,
   styleId,
@@ -610,6 +642,58 @@ export function LayerInspector({
               className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </Field>
+        </div>
+      ) : null}
+      {supportsBorderRadius ? (
+        <div className="space-y-2">
+          <p className="text-xs font-black text-[var(--muted)]">Shadow presets</p>
+          <div className="grid grid-cols-2 gap-2">
+            {LAYER_SHADOW_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                disabled={locked}
+                onClick={() => onChange(preset.patch)}
+                className="min-h-14 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-2 text-right transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="block text-xs font-black text-white" dir="auto">
+                  {preset.label}
+                </span>
+                <span className="mt-1 block text-[10px] font-bold leading-4 text-[var(--muted)]" dir="auto">
+                  {preset.detail}
+                </span>
+              </button>
+            ))}
+          </div>
+          <Field label="Shadow color">
+            <input
+              type="color"
+              value={resolveInspectorColorInputValue(layer.shadowColor, "#000000")}
+              disabled={locked}
+              onChange={(event) => onChange({ shadowColor: event.target.value })}
+              className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </Field>
+          <div className="grid grid-cols-3 gap-2">
+            <NumberField
+              label="Blur"
+              value={layer.shadowBlur ?? 0}
+              disabled={locked}
+              onChange={(shadowBlur) => onChange({ shadowBlur: clampInspectorNumber(shadowBlur, 0, 120) })}
+            />
+            <NumberField
+              label="X"
+              value={layer.shadowOffsetX ?? 0}
+              disabled={locked}
+              onChange={(shadowOffsetX) => onChange({ shadowOffsetX: clampInspectorNumber(shadowOffsetX, -120, 120) })}
+            />
+            <NumberField
+              label="Y"
+              value={layer.shadowOffsetY ?? 0}
+              disabled={locked}
+              onChange={(shadowOffsetY) => onChange({ shadowOffsetY: clampInspectorNumber(shadowOffsetY, -120, 120) })}
+            />
+          </div>
         </div>
       ) : null}
       {supportsAnimation ? (

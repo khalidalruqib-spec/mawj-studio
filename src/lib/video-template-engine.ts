@@ -94,6 +94,10 @@ export type TemplateLayer = {
   borderColor?: string;
   borderWidth?: number;
   borderRadius?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
   padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";

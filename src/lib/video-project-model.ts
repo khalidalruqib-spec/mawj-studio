@@ -150,6 +150,10 @@ export interface LayerStyle {
   borderColor?: string;
   borderWidth?: number;
   shadow?: string;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
   align?: "left" | "center" | "right";
   direction?: "ltr" | "rtl" | "auto";
   fit?: "cover" | "contain" | "fill";
@@ -232,6 +236,10 @@ export const layerStyleSchema = z.object({
   borderColor: z.string().optional(),
   borderWidth: z.number().min(0).optional(),
   shadow: z.string().optional(),
+  shadowColor: z.string().optional(),
+  shadowBlur: z.number().min(0).optional(),
+  shadowOffsetX: z.number().optional(),
+  shadowOffsetY: z.number().optional(),
   align: z.enum(["left", "center", "right"]).optional(),
   direction: z.enum(["ltr", "rtl", "auto"]).optional(),
   fit: z.enum(["cover", "contain", "fill"]).optional(),

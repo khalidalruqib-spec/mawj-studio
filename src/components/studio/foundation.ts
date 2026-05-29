@@ -122,6 +122,10 @@ export type TimelineLayer = {
   borderRadius?: number;
   borderColor?: string;
   borderWidth?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
   padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";

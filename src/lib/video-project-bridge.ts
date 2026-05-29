@@ -63,6 +63,10 @@ export type EditorTimelineLayerInput = {
   borderRadius?: number;
   borderColor?: string;
   borderWidth?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
   padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
@@ -335,6 +339,10 @@ export function editorLayerPatchToVideoLayerPatch(
     borderRadius: patch.borderRadius,
     borderColor: patch.borderColor,
     borderWidth: patch.borderWidth,
+    shadowColor: patch.shadowColor,
+    shadowBlur: patch.shadowBlur,
+    shadowOffsetX: patch.shadowOffsetX,
+    shadowOffsetY: patch.shadowOffsetY,
     padding: patch.padding,
     align: patch.align,
     direction: patch.direction,
@@ -509,6 +517,10 @@ function templateLayerToVideoLayer(
       borderRadius: layer.borderRadius,
       borderColor: layer.borderColor,
       borderWidth: layer.borderWidth,
+      shadowColor: layer.shadowColor,
+      shadowBlur: layer.shadowBlur,
+      shadowOffsetX: layer.shadowOffsetX,
+      shadowOffsetY: layer.shadowOffsetY,
       padding: layer.padding,
       align: layer.align,
       direction: layer.direction,
@@ -574,6 +586,10 @@ function editorTimelineLayerToVideoLayer(
       borderRadius: layer.borderRadius ?? previous?.style?.borderRadius,
       borderColor: layer.borderColor ?? previous?.style?.borderColor,
       borderWidth: layer.borderWidth ?? previous?.style?.borderWidth,
+      shadowColor: layer.shadowColor ?? previous?.style?.shadowColor,
+      shadowBlur: layer.shadowBlur ?? previous?.style?.shadowBlur,
+      shadowOffsetX: layer.shadowOffsetX ?? previous?.style?.shadowOffsetX,
+      shadowOffsetY: layer.shadowOffsetY ?? previous?.style?.shadowOffsetY,
       padding: layer.padding ?? previous?.style?.padding,
       align: layer.align ?? previous?.style?.align ?? "center",
       direction: layer.direction ?? previous?.style?.direction ?? "auto",

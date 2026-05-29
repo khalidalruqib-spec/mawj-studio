@@ -68,6 +68,10 @@ export type BrowserTimelineLayer = {
   borderRadius?: number;
   borderColor?: string;
   borderWidth?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
   padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
@@ -452,6 +456,7 @@ function drawTimelineOverlays(
       scale: animation.scale,
       rotation: layer.rotation ?? 0,
     });
+    drawTimelineLayerShadow(context, x, y, width, height, radius, layer, Math.min(scaleX, scaleY));
 
     if (layer.type === "image" && layer.src) {
       const image = assets.get(layer.src);
@@ -617,6 +622,34 @@ function strokeTimelineLayerBorder(
   context.lineWidth = borderWidth;
   context.strokeStyle = layer.borderColor ?? "rgba(255,255,255,0.72)";
   context.stroke();
+  context.restore();
+}
+
+function drawTimelineLayerShadow(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+  layer: Pick<BrowserTimelineLayer, "type" | "shadowColor" | "shadowBlur" | "shadowOffsetX" | "shadowOffsetY" | "backgroundColor">,
+  scale: number,
+) {
+  const blur = Math.max(0, (layer.shadowBlur ?? 0) * scale);
+  const offsetX = (layer.shadowOffsetX ?? 0) * scale;
+  const offsetY = (layer.shadowOffsetY ?? 0) * scale;
+  if (!blur && !offsetX && !offsetY) return;
+  const hasSurface = layer.type === "image" || layer.type === "shape" || Boolean(layer.backgroundColor && layer.backgroundColor !== "transparent");
+  if (!hasSurface) return;
+
+  context.save();
+  context.shadowColor = layer.shadowColor ?? "rgba(0,0,0,0.45)";
+  context.shadowBlur = blur;
+  context.shadowOffsetX = offsetX;
+  context.shadowOffsetY = offsetY;
+  roundedRect(context, x, y, width, height, radius);
+  context.fillStyle = layer.backgroundColor && layer.backgroundColor !== "transparent" ? layer.backgroundColor : "#000000";
+  context.fill();
   context.restore();
 }
 

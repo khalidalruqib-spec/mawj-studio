@@ -164,6 +164,7 @@ function drawLayer(
     context.scale(transform.scale, transform.scale);
     context.translate(-cx, -cy);
   }
+  drawTemplateLayerShadow(context, x, y, width, height, layer.borderRadius ?? 0, layer);
 
   if (layer.type === "background") {
     drawBackgroundLayer(context, layer);
@@ -548,6 +549,37 @@ function strokeTemplateLayerBorder(
   context.lineWidth = borderWidth;
   context.strokeStyle = layer.borderColor ?? "rgba(255,255,255,0.72)";
   context.stroke();
+  context.restore();
+}
+
+function drawTemplateLayerShadow(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+  layer: Pick<TemplateTimelineLayer, "type" | "shadowColor" | "shadowBlur" | "shadowOffsetX" | "shadowOffsetY" | "backgroundColor">,
+) {
+  const blur = Math.max(0, layer.shadowBlur ?? 0);
+  const offsetX = layer.shadowOffsetX ?? 0;
+  const offsetY = layer.shadowOffsetY ?? 0;
+  if (!blur && !offsetX && !offsetY) return;
+  const hasSurface =
+    layer.type === "image" ||
+    layer.type === "video" ||
+    layer.type === "shape" ||
+    Boolean(layer.backgroundColor && layer.backgroundColor !== "transparent");
+  if (!hasSurface) return;
+
+  context.save();
+  context.shadowColor = layer.shadowColor ?? "rgba(0,0,0,0.45)";
+  context.shadowBlur = blur;
+  context.shadowOffsetX = offsetX;
+  context.shadowOffsetY = offsetY;
+  roundedRect(context, x, y, width, height, radius);
+  context.fillStyle = layer.backgroundColor && layer.backgroundColor !== "transparent" ? layer.backgroundColor : "#000000";
+  context.fill();
   context.restore();
 }
 

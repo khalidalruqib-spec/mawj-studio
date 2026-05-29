@@ -473,6 +473,7 @@ function TimelinePreviewLayer({
           ...box,
           borderRadius: scalePreviewRadius(layer.borderRadius),
           border: resolvePreviewLayerBorder(layer, getPreviewFontScale(dimensions)),
+          boxShadow: resolvePreviewLayerShadow(layer, getPreviewFontScale(dimensions)),
           boxSizing: "border-box",
           opacity: (layer.opacity ?? 1) * animatedStyle.opacity,
           transform: resolvePreviewLayerTransform(layer, animatedStyle),
@@ -509,6 +510,7 @@ function TimelinePreviewLayer({
           backgroundColor: layer.backgroundColor ?? layer.color,
           borderRadius: scalePreviewRadius(layer.borderRadius),
           border: resolvePreviewLayerBorder(layer, getPreviewFontScale(dimensions)),
+          boxShadow: resolvePreviewLayerShadow(layer, getPreviewFontScale(dimensions)),
           boxSizing: "border-box",
           opacity: (layer.opacity ?? 1) * animatedStyle.opacity,
           transform: resolvePreviewLayerTransform(layer, animatedStyle),
@@ -531,6 +533,7 @@ function TimelinePreviewLayer({
     backgroundColor: layer.backgroundColor,
     borderRadius: scalePreviewRadius(layer.borderRadius),
     border: resolvePreviewLayerBorder(layer, fontScale),
+    boxShadow: resolvePreviewLayerShadow(layer, fontScale),
     boxSizing: "border-box",
     padding: `${Math.max(0, (layer.padding ?? 8) * fontScale)}px`,
     fontFamily: layer.fontFamily,
@@ -795,6 +798,18 @@ function resolvePreviewLayerBorder(layer: Pick<TimelineLayer, "borderColor" | "b
   return `${Math.max(1, width)}px solid ${layer.borderColor ?? "rgba(255,255,255,0.72)"}`;
 }
 
+function resolvePreviewLayerShadow(
+  layer: Pick<TimelineLayer, "shadowColor" | "shadowBlur" | "shadowOffsetX" | "shadowOffsetY">,
+  scale: number,
+) {
+  const blur = Math.max(0, (layer.shadowBlur ?? 0) * scale);
+  const offsetX = (layer.shadowOffsetX ?? 0) * scale;
+  const offsetY = (layer.shadowOffsetY ?? 0) * scale;
+
+  if (!blur && !offsetX && !offsetY) return undefined;
+  return `${offsetX}px ${offsetY}px ${blur}px ${layer.shadowColor ?? "rgba(0,0,0,0.45)"}`;
+}
+
 function scalePreviewRadius(radius?: number) {
   return radius ? `${Math.max(4, radius * 0.2)}px` : undefined;
 }
@@ -902,6 +917,7 @@ export function TemplatePreviewLayer({
           backgroundColor: layer.backgroundColor,
           borderRadius: layer.borderRadius ? `${Math.max(4, layer.borderRadius * 0.2)}px` : undefined,
           border: resolvePreviewLayerBorder(layer, 0.2),
+          boxShadow: resolvePreviewLayerShadow(layer, 0.2),
           boxSizing: "border-box",
           padding: `${Math.max(0, (layer.padding ?? 8) * 0.2)}px`,
           transform: resolvePreviewLayerTransform(layer, staticAnimation),
@@ -930,6 +946,7 @@ export function TemplatePreviewLayer({
           objectPosition: resolvePreviewMediaObjectPosition(layer),
           borderRadius: layer.borderRadius ? `${Math.max(4, layer.borderRadius * 0.2)}px` : undefined,
           border: resolvePreviewLayerBorder(layer, 0.2),
+          boxShadow: resolvePreviewLayerShadow(layer, 0.2),
           boxSizing: "border-box",
           opacity: layer.opacity ?? 1,
           filter: resolveLayerFilter(layer, 0.2),
@@ -942,6 +959,7 @@ export function TemplatePreviewLayer({
         className="absolute grid place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70"
         style={{
           ...style,
+          boxShadow: resolvePreviewLayerShadow(layer, 0.2),
           transform: resolvePreviewLayerTransform(layer, staticAnimation),
           transformOrigin: "center",
         }}
@@ -967,6 +985,7 @@ export function TemplatePreviewLayer({
         ...style,
         background: normalizeHexColor(layer.color),
         borderRadius: `${Math.min(28, (layer.borderRadius ?? 18) / 2)}px`,
+        boxShadow: resolvePreviewLayerShadow(layer, 0.2),
         opacity: layer.opacity ?? 0.75,
         transform: resolvePreviewLayerTransform(layer, staticAnimation),
         transformOrigin: "center",
