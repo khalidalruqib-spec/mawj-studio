@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import {
   Captions,
   Cloud,
@@ -161,7 +160,6 @@ import {
 const DEFAULT_IMAGE_CLIP_DURATION_SECONDS = 6;
 
 export function ProfessionalVideoStudio() {
-  const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const imageLayerInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -244,10 +242,11 @@ export function ProfessionalVideoStudio() {
   const exportHistoryUrlsRef = useRef<string[]>([]);
   const [error, setError] = useState("");
   const [projectStatus, setProjectStatus] = useState("Autosave ready");
-  const openTemplatesPage = useCallback(() => {
+  const openTemplatesPage = useCallback((event?: MouseEvent<HTMLAnchorElement>) => {
+    event?.preventDefault();
     setProjectStatus("Opening template library");
-    router.push("/templates");
-  }, [router]);
+    window.location.assign("/templates");
+  }, []);
   const engineProject = useVideoProjectStore((state) => state.currentProject);
   const setEngineProject = useVideoProjectStore((state) => state.setCurrentProject);
   const selectEngineLayer = useVideoProjectStore((state) => state.selectLayer);
@@ -3265,10 +3264,15 @@ export function ProfessionalVideoStudio() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button type="button" onClick={openTemplatesPage} className="btn-ghost hidden sm:inline-flex">
+            <a
+              href="/templates"
+              onClick={openTemplatesPage}
+              className="btn-ghost hidden sm:inline-flex"
+              aria-label="Open templates page"
+            >
               <LayoutTemplate className="h-4 w-4" aria-hidden="true" />
               <span>Templates</span>
-            </button>
+            </a>
             <button
               type="button"
               onClick={resetStudioProject}
@@ -3325,9 +3329,9 @@ export function ProfessionalVideoStudio() {
                 const active = activePanel === panel.id;
                 if (panel.id === "templates") {
                   return (
-                    <button
+                    <a
                       key={panel.id}
-                      type="button"
+                      href="/templates"
                       onClick={openTemplatesPage}
                       className="nav-btn w-full"
                       aria-label="Open templates page"
@@ -3337,7 +3341,7 @@ export function ProfessionalVideoStudio() {
                         <span className="block truncate text-xs font-black">{panel.label}</span>
                         <span className="block truncate text-[11px] font-semibold opacity-75">Open library</span>
                       </span>
-                    </button>
+                    </a>
                   );
                 }
                 return (
