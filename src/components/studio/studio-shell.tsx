@@ -271,6 +271,8 @@ export function ProfessionalVideoStudio() {
   const canBringLayerForward = Boolean(
     selectedLayerStackInfo && selectedLayerStackInfo.layerIndex < selectedLayerStackInfo.layerCount - 1,
   );
+  const selectedLayerSplitOffset = getLayerSplitOffsetAtTime(selectedLayer, previewTime);
+  const canSplitSelectedLayer = Boolean(selectedLayer && !selectedLayer.locked && selectedLayerSplitOffset !== null);
 
   const computedEngineState = useMemo<AIEngineState>(
     () => ({
@@ -546,6 +548,25 @@ export function ProfessionalVideoStudio() {
       if (commandPressed && key === "d") {
         event.preventDefault();
         duplicateSelectedLayer();
+        return;
+      }
+
+      if (!commandPressed && event.code === "Space") {
+        event.preventDefault();
+        void togglePlayback();
+        return;
+      }
+
+      if (!commandPressed && key === "s") {
+        event.preventDefault();
+        splitSelectedLayer();
+        return;
+      }
+
+      if (!commandPressed && (key === "j" || key === "l")) {
+        event.preventDefault();
+        const seekAmount = event.shiftKey ? 5 : 1;
+        seekPreview(previewTime + (key === "l" ? seekAmount : -seekAmount));
         return;
       }
 
@@ -1413,30 +1434,50 @@ export function ProfessionalVideoStudio() {
   }
 
   function splitSelectedLayer() {
+    if (!selectedLayer) {
+      setProjectStatus("Select a layer before splitting");
+      return;
+    }
+
     if (selectedLayer?.locked) {
       setProjectStatus(`${selectedLayer.name} is locked`);
       return;
     }
 
-    commitTimeline((tracks) =>
-      tracks.map((track) => ({
-        ...track,
-        layers: track.layers.flatMap((layer) => {
-          if (layer.id !== selectedLayerId || layer.duration < 4) return [layer];
-          const splitAt = Math.max(1, Math.min(layer.duration - 1, Math.round(layer.duration / 2)));
-          return [
-            { ...layer, id: `${layer.id}-a`, name: `${layer.name} A`, duration: splitAt },
-            {
-              ...layer,
-              id: `${layer.id}-b`,
-              name: `${layer.name} B`,
-              start: layer.start + splitAt,
-              duration: layer.duration - splitAt,
-            },
-          ];
-        }),
-      })),
-    );
+    const splitOffset = getLayerSplitOffsetAtTime(selectedLayer, previewTime);
+    if (splitOffset === null) {
+      setProjectStatus("Move the playhead inside the selected layer to split it");
+      return;
+    }
+
+    const firstLayerId = `${selectedLayer.id}-a-${crypto.randomUUID().slice(0, 6)}`;
+    const secondLayerId = `${selectedLayer.id}-b-${crypto.randomUUID().slice(0, 6)}`;
+    const nextTracks = timelineTracks.map((track) => ({
+      ...track,
+      layers: track.layers.flatMap((layer) => {
+        if (layer.id !== selectedLayer.id) return [layer];
+        return [
+          {
+            ...layer,
+            id: firstLayerId,
+            name: `${layer.name} A`,
+            duration: splitOffset,
+          },
+          {
+            ...layer,
+            id: secondLayerId,
+            name: `${layer.name} B`,
+            start: roundTime(layer.start + splitOffset),
+            duration: roundTime(layer.duration - splitOffset),
+          },
+        ];
+      }),
+    }));
+
+    commitTimeline(nextTracks);
+    setSelectedLayerId(secondLayerId);
+    selectEngineLayer(secondLayerId);
+    setProjectStatus(`${selectedLayer.name} split at ${formatDuration(previewTime)}`);
   }
 
   function trimSelectedLayer() {
@@ -2490,7 +2531,7 @@ export function ProfessionalVideoStudio() {
                     <ToolbarButton label="Undo" icon={Undo2} onClick={undoTimeline} disabled={!timelineUndo.length} />
                     <ToolbarButton label="Redo" icon={Redo2} onClick={redoTimeline} disabled={!timelineRedo.length} />
                     <ToolbarButton label="Trim" icon={Scissors} onClick={trimSelectedLayer} disabled={!selectedLayer || selectedLayer.locked} />
-                    <ToolbarButton label="Split" icon={Crop} onClick={splitSelectedLayer} disabled={!selectedLayer || selectedLayer.locked} />
+                    <ToolbarButton label="Split" icon={Crop} onClick={splitSelectedLayer} disabled={!canSplitSelectedLayer} />
                     <ToolbarButton label="Merge" icon={Layers3} onClick={mergeVideoLayers} />
                     <ToolbarButton label="Text" icon={Type} onClick={addTextLayer} />
                     <ToolbarButton
@@ -3367,6 +3408,18 @@ function isEditableKeyboardTarget(target: EventTarget | null) {
 function isLayerStatePatch(patch: Partial<TimelineLayer>) {
   const keys = Object.keys(patch);
   return keys.length > 0 && keys.every((key) => key === "locked" || key === "hidden");
+}
+
+function getLayerSplitOffsetAtTime(layer: TimelineLayer | null, time: number) {
+  if (!layer) return null;
+
+  const minSegmentDuration = 0.5;
+  const offset = roundTime(time - layer.start);
+  if (offset < minSegmentDuration || layer.duration - offset < minSegmentDuration) {
+    return null;
+  }
+
+  return offset;
 }
 
 function createTimelineForAssets(assets: MediaAsset[], primaryVideoAssetId: string): TimelineTrack[] {
