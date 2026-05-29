@@ -2,7 +2,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import { isUsableMediaDuration, resolveMediaDuration } from "@/lib/media-duration";
 
 const DB_NAME = "mawj-studio";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const DEFAULT_IMAGE_DURATION_SECONDS = 6;
 
 export type StoredMediaType = "video" | "audio" | "image";
@@ -28,6 +28,18 @@ export type StoredProjectRecord = {
   updatedAt: number;
 };
 
+export type StoredExportRecord = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  blob: Blob;
+  size: number;
+  durationSeconds: number;
+  resolution: string;
+  projectName: string;
+  createdAt: number;
+};
+
 type StoreMediaFileOptions = {
   id?: string;
 };
@@ -48,6 +60,13 @@ interface MawjStudioDB extends DBSchema {
       "by-updated-at": number;
     };
   };
+  exports: {
+    key: string;
+    value: StoredExportRecord;
+    indexes: {
+      "by-created-at": number;
+    };
+  };
 }
 
 let database: IDBPDatabase<MawjStudioDB> | null = null;
@@ -65,12 +84,21 @@ export async function getMediaDB() {
 
   database = await openDB<MawjStudioDB>(DB_NAME, DB_VERSION, {
     upgrade(db) {
-      const mediaStore = db.createObjectStore("media", { keyPath: "id" });
-      mediaStore.createIndex("by-created-at", "createdAt");
-      mediaStore.createIndex("by-type", "type");
+      if (!db.objectStoreNames.contains("media")) {
+        const mediaStore = db.createObjectStore("media", { keyPath: "id" });
+        mediaStore.createIndex("by-created-at", "createdAt");
+        mediaStore.createIndex("by-type", "type");
+      }
 
-      const projectStore = db.createObjectStore("projects", { keyPath: "id" });
-      projectStore.createIndex("by-updated-at", "updatedAt");
+      if (!db.objectStoreNames.contains("projects")) {
+        const projectStore = db.createObjectStore("projects", { keyPath: "id" });
+        projectStore.createIndex("by-updated-at", "updatedAt");
+      }
+
+      if (!db.objectStoreNames.contains("exports")) {
+        const exportStore = db.createObjectStore("exports", { keyPath: "id" });
+        exportStore.createIndex("by-created-at", "createdAt");
+      }
     },
   });
 
@@ -138,6 +166,23 @@ export async function getLatestProjectSnapshot() {
   const latest = cursor?.value ?? null;
   cursor = null;
   return latest;
+}
+
+export async function storeExportRecord(record: StoredExportRecord) {
+  const db = await getMediaDB();
+  await db.put("exports", record);
+  await pruneExportHistory(db, 12);
+}
+
+export async function listExportRecords() {
+  const db = await getMediaDB();
+  const records = await db.getAllFromIndex("exports", "by-created-at");
+  return records.reverse();
+}
+
+export async function deleteExportRecord(id: string) {
+  const db = await getMediaDB();
+  await db.delete("exports", id);
 }
 
 function getStoredMediaType(file: File): StoredMediaType {
@@ -262,6 +307,13 @@ function createImageThumbnail(image: HTMLImageElement) {
   const mimeType = header.match(/data:(.*?);base64/)?.[1] ?? "image/webp";
   const bytes = Uint8Array.from(atob(data), (char) => char.charCodeAt(0));
   return new Blob([bytes], { type: mimeType });
+}
+
+async function pruneExportHistory(db: IDBPDatabase<MawjStudioDB>, keepCount: number) {
+  const records = await db.getAllFromIndex("exports", "by-created-at");
+  const oldRecords = records.slice(0, Math.max(0, records.length - keepCount));
+
+  await Promise.all(oldRecords.map((record) => db.delete("exports", record.id)));
 }
 
 function createId(prefix: string) {

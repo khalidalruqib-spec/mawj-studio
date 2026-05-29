@@ -49,9 +49,12 @@ import {
   hasSupabaseBrowserEnv,
 } from "@/lib/supabase/client";
 import {
+  deleteExportRecord,
   deleteMediaRecord,
   getLatestProjectSnapshot,
+  listExportRecords,
   listMediaRecords,
+  storeExportRecord,
   storeMediaFile,
   type StoredMediaRecord,
 } from "@/lib/media-db";
@@ -135,7 +138,7 @@ import { AdMakerPanel } from "@/components/studio/panels/ad-maker";
 import { BrandKitPanel } from "@/components/studio/panels/brand";
 import { DashboardPanel } from "@/components/studio/panels/projects";
 import { CollaborationPanel } from "@/components/studio/panels/collaboration";
-import { ExportsPanel } from "@/components/studio/panels/exports";
+import { ExportsPanel, type ExportHistoryItem } from "@/components/studio/panels/exports";
 import { LayerInspector, ProjectSettingsPanel, type LayerAlignmentAction } from "@/components/studio/panels/settings";
 import { AssistantPanel } from "@/components/studio/panels/assistant";
 import { StockMediaPanel } from "@/components/studio/panels/stock";
@@ -230,6 +233,8 @@ export function ProfessionalVideoStudio() {
   const [previewTime, setPreviewTime] = useState(0);
   const [renderProgress, setRenderProgress] = useState<BrowserRenderProgress | null>(null);
   const [renderResult, setRenderResult] = useState<BrowserRenderResult | null>(null);
+  const [exportHistory, setExportHistory] = useState<ExportHistoryItem[]>([]);
+  const exportHistoryUrlsRef = useRef<string[]>([]);
   const [error, setError] = useState("");
   const [projectStatus, setProjectStatus] = useState("Autosave ready");
   const engineProject = useVideoProjectStore((state) => state.currentProject);
@@ -258,6 +263,13 @@ export function ProfessionalVideoStudio() {
     if (!query) return transcript;
     return transcript.filter((segment) => segment.text.toLowerCase().includes(query));
   }, [transcript, transcriptSearch]);
+
+  const localStorageBytes = useMemo(
+    () =>
+      mediaAssets.reduce((total, asset) => total + asset.size, 0) +
+      exportHistory.reduce((total, item) => total + item.size, 0),
+    [exportHistory, mediaAssets],
+  );
 
   const totalTimelineSeconds = useMemo(
     () =>
@@ -479,11 +491,37 @@ export function ProfessionalVideoStudio() {
     }
   }, []);
 
+  const loadExportHistory = useCallback(async () => {
+    try {
+      const records = await listExportRecords();
+      const nextHistory = records.slice(0, 12).map((record) => ({
+        ...record,
+        url: URL.createObjectURL(record.blob),
+      }));
+
+      exportHistoryUrlsRef.current.forEach(revokeObjectUrl);
+      exportHistoryUrlsRef.current = nextHistory.map((record) => record.url);
+      setExportHistory(nextHistory);
+    } catch {
+      exportHistoryUrlsRef.current.forEach(revokeObjectUrl);
+      exportHistoryUrlsRef.current = [];
+      setExportHistory([]);
+    }
+  }, []);
+
   useEffect(() => {
     if (activePanel === "dashboard") {
       void loadProjects();
     }
-  }, [activePanel, loadProjects]);
+    if (activePanel === "exports" || activePanel === "dashboard") {
+      void loadExportHistory();
+    }
+  }, [activePanel, loadExportHistory, loadProjects]);
+
+  useEffect(() => () => {
+    exportHistoryUrlsRef.current.forEach(revokeObjectUrl);
+    exportHistoryUrlsRef.current = [];
+  }, []);
 
   function clearRenderedOutput() {
     setRenderResult((currentResult) => {
@@ -491,6 +529,29 @@ export function ProfessionalVideoStudio() {
       return null;
     });
     setRenderProgress(null);
+  }
+
+  function persistExportResult(result: BrowserRenderResult, projectName = brandName || BRAND.displayName) {
+    void storeExportRecord({
+      id: createLayerId("export"),
+      fileName: result.fileName,
+      mimeType: result.mimeType,
+      blob: result.blob,
+      size: result.blob.size,
+      durationSeconds: result.durationSeconds,
+      resolution: result.resolution,
+      projectName,
+      createdAt: Date.now(),
+    })
+      .then(loadExportHistory)
+      .catch(() => undefined);
+  }
+
+  function deleteExportHistoryItem(id: string) {
+    void deleteExportRecord(id)
+      .then(loadExportHistory)
+      .then(() => setProjectStatus("Export removed from local history"))
+      .catch(() => setError("Could not delete this local export."));
   }
 
   function syncEditorTimelineFromEngineProject(project: VideoProject) {
@@ -1596,6 +1657,7 @@ export function ProfessionalVideoStudio() {
           onProgress: setRenderProgress,
         });
         setRenderResult(result);
+        persistExportResult(result, templateProject.name);
         setProjectStatus(`${templateProject.name} template export ready`);
         setActivePanel("exports");
       } catch (caughtError) {
@@ -1651,6 +1713,7 @@ export function ProfessionalVideoStudio() {
         onProgress: setRenderProgress,
       });
       setRenderResult(result);
+      persistExportResult(result, renderPlan.title);
       setProjectStatus(`${exportTier} ${exportFormat} export ready`);
       setActivePanel("exports");
     } catch (caughtError) {
@@ -1698,6 +1761,7 @@ export function ProfessionalVideoStudio() {
         onProgress: setRenderProgress,
       });
       setRenderResult(result);
+      persistExportResult(result, `${clip.label} · ${brandName || BRAND.displayName}`);
       setProjectStatus(`${clip.label} export ready`);
       setActivePanel("exports");
     } catch (caughtError) {
@@ -2528,14 +2592,16 @@ export function ProfessionalVideoStudio() {
         });
       });
       const url = URL.createObjectURL(blob);
-      setRenderResult({
+      const result: BrowserRenderResult = {
         blob,
         url,
         fileName: `${withoutFileExtension(sourceName)}-audio.mp3`,
         mimeType: "audio/mpeg",
         durationSeconds: Math.round(outputSeconds),
         resolution: "MP3 · 192 kbps",
-      });
+      };
+      setRenderResult(result);
+      persistExportResult(result, `${brandName || BRAND.displayName} audio`);
       setProjectStatus("MP3 audio export ready");
       setActivePanel("exports");
     } catch (caughtError) {
@@ -2589,14 +2655,16 @@ export function ProfessionalVideoStudio() {
         },
       );
       const url = URL.createObjectURL(blob);
-      setRenderResult({
+      const result: BrowserRenderResult = {
         blob,
         url,
         fileName: `${withoutFileExtension(sourceName)}-preview.gif`,
         mimeType: "image/gif",
         durationSeconds: Math.round(outputSeconds),
         resolution: aspectRatio === "16:9" ? "GIF · 640px wide" : "GIF · 480px wide",
-      });
+      };
+      setRenderResult(result);
+      persistExportResult(result, `${brandName || BRAND.displayName} GIF`);
       setProjectStatus("GIF preview export ready");
       setActivePanel("exports");
     } catch (caughtError) {
@@ -2694,8 +2762,8 @@ export function ProfessionalVideoStudio() {
   }
 
   async function refreshProjectList() {
-    await loadProjects();
-    setProjectStatus("Project list refreshed");
+    await Promise.all([loadProjects(), loadExportHistory()]);
+    setProjectStatus("Dashboard refreshed");
   }
 
   async function updateProjectRecord(projectId: string) {
@@ -3294,6 +3362,9 @@ export function ProfessionalVideoStudio() {
           {activePanel === "dashboard" ? (
             <DashboardPanel
               projects={recentProjects}
+              mediaCount={mediaAssets.length}
+              exportCount={exportHistory.length}
+              storageBytes={localStorageBytes}
               projectStatus={projectStatus}
               onRefresh={refreshProjectList}
               onUpdate={updateProjectRecord}
@@ -3535,6 +3606,7 @@ export function ProfessionalVideoStudio() {
           format={exportFormat}
           renderResult={renderResult}
           renderProgress={renderProgress}
+          exportHistory={exportHistory}
           isRendering={isRendering}
           aspectRatio={aspectRatio}
           onTierChange={setExportTier}
@@ -3544,6 +3616,8 @@ export function ProfessionalVideoStudio() {
           onExportThumbnail={exportThumbnail}
           onExportMp3={exportMp3}
           onExportGif={exportGif}
+          onRefreshHistory={() => void loadExportHistory()}
+          onDeleteHistoryItem={deleteExportHistoryItem}
         />
       );
     }
