@@ -75,6 +75,7 @@ export type BrowserTimelineLayer = {
   shadowOffsetY?: number;
   padding?: number;
   opacity?: number;
+  zIndex?: number;
   blendMode?: LayerBlendMode;
   fit?: "cover" | "contain" | "fill";
   brightness?: number;
@@ -309,15 +310,19 @@ function getPlanCuts(plan: EditPlan | null, realDuration: number): FFmpegCut[] {
 }
 
 function getRenderableTimelineLayers(layers: BrowserTimelineLayer[]) {
-  return layers.filter((layer) => {
-    if (layer.hidden) return false;
-    if (layer.duration <= 0) return false;
-    if (layer.type === "image") return Boolean(layer.src);
-    if (layer.type === "shape") return true;
-    if (layer.type === "text") return Boolean(layer.content?.trim());
-    if (layer.type === "caption") return Boolean(layer.content?.trim());
-    return false;
-  });
+  return layers
+    .filter((layer) => {
+      if (layer.hidden) return false;
+      if (layer.duration <= 0) return false;
+      if (layer.type === "image") return Boolean(layer.src);
+      if (layer.type === "shape") return true;
+      if (layer.type === "text") return Boolean(layer.content?.trim());
+      if (layer.type === "caption") return Boolean(layer.content?.trim());
+      return false;
+    })
+    .map((layer, index) => ({ layer, index }))
+    .sort((left, right) => getRenderLayerStackValue(left.layer, left.index) - getRenderLayerStackValue(right.layer, right.index))
+    .map(({ layer }) => layer);
 }
 
 async function loadTimelineOverlayAssets(layers: BrowserTimelineLayer[]) {
@@ -502,6 +507,10 @@ function applyTimelineLayerTransform(
   if (transform.rotation) context.rotate((transform.rotation * Math.PI) / 180);
   if (transform.scale !== 1) context.scale(transform.scale, transform.scale);
   context.translate(-centerX, -centerY);
+}
+
+function getRenderLayerStackValue(layer: Pick<BrowserTimelineLayer, "zIndex">, fallbackIndex: number) {
+  return Number.isFinite(layer.zIndex) ? layer.zIndex ?? fallbackIndex : fallbackIndex;
 }
 
 function getTimelineLayerAnimationFrame(

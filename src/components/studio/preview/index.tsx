@@ -219,6 +219,9 @@ export function TemplateProjectPreview({ project }: { project: TemplateProject }
   const activeLayers = project.timeline
     .flatMap((track) => track.layers)
     .filter((layer) => layer.absoluteStart <= (firstScene?.duration ?? project.duration))
+    .map((layer, index) => ({ layer, index }))
+    .sort((left, right) => getPreviewLayerStackValue(left.layer, left.index) - getPreviewLayerStackValue(right.layer, right.index))
+    .map(({ layer }) => layer)
     .slice(0, 12);
 
   return (
@@ -266,7 +269,10 @@ function TimelinePreviewOverlay({
   const [editingText, setEditingText] = useState<PreviewTextEditState | null>(null);
   const layers = tracks
     .flatMap((track) => track.layers)
-    .filter((layer) => isRenderablePreviewLayer(layer, currentTime));
+    .filter((layer) => isRenderablePreviewLayer(layer, currentTime))
+    .map((layer, index) => ({ layer, index }))
+    .sort((left, right) => getPreviewLayerStackValue(left.layer, left.index) - getPreviewLayerStackValue(right.layer, right.index))
+    .map(({ layer }) => layer);
   const activeFrame = interactionState
     ? getPreviewInteractionFrame(interactionState, dimensions)
     : null;
@@ -789,6 +795,10 @@ function resolvePreviewMediaObjectPosition(layer: Pick<TimelineLayer, "mediaOffs
   const x = Math.min(100, Math.max(0, 50 + (layer.mediaOffsetX ?? 0) / 2));
   const y = Math.min(100, Math.max(0, 50 + (layer.mediaOffsetY ?? 0) / 2));
   return `${x}% ${y}%`;
+}
+
+function getPreviewLayerStackValue(layer: Pick<TimelineLayer, "zIndex">, fallbackIndex: number) {
+  return Number.isFinite(layer.zIndex) ? layer.zIndex ?? fallbackIndex : fallbackIndex;
 }
 
 function combinePreviewTransforms(...transforms: Array<string | undefined>) {

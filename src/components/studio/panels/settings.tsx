@@ -590,6 +590,14 @@ export function LayerInspector({
           onChange={(opacity) => onChange({ opacity: clampInspectorNumber(opacity, 0, 100) / 100 })}
         />
         {supportsBlendMode ? (
+          <NumberField
+            label="Stack"
+            value={layer.zIndex ?? 0}
+            disabled={locked}
+            onChange={(zIndex) => onChange({ zIndex: clampInspectorNumber(zIndex, 0, 999) })}
+          />
+        ) : null}
+        {supportsBlendMode ? (
           <Field label="Blend mode">
             <select
               value={layer.blendMode ?? "normal"}

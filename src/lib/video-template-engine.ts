@@ -101,6 +101,7 @@ export type TemplateLayer = {
   shadowOffsetY?: number;
   padding?: number;
   opacity?: number;
+  zIndex?: number;
   blendMode?: LayerBlendMode;
   fit?: "cover" | "contain" | "fill";
   brightness?: number;

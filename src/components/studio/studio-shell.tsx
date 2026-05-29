@@ -264,14 +264,13 @@ export function ProfessionalVideoStudio() {
     [selectedLayerId, timelineTracks],
   );
   const selectedLayerStackInfo = useMemo(() => {
-    for (const track of timelineTracks) {
-      const layerIndex = track.layers.findIndex((layer) => layer.id === selectedLayerId);
-      if (layerIndex !== -1) {
-        return {
-          layerIndex,
-          layerCount: track.layers.length,
-        };
-      }
+    const stack = getStackableTimelineLayers(timelineTracks);
+    const layerIndex = stack.findIndex((entry) => entry.layer.id === selectedLayerId);
+    if (layerIndex !== -1) {
+      return {
+        layerIndex,
+        layerCount: stack.length,
+      };
     }
 
     return null;
@@ -1815,37 +1814,37 @@ export function ProfessionalVideoStudio() {
       return;
     }
 
-    let moved = false;
-    const nextTracks = timelineTracks.map((track) => {
-      const currentIndex = track.layers.findIndex((layer) => layer.id === selectedLayer.id);
-      if (currentIndex === -1) return track;
+    const stack = getStackableTimelineLayers(timelineTracks);
+    const currentIndex = stack.findIndex((entry) => entry.layer.id === selectedLayer.id);
+    if (currentIndex === -1) {
+      setProjectStatus(`${selectedLayer.name} cannot be reordered`);
+      return;
+    }
 
-      const layers = [...track.layers];
-      const [layer] = layers.splice(currentIndex, 1);
-      const nextIndex =
-        direction === "front"
-          ? layers.length
-          : direction === "back"
-            ? 0
-            : direction === "forward"
-              ? Math.min(layers.length, currentIndex + 1)
-              : Math.max(0, currentIndex - 1);
+    const [entry] = stack.splice(currentIndex, 1);
+    const nextIndex =
+      direction === "front"
+        ? stack.length
+        : direction === "back"
+          ? 0
+          : direction === "forward"
+            ? Math.min(stack.length, currentIndex + 1)
+            : Math.max(0, currentIndex - 1);
 
-      if (nextIndex === currentIndex) return track;
-
-      layers.splice(nextIndex, 0, layer);
-      moved = true;
-
-      return {
-        ...track,
-        layers,
-      };
-    });
-
-    if (!moved) {
+    if (nextIndex === currentIndex) {
       setProjectStatus(`${selectedLayer.name} is already at this layer edge`);
       return;
     }
+
+    stack.splice(nextIndex, 0, entry);
+    const zIndexById = new Map(stack.map((stackEntry, index) => [stackEntry.layer.id, index]));
+    const nextTracks = timelineTracks.map((track) => ({
+      ...track,
+      layers: track.layers.map((layer) => ({
+        ...layer,
+        zIndex: zIndexById.get(layer.id) ?? layer.zIndex,
+      })),
+    }));
 
     commitTimeline(nextTracks);
     setSelectedLayerId(selectedLayer.id);
@@ -3507,6 +3506,22 @@ function isDuplicableEditorLayer(layer: TimelineLayer | null) {
   return isPositionableEditorLayer(layer);
 }
 
+function getStackableTimelineLayers(tracks: TimelineTrack[]) {
+  return tracks
+    .flatMap((track) => track.layers)
+    .map((layer, index) => ({ layer, fallbackIndex: index }))
+    .filter(({ layer }) => isStackableEditorLayer(layer))
+    .sort((left, right) => getLayerStackValue(left.layer, left.fallbackIndex) - getLayerStackValue(right.layer, right.fallbackIndex));
+}
+
+function getLayerStackValue(layer: TimelineLayer, fallbackIndex: number) {
+  return Number.isFinite(layer.zIndex) ? layer.zIndex ?? fallbackIndex : fallbackIndex;
+}
+
+function isStackableEditorLayer(layer: TimelineLayer) {
+  return layer.type === "video" || layer.type === "image" || layer.type === "text" || layer.type === "caption" || layer.type === "shape" || layer.type === "background";
+}
+
 function createImageStoryboardTemplateProject({
   assets,
   plan,
@@ -4674,6 +4689,7 @@ function editorLayerToTemplateTimelineLayer(
     start: relativeStart,
     absoluteStart: layer.start,
     duration: Math.max(0.1, layer.duration),
+    zIndex: layer.zIndex,
     color: layer.textColor ?? layer.color,
     backgroundColor: layer.backgroundColor,
     borderRadius: layer.borderRadius,
@@ -4791,6 +4807,7 @@ function templateTimelineToEditorTracks(templateTracks: TemplateTimelineTrack[])
       name: layer.content || layer.name || layer.id,
       start: layer.absoluteStart,
       duration: layer.duration,
+      zIndex: layer.zIndex,
       color: normalizeHexColor(layer.color ?? layer.backgroundColor ?? colorForTemplateLayer(layer.type)),
       content: layer.content,
       src: layer.src,
@@ -4847,6 +4864,7 @@ function toTemplateTimelinePatch(patch: Partial<TimelineLayer>): Partial<Templat
     src: patch.src,
     start: patch.start,
     duration: patch.duration,
+    zIndex: patch.zIndex,
     color: patch.color ?? patch.textColor,
     backgroundColor: patch.backgroundColor,
     x: patch.x,

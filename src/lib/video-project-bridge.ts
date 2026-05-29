@@ -70,6 +70,7 @@ export type EditorTimelineLayerInput = {
   shadowOffsetY?: number;
   padding?: number;
   opacity?: number;
+  zIndex?: number;
   blendMode?: LayerBlendMode;
   fit?: "cover" | "contain" | "fill";
   brightness?: number;
@@ -369,6 +370,7 @@ export function editorLayerPatchToVideoLayerPatch(
     height: patch.height,
     rotation: patch.rotation,
     opacity: patch.opacity,
+    zIndex: patch.zIndex,
     locked: patch.locked,
     hidden: patch.hidden,
     start: patch.start,
@@ -498,7 +500,7 @@ function templateLayerToVideoLayer(
     scaleX: 1,
     scaleY: 1,
     opacity: layer.opacity ?? 1,
-    zIndex: index,
+    zIndex: layer.zIndex ?? index,
     start: layer.absoluteStart,
     duration: Math.max(0.1, layer.duration),
     editable: layer.editable,
@@ -567,7 +569,7 @@ function editorTimelineLayerToVideoLayer(
     scaleX: previous?.scaleX ?? 1,
     scaleY: previous?.scaleY ?? 1,
     opacity: layer.opacity ?? previous?.opacity ?? 1,
-    zIndex: previous?.zIndex ?? index,
+    zIndex: layer.zIndex ?? previous?.zIndex ?? index,
     start: layer.start,
     duration: Math.max(0.1, layer.duration),
     editable: previous?.editable ?? true,

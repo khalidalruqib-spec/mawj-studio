@@ -131,7 +131,9 @@ function drawTemplateFrame(
   const activeLayers = project.timeline
     .flatMap((track) => track.layers)
     .filter((layer) => isLayerActive(layer, time))
-    .sort((left, right) => getLayerZIndex(left.type) - getLayerZIndex(right.type));
+    .map((layer, index) => ({ layer, index }))
+    .sort((left, right) => getLayerStackValue(left.layer, left.index) - getLayerStackValue(right.layer, right.index))
+    .map(({ layer }) => layer);
 
   for (const layer of activeLayers) {
     drawLayer(context, layer, assets, time, project.inputs[TEMPLATE_FONT_PRESET_INPUT_KEY]);
@@ -649,6 +651,11 @@ function getLayerZIndex(type: TemplateTimelineLayer["type"]) {
   };
 
   return order[type] ?? 10;
+}
+
+function getLayerStackValue(layer: TemplateTimelineLayer, fallbackIndex: number) {
+  if (Number.isFinite(layer.zIndex)) return layer.zIndex ?? fallbackIndex;
+  return getLayerZIndex(layer.type) * 1000 + fallbackIndex;
 }
 
 function getAnimatedOpacity(layer: TemplateTimelineLayer, time: number) {
