@@ -2588,6 +2588,7 @@ export function ProfessionalVideoStudio() {
                 zoom={timelineZoom}
                 totalSeconds={totalTimelineSeconds}
                 onSelectLayer={selectTimelineLayer}
+                onUpdateLayer={updateTimelineLayer}
               />
             </>
           )}

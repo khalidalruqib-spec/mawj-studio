@@ -25,6 +25,7 @@ import { isUsableMediaDuration } from "@/lib/media-duration";
 import {
   getTimelineCanvasHeight,
   getTimelineCanvasWidth,
+  getTimelinePixelsPerSecond,
   hitTestTimeline,
   renderTimelineCanvas,
   type TimelineCanvasRenderPayload,
@@ -822,16 +823,19 @@ export function TimelineEditor({
   zoom,
   totalSeconds,
   onSelectLayer,
+  onUpdateLayer,
 }: {
   tracks: TimelineTrack[];
   selectedLayerId: string;
   zoom: number;
   totalSeconds: number;
   onSelectLayer: (id: string) => void;
+  onUpdateLayer: (id: string, patch: Partial<TimelineLayer>) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const transferredRef = useRef(false);
+  const [timelineDrag, setTimelineDrag] = useState<TimelineDragState | null>(null);
   const canvasWidth = useMemo(
     () => getTimelineCanvasWidth(totalSeconds, zoom),
     [totalSeconds, zoom],
@@ -840,9 +844,13 @@ export function TimelineEditor({
     () => getTimelineCanvasHeight(tracks.length),
     [tracks.length],
   );
+  const previewTracks = useMemo(
+    () => (timelineDrag ? applyTimelineDragPreview(tracks, timelineDrag, totalSeconds) : tracks),
+    [timelineDrag, totalSeconds, tracks],
+  );
   const renderPayload = useMemo<TimelineCanvasRenderPayload>(
     () => ({
-      tracks,
+      tracks: previewTracks,
       selectedLayerId,
       totalSeconds,
       zoom,
@@ -850,7 +858,7 @@ export function TimelineEditor({
       height: canvasHeight,
       dpr: typeof window === "undefined" ? 1 : window.devicePixelRatio || 1,
     }),
-    [canvasHeight, canvasWidth, selectedLayerId, totalSeconds, tracks, zoom],
+    [canvasHeight, canvasWidth, previewTracks, selectedLayerId, totalSeconds, zoom],
   );
 
   useEffect(() => {
@@ -901,8 +909,8 @@ export function TimelineEditor({
     renderTimelineCanvas(context, renderPayload);
   }, [canvasHeight, canvasWidth, renderPayload]);
 
-  const handleTimelineClick = useCallback(
-    (event: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleTimelinePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -912,9 +920,57 @@ export function TimelineEditor({
         y: (event.clientY - rect.top) * (canvasHeight / rect.height),
       };
       const hit = hitTestTimeline(renderPayload, point);
-      if (hit) onSelectLayer(hit.layerId);
+      if (!hit) return;
+
+      const layer = tracks
+        .flatMap((track) => track.layers)
+        .find((item) => item.id === hit.layerId);
+
+      onSelectLayer(hit.layerId);
+      if (!layer || layer.locked) return;
+
+      event.preventDefault();
+      canvas.setPointerCapture(event.pointerId);
+      setTimelineDrag({
+        layerId: layer.id,
+        pointerId: event.pointerId,
+        mode: getTimelineDragMode(hit.x, hit.width, point.x),
+        startPointerX: event.clientX,
+        scaleX: canvasWidth / rect.width,
+        pxPerSecond: getTimelinePixelsPerSecond(zoom),
+        start: layer.start,
+        duration: layer.duration,
+        deltaSeconds: 0,
+      });
     },
-    [canvasHeight, canvasWidth, onSelectLayer, renderPayload],
+    [canvasHeight, canvasWidth, onSelectLayer, renderPayload, tracks, zoom],
+  );
+  const handleTimelinePointerMove = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    setTimelineDrag((state) => {
+      if (!state || state.pointerId !== event.pointerId) return state;
+      event.preventDefault();
+
+      return {
+        ...state,
+        deltaSeconds: ((event.clientX - state.startPointerX) * state.scaleX) / state.pxPerSecond,
+      };
+    });
+  }, []);
+  const handleTimelinePointerEnd = useCallback(
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!timelineDrag || timelineDrag.pointerId !== event.pointerId) return;
+
+      event.preventDefault();
+      const patch = getTimelineDragPatch(timelineDrag, totalSeconds);
+      if (
+        patch.start !== roundTimelineSeconds(timelineDrag.start) ||
+        patch.duration !== roundTimelineSeconds(timelineDrag.duration)
+      ) {
+        onUpdateLayer(timelineDrag.layerId, patch);
+      }
+      setTimelineDrag(null);
+    },
+    [onUpdateLayer, timelineDrag, totalSeconds],
   );
 
   const selectedLayer = tracks
@@ -942,10 +998,13 @@ export function TimelineEditor({
             ref={canvasRef}
             width={canvasWidth}
             height={canvasHeight}
-            onClick={handleTimelineClick}
+            onPointerDown={handleTimelinePointerDown}
+            onPointerMove={handleTimelinePointerMove}
+            onPointerUp={handleTimelinePointerEnd}
+            onPointerCancel={handleTimelinePointerEnd}
             tabIndex={0}
             role="img"
-            aria-label="Canvas timeline. Click a clip to select and edit it in the inspector."
+            aria-label="Canvas timeline. Drag clips to move timing, or drag edges to trim."
             className="block cursor-pointer rounded-lg border border-[var(--line)] bg-black/20 outline-none transition focus:border-[var(--brand)]"
           />
         </div>
@@ -955,6 +1014,85 @@ export function TimelineEditor({
       </div>
     </section>
   );
+}
+
+type TimelineDragMode = "move" | "trim-start" | "trim-end";
+
+type TimelineDragState = {
+  layerId: string;
+  pointerId: number;
+  mode: TimelineDragMode;
+  startPointerX: number;
+  scaleX: number;
+  pxPerSecond: number;
+  start: number;
+  duration: number;
+  deltaSeconds: number;
+};
+
+function getTimelineDragMode(zoneX: number, zoneWidth: number, pointerX: number): TimelineDragMode {
+  const edgeWidth = Math.min(12, Math.max(6, zoneWidth / 3));
+  if (pointerX <= zoneX + edgeWidth) return "trim-start";
+  if (pointerX >= zoneX + zoneWidth - edgeWidth) return "trim-end";
+  return "move";
+}
+
+function applyTimelineDragPreview(
+  tracks: TimelineTrack[],
+  drag: TimelineDragState,
+  totalSeconds: number,
+): TimelineTrack[] {
+  const patch = getTimelineDragPatch(drag, totalSeconds);
+
+  return tracks.map((track) => ({
+    ...track,
+    layers: track.layers.map((layer) =>
+      layer.id === drag.layerId
+        ? {
+            ...layer,
+            ...patch,
+          }
+        : layer,
+    ),
+  }));
+}
+
+function getTimelineDragPatch(
+  drag: TimelineDragState,
+  totalSeconds: number,
+): Pick<TimelineLayer, "start" | "duration"> {
+  const delta = roundTimelineSeconds(drag.deltaSeconds);
+  const minDuration = 0.5;
+
+  if (drag.mode === "trim-start") {
+    const maxStart = drag.start + drag.duration - minDuration;
+    const start = clampTimelineSeconds(drag.start + delta, 0, maxStart);
+    return {
+      start,
+      duration: roundTimelineSeconds(drag.duration - (start - drag.start)),
+    };
+  }
+
+  if (drag.mode === "trim-end") {
+    const duration = clampTimelineSeconds(drag.duration + delta, minDuration, Math.max(minDuration, totalSeconds - drag.start));
+    return {
+      start: roundTimelineSeconds(drag.start),
+      duration,
+    };
+  }
+
+  return {
+    start: clampTimelineSeconds(drag.start + delta, 0, Math.max(0, totalSeconds - minDuration)),
+    duration: roundTimelineSeconds(drag.duration),
+  };
+}
+
+function roundTimelineSeconds(value: number) {
+  return Math.round(value * 10) / 10;
+}
+
+function clampTimelineSeconds(value: number, min: number, max: number) {
+  return roundTimelineSeconds(Math.min(max, Math.max(min, value)));
 }
 
 export function ProjectMetrics({
