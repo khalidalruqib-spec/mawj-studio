@@ -24,6 +24,7 @@ import {
   Save,
   Scissors,
   SlidersHorizontal,
+  Square,
   Trash2,
   Type,
   Undo2,
@@ -1611,6 +1612,39 @@ export function ProfessionalVideoStudio() {
     setProjectStatus("Editable text layer added and selected");
   }
 
+  function addShapeLayer() {
+    const shapeLayer = createManualShapeLayer({
+      start: Math.max(0, roundTime(previewTime)),
+      aspectRatio,
+    });
+    const targetTrack =
+      timelineTracks.find((track) => track.kind === "overlay" || track.kind === "shape") ??
+      timelineTracks.find((track) => track.kind === "text" || track.kind === "image");
+    const nextTracks = targetTrack
+      ? timelineTracks.map((track) =>
+          track.id === targetTrack.id
+            ? {
+                ...track,
+                layers: [...track.layers, shapeLayer],
+              }
+            : track,
+        )
+      : [
+          ...timelineTracks,
+          {
+            id: `track-shape-${crypto.randomUUID().slice(0, 8)}`,
+            name: "Shapes",
+            kind: "shape" as const,
+            layers: [shapeLayer],
+          },
+        ];
+
+    commitTimeline(nextTracks);
+    setSelectedLayerId(shapeLayer.id);
+    selectEngineLayer(shapeLayer.id);
+    setProjectStatus("Editable shape layer added and selected");
+  }
+
   function duplicateSelectedLayer() {
     if (!selectedLayer || !isDuplicableEditorLayer(selectedLayer)) {
       setProjectStatus("Select a text, image, shape, or caption layer to duplicate");
@@ -2606,6 +2640,7 @@ export function ProfessionalVideoStudio() {
                     <ToolbarButton label="Split" icon={Crop} onClick={splitSelectedLayer} disabled={!canSplitSelectedLayer} />
                     <ToolbarButton label="Merge" icon={Layers3} onClick={mergeVideoLayers} />
                     <ToolbarButton label="Text" icon={Type} onClick={addTextLayer} />
+                    <ToolbarButton label="Shape" icon={Square} onClick={addShapeLayer} />
                     <ToolbarButton
                       label="Duplicate"
                       icon={Copy}
@@ -3249,6 +3284,41 @@ function getManualTextLayerBox(aspectRatio: AspectRatio) {
   }
 
   return { x: 70, y: 1280, width: 940, height: 190 };
+}
+
+function createManualShapeLayer({
+  start,
+  aspectRatio,
+}: {
+  start: number;
+  aspectRatio: AspectRatio;
+}): TimelineLayer {
+  const box = getManualShapeLayerBox(aspectRatio);
+
+  return {
+    id: `shape-${crypto.randomUUID()}`,
+    type: "shape",
+    name: "CTA badge shape",
+    start,
+    duration: 5,
+    color: "#8ef7c2",
+    backgroundColor: "#8ef7c2",
+    borderRadius: aspectRatio === "16:9" ? 32 : 42,
+    opacity: 0.86,
+    ...box,
+  };
+}
+
+function getManualShapeLayerBox(aspectRatio: AspectRatio) {
+  if (aspectRatio === "16:9") {
+    return { x: 610, y: 780, width: 700, height: 130 };
+  }
+
+  if (aspectRatio === "1:1") {
+    return { x: 220, y: 800, width: 640, height: 130 };
+  }
+
+  return { x: 140, y: 1420, width: 800, height: 150 };
 }
 
 function duplicateTimelineLayer(layer: TimelineLayer, aspectRatio: AspectRatio): TimelineLayer {
