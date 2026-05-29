@@ -147,6 +147,38 @@ const MEDIA_FILTER_PRESETS: Array<{
   },
 ];
 
+const MEDIA_FRAMING_PRESETS: Array<{
+  id: string;
+  label: string;
+  detail: string;
+  patch: Pick<TimelineLayer, "mediaZoom" | "mediaOffsetX" | "mediaOffsetY">;
+}> = [
+  {
+    id: "center",
+    label: "Center",
+    detail: "توسيط بدون قص إضافي",
+    patch: { mediaZoom: 1, mediaOffsetX: 0, mediaOffsetY: 0 },
+  },
+  {
+    id: "product-closeup",
+    label: "Close-up",
+    detail: "تقريب للمنتج أو الوجه",
+    patch: { mediaZoom: 1.35, mediaOffsetX: 0, mediaOffsetY: 0 },
+  },
+  {
+    id: "top-focus",
+    label: "Top focus",
+    detail: "تركيز أعلى الصورة",
+    patch: { mediaZoom: 1.18, mediaOffsetX: 0, mediaOffsetY: -55 },
+  },
+  {
+    id: "bottom-focus",
+    label: "Bottom focus",
+    detail: "تركيز أسفل الصورة",
+    patch: { mediaZoom: 1.18, mediaOffsetX: 0, mediaOffsetY: 55 },
+  },
+];
+
 export function ProjectSettingsPanel({
   brandName,
   styleId,
@@ -353,6 +385,24 @@ export function LayerInspector({
           </Field>
           <div>
             <p className="mb-2 text-xs font-black text-[var(--muted)]">Crop and pan</p>
+            <div className="mb-2 grid grid-cols-2 gap-2">
+              {MEDIA_FRAMING_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  disabled={locked}
+                  onClick={() => onChange(preset.patch)}
+                  className="min-h-14 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-2 text-right transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="block text-xs font-black text-white" dir="auto">
+                    {preset.label}
+                  </span>
+                  <span className="mt-1 block text-[10px] font-bold leading-4 text-[var(--muted)]" dir="auto">
+                    {preset.detail}
+                  </span>
+                </button>
+              ))}
+            </div>
             <div className="grid grid-cols-3 gap-2">
               <NumberField
                 label="Zoom"
