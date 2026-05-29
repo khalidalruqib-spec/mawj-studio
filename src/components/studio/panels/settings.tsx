@@ -179,6 +179,38 @@ const MEDIA_FRAMING_PRESETS: Array<{
   },
 ];
 
+const LAYER_BORDER_PRESETS: Array<{
+  id: string;
+  label: string;
+  detail: string;
+  patch: Pick<TimelineLayer, "borderColor" | "borderWidth">;
+}> = [
+  {
+    id: "none",
+    label: "No border",
+    detail: "إزالة الإطار",
+    patch: { borderColor: "#ffffff", borderWidth: 0 },
+  },
+  {
+    id: "white-frame",
+    label: "White frame",
+    detail: "إطار واضح للصور",
+    patch: { borderColor: "#ffffff", borderWidth: 10 },
+  },
+  {
+    id: "brand-neon",
+    label: "Brand neon",
+    detail: "لون موج للكابشن",
+    patch: { borderColor: "#8ef7c2", borderWidth: 8 },
+  },
+  {
+    id: "soft-dark",
+    label: "Soft dark",
+    detail: "تحديد هادي وداكن",
+    patch: { borderColor: "#111827", borderWidth: 6 },
+  },
+];
+
 export function ProjectSettingsPanel({
   brandName,
   styleId,
@@ -549,15 +581,36 @@ export function LayerInspector({
         ) : null}
       </div>
       {supportsBorderRadius ? (
-        <Field label="Border color">
-          <input
-            type="color"
-            value={resolveInspectorColorInputValue(layer.borderColor, "#ffffff")}
-            disabled={locked}
-            onChange={(event) => onChange({ borderColor: event.target.value })}
-            className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
-          />
-        </Field>
+        <div className="space-y-2">
+          <p className="text-xs font-black text-[var(--muted)]">Border presets</p>
+          <div className="grid grid-cols-2 gap-2">
+            {LAYER_BORDER_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                disabled={locked}
+                onClick={() => onChange(preset.patch)}
+                className="min-h-14 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-2 text-right transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="block text-xs font-black text-white" dir="auto">
+                  {preset.label}
+                </span>
+                <span className="mt-1 block text-[10px] font-bold leading-4 text-[var(--muted)]" dir="auto">
+                  {preset.detail}
+                </span>
+              </button>
+            ))}
+          </div>
+          <Field label="Border color">
+            <input
+              type="color"
+              value={resolveInspectorColorInputValue(layer.borderColor, "#ffffff")}
+              disabled={locked}
+              onChange={(event) => onChange({ borderColor: event.target.value })}
+              className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </Field>
+        </div>
       ) : null}
       {supportsAnimation ? (
         <AnimationControls layer={layer} locked={locked} onChange={onChange} />
