@@ -149,8 +149,9 @@ export async function renderEditedVideo({
   }
 
   const playbackRate = getPlaybackRate(style.pace);
+  const cutSourceSeconds = ffmpegCuts.reduce((total, cut) => total + Math.max(0, cut.end - cut.start), 0);
   const desiredSourceSeconds = Math.max(4, Math.min(plan?.targetDurationSeconds ?? realDuration, 60));
-  const sourceSeconds = Math.min(realDuration, desiredSourceSeconds);
+  const sourceSeconds = ffmpegCuts.length > 0 ? Math.min(realDuration, cutSourceSeconds) : Math.min(realDuration, desiredSourceSeconds);
   const outputSeconds = sourceSeconds / playbackRate;
   const overlayImages = await loadTimelineOverlayImages(timelineTracks);
 
@@ -181,7 +182,7 @@ export async function renderEditedVideo({
       await audio.context.resume();
     }
 
-    video.currentTime = 0;
+    video.currentTime = ffmpegCuts[0]?.start ?? 0;
     video.playbackRate = playbackRate;
     drawEditedFrame(context, video, {
       style,
@@ -199,14 +200,30 @@ export async function renderEditedVideo({
 
     await new Promise<void>((resolve, reject) => {
       let animationFrame = 0;
+      const renderStart = performance.now();
       const tick = () => {
         if (video.error) {
           reject(new Error("تعذر قراءة الفيديو أثناء الرندر."));
           return;
         }
 
-        const elapsedSourceSeconds = Math.max(0, video.currentTime);
-        const elapsedOutputSeconds = Math.min(outputSeconds, elapsedSourceSeconds / playbackRate);
+        const elapsedOutputSeconds = ffmpegCuts.length > 0
+          ? Math.min(outputSeconds, (performance.now() - renderStart) / 1000)
+          : Math.min(outputSeconds, Math.max(0, video.currentTime) / playbackRate);
+
+        if (ffmpegCuts.length > 0) {
+          const targetSourceTime = getSourceTimeForCutOutput(ffmpegCuts, elapsedOutputSeconds * playbackRate);
+          const currentCut = getCutForSourceTime(ffmpegCuts, targetSourceTime);
+          const isOutsideCut =
+            !currentCut ||
+            video.currentTime < currentCut.start - 0.08 ||
+            video.currentTime > currentCut.end + 0.08;
+          const drift = Math.abs(video.currentTime - targetSourceTime);
+
+          if (isOutsideCut || drift > 0.35) {
+            video.currentTime = targetSourceTime;
+          }
+        }
 
         drawEditedFrame(context, video, {
           style,
@@ -226,7 +243,7 @@ export async function renderEditedVideo({
           outputSeconds,
         });
 
-        if (elapsedSourceSeconds >= sourceSeconds || video.ended) {
+        if (elapsedOutputSeconds >= outputSeconds || (!ffmpegCuts.length && video.ended)) {
           cancelAnimationFrame(animationFrame);
           resolve();
           return;
@@ -285,6 +302,24 @@ function getPlanCuts(plan: EditPlan | null, realDuration: number): FFmpegCut[] {
       label: item.label,
     }))
     .filter((cut) => cut.end - cut.start > 0.1);
+}
+
+function getSourceTimeForCutOutput(cuts: FFmpegCut[], elapsedSourceSeconds: number) {
+  let cursor = 0;
+
+  for (const cut of cuts) {
+    const duration = Math.max(0, cut.end - cut.start);
+    if (elapsedSourceSeconds <= cursor + duration) {
+      return cut.start + Math.max(0, elapsedSourceSeconds - cursor);
+    }
+    cursor += duration;
+  }
+
+  return cuts.at(-1)?.end ?? elapsedSourceSeconds;
+}
+
+function getCutForSourceTime(cuts: FFmpegCut[], sourceTime: number) {
+  return cuts.find((cut) => sourceTime >= cut.start - 0.01 && sourceTime <= cut.end + 0.01) ?? null;
 }
 
 export function getPreviewFilter(styleId: VideoStyle["id"]) {
@@ -589,7 +624,7 @@ function drawTimelineTextLayer(
     aspectRatio: AspectRatio;
   },
 ) {
-  const text = layer.content ?? layer.name;
+  const text = layer.content ?? "";
   if (!text.trim()) return;
 
   const fontSize = clamp((layer.fontSize ?? (layer.type === "caption" ? 58 : 64)) * scaleX, 18, aspectRatio === "16:9" ? 54 : 62);
@@ -747,7 +782,7 @@ function getRenderableTimelineLayers(tracks: RenderTimelineTrack[]) {
     .flatMap((track) => track.layers)
     .filter((layer) => {
       if (!["text", "caption", "image", "shape"].includes(layer.type)) return false;
-      if ((layer.type === "text" || layer.type === "caption") && !(layer.content ?? layer.name).trim()) return false;
+      if ((layer.type === "text" || layer.type === "caption") && !layer.content?.trim()) return false;
       if (layer.type === "image" && !layer.src) return false;
       return layer.duration > 0;
     });

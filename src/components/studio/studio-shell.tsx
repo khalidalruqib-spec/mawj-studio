@@ -2025,30 +2025,75 @@ export function ProfessionalVideoStudio() {
 
   function markTranscriptDeleted(segmentId: string) {
     const segment = transcript.find((item) => item.id === segmentId);
-    setTranscript((items) =>
-      items.map((item) => (item.id === segmentId ? { ...item, deleted: !item.deleted } : item)),
-    );
     if (!segment) return;
 
+    const nextTranscript = transcript.map((item) =>
+      item.id === segmentId ? { ...item, deleted: !item.deleted } : item,
+    );
+    const keptSegments = getKeptTranscriptSegments(nextTranscript);
+
+    if (!keptSegments.length) {
+      setProjectStatus("لا يمكن حذف كل مقاطع الترانسكربت");
+      setAssistantMessages((messages) =>
+        [
+          createAssistantMessage(
+            "assistant",
+            "ما أقدر أحذف كل الجمل؛ لازم يبقى مقطع واحد على الأقل حتى نقدر نصدّر فيديو فعلي.",
+          ),
+          ...messages,
+        ].slice(0, 12),
+      );
+      return;
+    }
+
+    const deletedSegments = getDeletedTranscriptSegments(nextTranscript);
+    const hasCuts = deletedSegments.length > 0;
+    const targetDuration = studioFile?.durationSeconds ?? totalTimelineSeconds;
+    const nextPlan = hasCuts
+      ? createTranscriptCutPlan({
+          transcript: nextTranscript,
+          deletedSegments,
+          style: activeStyle,
+          aspectRatio,
+          brandName,
+          durationSeconds: targetDuration,
+        })
+      : null;
+    const nextCaptions = hasCuts
+      ? createOutputCaptionsFromTranscript(nextTranscript)
+      : transcriptToCaptions(keptSegments);
+
+    setTranscript(nextTranscript);
+    setCaptions(nextCaptions);
+    setPlan((currentPlan) => nextPlan ?? (currentPlan?.id.startsWith("transcript-cut-") ? null : currentPlan));
     commitTimeline((tracks) =>
-      tracks.map((track) =>
-        track.kind === "effects"
-          ? {
-              ...track,
-              layers: [
-                ...track.layers,
-                {
-                  id: crypto.randomUUID(),
-                  type: "effect",
-                  name: `Text cut ${formatDuration(segment.start)}`,
-                  start: segment.start,
-                  duration: Math.max(0.5, segment.end - segment.start),
-                  color: "#fb7185",
-                },
-              ],
-            }
-          : track,
+      ensureCaptionLayer(
+        syncTranscriptCutMarkers(tracks, deletedSegments),
+        nextCaptions,
+        nextPlan?.targetDurationSeconds ?? targetDuration,
+        getActiveCaptionStylePatch(),
       ),
+    );
+    clearRenderedOutput();
+    setProjectStatus(
+      hasCuts
+        ? `تم تجهيز ${deletedSegments.length} قصّة نصية للتصدير`
+        : "تم إلغاء قص الترانسكربت واستعادة الكابشن",
+    );
+    setAssistantMessages((messages) =>
+      [
+        createAssistantMessage(
+          "assistant",
+          hasCuts
+            ? `تم تجهيز قص فعلي من الترانسكربت. التصدير القادم سيحافظ على ${keptSegments.length} مقطع ويقص:\n${deletedSegments
+                .slice(0, 6)
+                .map((item) => `• ${formatDuration(item.start)}–${formatDuration(item.end)}`)
+                .join("\n")}`
+            : "رجّعت كل مقاطع الترانسكربت. التصدير القادم سيستخدم الفيديو بدون قص نصي.",
+          hasCuts ? [{ type: "REMOVE_SILENCE", label: `${deletedSegments.length} transcript cuts` }] : undefined,
+        ),
+        ...messages,
+      ].slice(0, 12),
     );
   }
 
@@ -2111,27 +2156,36 @@ export function ProfessionalVideoStudio() {
       deleted: true,
     }));
 
-    setTranscript((segments) =>
-      [...segments.filter((segment) => !segment.id.startsWith("silence-gap-")), ...silenceSegments]
-        .sort((a, b) => a.start - b.start),
-    );
-    setPlan(
-      createSilenceRemovalPlan({
-        transcript: sorted,
-        gaps,
-        style: activeStyle,
-        aspectRatio,
-        brandName,
-      }),
-    );
+    const nextTranscript = [
+      ...transcript.filter((segment) => !segment.id.startsWith("silence-gap-")),
+      ...silenceSegments,
+    ].sort((a, b) => a.start - b.start);
+    const nextPlan = createSilenceRemovalPlan({
+      transcript: sorted,
+      gaps,
+      style: activeStyle,
+      aspectRatio,
+      brandName,
+    });
+    const nextCaptions = createOutputCaptionsFromTranscript(nextTranscript);
+
+    setTranscript(nextTranscript);
+    setPlan(nextPlan);
+    setCaptions(nextCaptions);
 
     commitTimeline((tracks) =>
-      tracks.map((track) =>
-        track.kind === "effects"
-          ? { ...track, layers: [...track.layers, ...silenceMarkers] }
-        : track,
+      ensureCaptionLayer(
+        tracks.map((track) =>
+          track.kind === "effects"
+            ? { ...track, layers: [...track.layers.filter((layer) => !layer.name.startsWith("Silence ")), ...silenceMarkers] }
+            : track,
+        ),
+        nextCaptions,
+        nextPlan.targetDurationSeconds,
+        getActiveCaptionStylePatch(),
       ),
     );
+    clearRenderedOutput();
     setProjectStatus(`تم تحديد ${gaps.length} فترة صمت للحذف`);
     setAssistantMessages((messages) =>
       [
@@ -4902,6 +4956,132 @@ function createSilenceRemovalPlan({
       { platform: "SRT", duration: `${Math.round(targetDurationSeconds)}s`, caption: "Captions aligned to the shortened edit." },
     ],
   };
+}
+
+function createTranscriptCutPlan({
+  transcript,
+  deletedSegments,
+  style,
+  aspectRatio,
+  brandName,
+  durationSeconds,
+}: {
+  transcript: TranscriptSegment[];
+  deletedSegments: TranscriptSegment[];
+  style: VideoStyle;
+  aspectRatio: AspectRatio;
+  brandName: string;
+  durationSeconds: number;
+}): EditPlan {
+  const keptSegments = getKeptTranscriptSegments(transcript);
+  const captions = createPlanCaptionsFromTranscript(transcript);
+  const targetDurationSeconds = Math.max(
+    1,
+    Number(keptSegments.reduce((total, segment) => total + Math.max(0, segment.end - segment.start), 0).toFixed(2)),
+  );
+
+  return {
+    id: `transcript-cut-${Date.now()}`,
+    title: `${brandName || "Mawj Studio"} text edit`,
+    hook: keptSegments[0]?.text ?? "Text-based edit",
+    summary: `Cut ${deletedSegments.length} transcript segment${deletedSegments.length === 1 ? "" : "s"} and kept ${Math.round(targetDurationSeconds)}s from ${Math.round(durationSeconds)}s.`,
+    targetDurationSeconds,
+    styleId: style.id,
+    confidence: 93,
+    renderSettings: {
+      aspectRatio,
+      resolution: aspectRatio === "16:9" ? "1920x1080" : aspectRatio === "1:1" ? "1080x1080" : "1080x1920",
+      fps: 30,
+      loudness: "-14 LUFS",
+      safeMargins: "12% captions / 8% UI safe zones",
+    },
+    timeline: keptSegments.map((segment, index) => ({
+      id: `text-keep-${segment.id}`,
+      label: `Text edit ${index + 1}`,
+      start: segment.start,
+      end: segment.end,
+      action: `Keep transcript sentence and remove deleted ranges around ${formatDuration(segment.start)}.`,
+      intensity: index === 0 ? "high" : "medium",
+    })),
+    captions,
+    aiTools: [
+      { name: "Text-based editing", status: "ready", detail: `${deletedSegments.length} transcript segments are excluded from export.` },
+      { name: "FFmpeg trim", status: "ready", detail: "Export will concatenate the remaining transcript ranges." },
+    ],
+    exportVariants: [
+      { platform: "MP4", duration: `${Math.round(targetDurationSeconds)}s`, caption: "Transcript-trimmed video export." },
+      { platform: "SRT", duration: `${Math.round(targetDurationSeconds)}s`, caption: "Captions aligned to the shortened cut." },
+    ],
+  };
+}
+
+function getKeptTranscriptSegments(transcript: TranscriptSegment[]) {
+  return [...transcript]
+    .filter((segment) => !segment.deleted && !segment.id.startsWith("silence-gap-") && segment.end - segment.start > 0.1)
+    .sort((a, b) => a.start - b.start);
+}
+
+function getDeletedTranscriptSegments(transcript: TranscriptSegment[]) {
+  return [...transcript]
+    .filter((segment) => segment.deleted && segment.end - segment.start > 0.1)
+    .sort((a, b) => a.start - b.start);
+}
+
+function createPlanCaptionsFromTranscript(transcript: TranscriptSegment[]) {
+  let outputCursor = 0;
+
+  return getKeptTranscriptSegments(transcript).map((segment) => {
+    const caption = {
+      at: Number(outputCursor.toFixed(2)),
+      text: segment.text,
+      emphasis: [],
+    };
+    outputCursor += Math.max(0, segment.end - segment.start);
+    return caption;
+  });
+}
+
+function createOutputCaptionsFromTranscript(transcript: TranscriptSegment[]): CaptionLine[] {
+  let outputCursor = 0;
+
+  return getKeptTranscriptSegments(transcript).map((segment, index) => {
+    const duration = Math.max(0.4, segment.end - segment.start);
+    const start = Number(outputCursor.toFixed(2));
+    const end = Number((outputCursor + duration).toFixed(2));
+    outputCursor += duration;
+
+    return {
+      id: `cap-text-cut-${index}-${segment.id}`,
+      start,
+      end,
+      text: segment.text,
+    };
+  });
+}
+
+function syncTranscriptCutMarkers(tracks: TimelineTrack[], deletedSegments: TranscriptSegment[]): TimelineTrack[] {
+  const markers: TimelineLayer[] = deletedSegments.map((segment) => ({
+    id: `transcript-cut-${segment.id}`,
+    type: "effect",
+    name: `Text cut ${formatDuration(segment.start)}–${formatDuration(segment.end)}`,
+    start: segment.start,
+    duration: Math.max(0.5, segment.end - segment.start),
+    color: "#fb7185",
+  }));
+
+  return tracks.map((track) =>
+    track.kind === "effects"
+      ? {
+          ...track,
+          layers: [
+            ...track.layers.filter(
+              (layer) => !layer.id.startsWith("transcript-cut-") && !layer.name.startsWith("Text cut "),
+            ),
+            ...markers,
+          ],
+        }
+      : track,
+  );
 }
 
 function createClipSuggestions({
