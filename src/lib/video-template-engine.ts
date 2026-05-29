@@ -96,6 +96,10 @@ export type TemplateLayer = {
   padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
+  brightness?: number;
+  contrast?: number;
+  saturation?: number;
+  blur?: number;
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;

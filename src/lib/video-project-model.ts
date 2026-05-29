@@ -153,6 +153,10 @@ export interface LayerStyle {
   align?: "left" | "center" | "right";
   direction?: "ltr" | "rtl" | "auto";
   fit?: "cover" | "contain" | "fill";
+  brightness?: number;
+  contrast?: number;
+  saturation?: number;
+  blur?: number;
 }
 
 export interface Keyframe {
@@ -228,6 +232,10 @@ export const layerStyleSchema = z.object({
   align: z.enum(["left", "center", "right"]).optional(),
   direction: z.enum(["ltr", "rtl", "auto"]).optional(),
   fit: z.enum(["cover", "contain", "fill"]).optional(),
+  brightness: z.number().min(0).optional(),
+  contrast: z.number().min(0).optional(),
+  saturation: z.number().min(0).optional(),
+  blur: z.number().min(0).optional(),
 });
 
 export const keyframePropertiesSchema = z.object({

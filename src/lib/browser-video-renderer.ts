@@ -1,5 +1,6 @@
 import type { EditPlan } from "@/lib/edit-plan";
 import { trimVideoWithFFmpeg, type FFmpegCut } from "@/lib/ffmpeg-renderer";
+import { resolveLayerFilter } from "@/lib/layer-filters";
 import { resolveMediaDuration } from "@/lib/media-duration";
 import { resolveLayerFontFamily } from "@/lib/template-typography";
 import type { AspectRatio, VideoStyle } from "@/lib/video-styles";
@@ -68,6 +69,10 @@ export type BrowserTimelineLayer = {
   padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
+  brightness?: number;
+  contrast?: number;
+  saturation?: number;
+  blur?: number;
   animationIn?: TemplateAnimation;
   animationOut?: TemplateAnimation;
   hidden?: boolean;
@@ -445,7 +450,11 @@ function drawTimelineOverlays(
 
     if (layer.type === "image" && layer.src) {
       const image = assets.get(layer.src);
-      if (image) drawImageFitted(context, image, x, y, width, height, radius, layer.fit ?? "cover");
+      if (image) {
+        context.filter = resolveLayerFilter(layer, Math.min(scaleX, scaleY)) ?? "none";
+        drawImageFitted(context, image, x, y, width, height, radius, layer.fit ?? "cover");
+        context.filter = "none";
+      }
     } else if (layer.type === "shape") {
       roundedRect(context, x, y, width, height, radius);
       context.fillStyle = layer.backgroundColor ?? layer.color ?? "rgba(255,255,255,0.16)";

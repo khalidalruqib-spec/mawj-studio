@@ -19,6 +19,7 @@ import {
 import type { EditPlan } from "@/lib/edit-plan";
 import type { TemplateProject, TemplateTimelineTrack } from "@/lib/video-template-engine";
 import { normalizeTemplateFontWeight, resolveLayerFontFamily } from "@/lib/template-typography";
+import { resolveLayerFilter } from "@/lib/layer-filters";
 import type { AspectRatio, VideoStyle } from "@/lib/video-styles";
 import type { VideoProject } from "@/lib/video-project-model";
 import { isUsableMediaDuration } from "@/lib/media-duration";
@@ -480,7 +481,7 @@ function TimelinePreviewLayer({
           src={layer.src}
           alt={layer.name}
           className="h-full w-full"
-          style={{ objectFit: layer.fit ?? "cover" }}
+          style={{ objectFit: layer.fit ?? "cover", filter: resolveLayerFilter(layer, getPreviewFontScale(dimensions)) }}
         />
         <ResizeHandles selected={selected && !locked} onResizePointerDown={onResizePointerDown} />
       </button>
@@ -897,6 +898,7 @@ export function TemplatePreviewLayer({
           objectFit: layer.fit ?? "cover",
           borderRadius: layer.borderRadius ? `${Math.max(4, layer.borderRadius * 0.2)}px` : undefined,
           opacity: layer.opacity ?? 1,
+          filter: resolveLayerFilter(layer, 0.2),
           transform: resolvePreviewLayerTransform(layer, staticAnimation),
           transformOrigin: "center",
         }}

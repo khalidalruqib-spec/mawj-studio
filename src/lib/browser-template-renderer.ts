@@ -7,6 +7,7 @@ import type {
   BrowserRenderProgress,
   BrowserRenderResult,
 } from "@/lib/browser-video-renderer";
+import { resolveLayerFilter } from "@/lib/layer-filters";
 import {
   TEMPLATE_FONT_PRESET_INPUT_KEY,
   normalizeTemplateFontWeight,
@@ -173,7 +174,9 @@ function drawLayer(
   } else if (layer.type === "image" || layer.type === "video") {
     const asset = layer.src ? assets.get(layer.src) : null;
     if (asset) {
+      context.filter = resolveLayerFilter(layer) ?? "none";
       drawMedia(context, asset, x, y, width, height, layer.fit ?? "cover", layer.borderRadius ?? 0);
+      context.filter = "none";
     } else {
       drawMissingMedia(context, x, y, width, height, layer.type);
     }

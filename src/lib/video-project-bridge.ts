@@ -64,6 +64,10 @@ export type EditorTimelineLayerInput = {
   padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
+  brightness?: number;
+  contrast?: number;
+  saturation?: number;
+  blur?: number;
   animationIn?: TemplateAnimation;
   animationOut?: TemplateAnimation;
   locked?: boolean;
@@ -328,6 +332,10 @@ export function editorLayerPatchToVideoLayerPatch(
     align: patch.align,
     direction: patch.direction,
     fit: patch.fit,
+    brightness: patch.brightness,
+    contrast: patch.contrast,
+    saturation: patch.saturation,
+    blur: patch.blur,
   };
   const cleanStyle = removeUndefined(style);
 
@@ -493,6 +501,10 @@ function templateLayerToVideoLayer(
       align: layer.align,
       direction: layer.direction,
       fit: layer.fit,
+      brightness: layer.brightness,
+      contrast: layer.contrast,
+      saturation: layer.saturation,
+      blur: layer.blur,
     },
     effects: layer.type === "waveform" ? [{ id: `${layer.id}-waveform`, type: "waveform", enabled: true, params: {} }] : undefined,
     animationIn: templateAnimationToProjectAnimation(layer.animationIn),
@@ -549,6 +561,10 @@ function editorTimelineLayerToVideoLayer(
       align: layer.align ?? previous?.style?.align ?? "center",
       direction: layer.direction ?? previous?.style?.direction ?? "auto",
       fit: layer.fit ?? previous?.style?.fit ?? (type === "video" || type === "image" ? "cover" : undefined),
+      brightness: layer.brightness ?? previous?.style?.brightness,
+      contrast: layer.contrast ?? previous?.style?.contrast,
+      saturation: layer.saturation ?? previous?.style?.saturation,
+      blur: layer.blur ?? previous?.style?.blur,
     },
     effects:
       layer.type === "effect"

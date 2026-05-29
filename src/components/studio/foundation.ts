@@ -123,6 +123,10 @@ export type TimelineLayer = {
   padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
+  brightness?: number;
+  contrast?: number;
+  saturation?: number;
+  blur?: number;
   animationIn?: TemplateAnimation;
   animationOut?: TemplateAnimation;
   locked?: boolean;

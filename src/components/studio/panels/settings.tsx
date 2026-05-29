@@ -319,6 +319,43 @@ export function LayerInspector({
               <option value="fill">Fill - stretch</option>
             </select>
           </Field>
+          <div>
+            <p className="mb-2 text-xs font-black text-[var(--muted)]">Visual filters</p>
+            <div className="grid grid-cols-2 gap-2">
+              <NumberField
+                label="Brightness %"
+                value={layer.brightness ?? 100}
+                disabled={locked}
+                onChange={(brightness) => onChange({ brightness: clampInspectorNumber(brightness, 0, 220) })}
+              />
+              <NumberField
+                label="Contrast %"
+                value={layer.contrast ?? 100}
+                disabled={locked}
+                onChange={(contrast) => onChange({ contrast: clampInspectorNumber(contrast, 0, 220) })}
+              />
+              <NumberField
+                label="Saturation %"
+                value={layer.saturation ?? 100}
+                disabled={locked}
+                onChange={(saturation) => onChange({ saturation: clampInspectorNumber(saturation, 0, 260) })}
+              />
+              <NumberField
+                label="Blur px"
+                value={layer.blur ?? 0}
+                disabled={locked}
+                onChange={(blur) => onChange({ blur: clampInspectorNumber(blur, 0, 80) })}
+              />
+            </div>
+            <button
+              type="button"
+              disabled={locked}
+              onClick={() => onChange({ brightness: 100, contrast: 100, saturation: 100, blur: 0 })}
+              className="mt-2 min-h-9 w-full rounded-lg border border-[var(--line)] bg-black/20 px-3 py-2 text-xs font-black text-[var(--muted)] transition hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Reset visual filters
+            </button>
+          </div>
         </>
       ) : null}
       <div className="grid grid-cols-2 gap-2">
