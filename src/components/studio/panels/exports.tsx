@@ -9,8 +9,8 @@ const EXPORT_FORMATS = [
   { id: "MP4", disabled: false },
   { id: "SRT", disabled: false },
   { id: "Thumbnail", disabled: false },
+  { id: "MP3", disabled: false },
   { id: "GIF", disabled: true },
-  { id: "MP3", disabled: true },
 ] as const;
 
 export function ExportsPanel({
@@ -25,6 +25,7 @@ export function ExportsPanel({
   onRender,
   onDownloadSrt,
   onExportThumbnail,
+  onExportMp3,
 }: {
   tier: string;
   format: string;
@@ -37,6 +38,7 @@ export function ExportsPanel({
   onRender: () => void;
   onDownloadSrt: () => void;
   onExportThumbnail: () => void;
+  onExportMp3: () => void;
 }) {
   const selectedFormat = EXPORT_FORMATS.find((item) => item.id === format);
   const isUnsupported = Boolean(selectedFormat?.disabled);
@@ -45,6 +47,8 @@ export function ExportsPanel({
       ? "Download SRT"
       : format === "Thumbnail"
         ? "Download Thumbnail"
+        : format === "MP3"
+          ? "Export MP3"
         : isUnsupported
           ? `${format} قريبًا`
           : `Export ${format}`;
@@ -57,6 +61,11 @@ export function ExportsPanel({
 
     if (format === "Thumbnail") {
       onExportThumbnail();
+      return;
+    }
+
+    if (format === "MP3") {
+      onExportMp3();
       return;
     }
 
@@ -128,13 +137,17 @@ export function ExportsPanel({
       ) : null}
       {renderResult ? (
         <div className="rounded-lg border border-[var(--brand)] bg-[var(--brand-soft)] p-3">
-          <video
-            src={renderResult.url}
-            controls
-            className={`mx-auto mb-3 max-h-[420px] w-full rounded-lg bg-black object-contain ${
-              aspectRatio === "9:16" ? "aspect-[9/16] max-w-[236px]" : aspectRatio === "1:1" ? "aspect-square" : "aspect-video"
-            }`}
-          />
+          {renderResult.mimeType.startsWith("audio/") ? (
+            <audio src={renderResult.url} controls className="mb-3 w-full" />
+          ) : (
+            <video
+              src={renderResult.url}
+              controls
+              className={`mx-auto mb-3 max-h-[420px] w-full rounded-lg bg-black object-contain ${
+                aspectRatio === "9:16" ? "aspect-[9/16] max-w-[236px]" : aspectRatio === "1:1" ? "aspect-square" : "aspect-video"
+              }`}
+            />
+          )}
           <div className="mb-3 grid grid-cols-2 gap-2">
             <SmallSetting label="Output" value={renderResult.resolution} />
             <SmallSetting label="Length" value={formatDuration(renderResult.durationSeconds)} />

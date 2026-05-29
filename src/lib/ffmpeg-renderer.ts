@@ -48,12 +48,13 @@ export async function trimVideoWithFFmpeg(
   if (partNames.length === 1) {
     const data = await ffmpeg.readFile(partNames[0]);
     onProgress?.(100);
-    return fileDataToBlob(data);
+    return fileDataToBlob(data, "video/mp4");
   }
 
   const concatFile = partNames.map((part) => `file '${part}'`).join("\n");
   await ffmpeg.writeFile("concat.txt", new TextEncoder().encode(concatFile));
   await ffmpeg.exec([
+    "-y",
     "-f",
     "concat",
     "-safe",
@@ -67,7 +68,47 @@ export async function trimVideoWithFFmpeg(
 
   const data = await ffmpeg.readFile("output.mp4");
   onProgress?.(100);
-  return fileDataToBlob(data);
+  return fileDataToBlob(data, "video/mp4");
+}
+
+export async function extractAudioMp3WithFFmpeg(
+  source: Blob,
+  sourceName: string,
+  onProgress?: (p: number) => void,
+): Promise<Blob> {
+  if (!source.size) {
+    throw new Error("لا يوجد ملف صالح لاستخراج الصوت.");
+  }
+
+  const ffmpeg = await getFFmpeg();
+  const inputName = getFFmpegInputName(source, sourceName);
+  const outputName = "mawj-audio.mp3";
+
+  onProgress?.(5);
+  await ffmpeg.writeFile(inputName, await fetchFile(source));
+
+  ffmpeg.on("progress", ({ progress }) => {
+    const normalized = Number.isFinite(progress) ? progress : 0;
+    onProgress?.(Math.min(95, Math.max(8, Math.round(normalized * 90))));
+  });
+
+  await ffmpeg.exec([
+    "-y",
+    "-i",
+    inputName,
+    "-vn",
+    "-map",
+    "0:a:0",
+    "-acodec",
+    "libmp3lame",
+    "-b:a",
+    "192k",
+    outputName,
+  ]);
+
+  const data = await ffmpeg.readFile(outputName);
+  onProgress?.(100);
+  return fileDataToBlob(data, "audio/mpeg");
 }
 
 async function getFFmpeg() {
@@ -96,6 +137,7 @@ async function execTrimPart(
 ) {
   try {
     await ffmpeg.exec([
+      "-y",
       "-i",
       inputName,
       "-ss",
@@ -111,6 +153,7 @@ async function execTrimPart(
     return;
   } catch {
     await ffmpeg.exec([
+      "-y",
       "-i",
       inputName,
       "-ss",
@@ -141,12 +184,26 @@ function normalizeCuts(cuts: FFmpegCut[]) {
     .sort((left, right) => left.start - right.start);
 }
 
-function fileDataToBlob(data: Awaited<ReturnType<FFmpeg["readFile"]>>) {
+function getFFmpegInputName(source: Blob, sourceName: string) {
+  const lowerName = sourceName.toLowerCase();
+  const extension =
+    lowerName.endsWith(".webm") || source.type.includes("webm")
+      ? "webm"
+      : lowerName.endsWith(".mov") || source.type.includes("quicktime")
+        ? "mov"
+        : lowerName.endsWith(".mp3") || source.type.includes("mpeg")
+          ? "mp3"
+          : "mp4";
+
+  return `input.${extension}`;
+}
+
+function fileDataToBlob(data: Awaited<ReturnType<FFmpeg["readFile"]>>, mimeType: string) {
   if (typeof data === "string") {
-    return new Blob([data], { type: "video/mp4" });
+    return new Blob([data], { type: mimeType });
   }
 
   const copy = new Uint8Array(data.length);
   copy.set(data);
-  return new Blob([copy.buffer], { type: "video/mp4" });
+  return new Blob([copy.buffer], { type: mimeType });
 }

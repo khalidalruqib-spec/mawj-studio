@@ -35,6 +35,7 @@ import {
   type BrowserRenderProgress,
   type BrowserRenderResult,
 } from "@/lib/browser-video-renderer";
+import { extractAudioMp3WithFFmpeg } from "@/lib/ffmpeg-renderer";
 import {
   renderTemplateProject,
   renderTemplateProjectThumbnail,
@@ -2492,6 +2493,57 @@ export function ProfessionalVideoStudio() {
     }
   }
 
+  async function exportMp3() {
+    const sourceBlob = renderResult?.blob ?? studioFile?.file ?? null;
+    const sourceName = renderResult?.fileName ?? studioFile?.file.name ?? "mawj-video.mp4";
+    const outputSeconds = Math.max(
+      1,
+      renderResult?.durationSeconds ?? studioFile?.durationSeconds ?? templateProject?.duration ?? totalTimelineSeconds,
+    );
+
+    if (!sourceBlob) {
+      setError("ارفع فيديو أو صدّر ملف فيديو أولاً قبل استخراج MP3.");
+      return;
+    }
+
+    setIsRendering(true);
+    setError("");
+    setProjectStatus("Extracting MP3 audio...");
+    clearRenderedOutput();
+    setRenderProgress({
+      percent: 0,
+      label: "Preparing MP3 export",
+      elapsedSeconds: 0,
+      outputSeconds,
+    });
+
+    try {
+      const blob = await extractAudioMp3WithFFmpeg(sourceBlob, sourceName, (percent) => {
+        setRenderProgress({
+          percent,
+          label: "Extracting MP3 audio",
+          elapsedSeconds: Math.round((percent / 100) * outputSeconds),
+          outputSeconds,
+        });
+      });
+      const url = URL.createObjectURL(blob);
+      setRenderResult({
+        blob,
+        url,
+        fileName: `${withoutFileExtension(sourceName)}-audio.mp3`,
+        mimeType: "audio/mpeg",
+        durationSeconds: Math.round(outputSeconds),
+        resolution: "MP3 · 192 kbps",
+      });
+      setProjectStatus("MP3 audio export ready");
+      setActivePanel("exports");
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not extract MP3 audio.");
+    } finally {
+      setIsRendering(false);
+    }
+  }
+
   async function importSrtFile(file: File) {
     try {
       const text = await file.text();
@@ -3428,6 +3480,7 @@ export function ProfessionalVideoStudio() {
           onRender={renderVideo}
           onDownloadSrt={downloadSrt}
           onExportThumbnail={exportThumbnail}
+          onExportMp3={exportMp3}
         />
       );
     }
