@@ -120,6 +120,8 @@ export type TimelineLayer = {
   direction?: "ltr" | "rtl" | "auto";
   backgroundColor?: string;
   borderRadius?: number;
+  borderColor?: string;
+  borderWidth?: number;
   padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";

@@ -66,6 +66,8 @@ export type BrowserTimelineLayer = {
   direction?: "ltr" | "rtl" | "auto";
   backgroundColor?: string;
   borderRadius?: number;
+  borderColor?: string;
+  borderWidth?: number;
   padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
@@ -461,11 +463,13 @@ function drawTimelineOverlays(
           offsetY: layer.mediaOffsetY,
         });
         context.filter = "none";
+        strokeTimelineLayerBorder(context, x, y, width, height, radius, layer, Math.min(scaleX, scaleY));
       }
     } else if (layer.type === "shape") {
       roundedRect(context, x, y, width, height, radius);
       context.fillStyle = layer.backgroundColor ?? layer.color ?? "rgba(255,255,255,0.16)";
       context.fill();
+      strokeTimelineLayerBorder(context, x, y, width, height, radius, layer, Math.min(scaleX, scaleY));
     } else if (layer.type === "text" || layer.type === "caption") {
       drawTimelineTextLayer(context, layer, x, y, width, height, Math.min(scaleX, scaleY));
     }
@@ -560,6 +564,7 @@ function drawTimelineTextLayer(
     context.fillStyle = layer.backgroundColor;
     context.fill();
   }
+  strokeTimelineLayerBorder(context, x, y, width, height, radius, layer, scale);
 
   context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
   context.textAlign = layer.align ?? "center";
@@ -591,6 +596,27 @@ function drawTimelineTextLayer(
   }
   context.restore();
 
+  context.restore();
+}
+
+function strokeTimelineLayerBorder(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+  layer: Pick<BrowserTimelineLayer, "borderColor" | "borderWidth">,
+  scale: number,
+) {
+  const borderWidth = Math.max(0, (layer.borderWidth ?? 0) * scale);
+  if (!borderWidth) return;
+
+  context.save();
+  roundedRect(context, x + borderWidth / 2, y + borderWidth / 2, Math.max(0, width - borderWidth), Math.max(0, height - borderWidth), Math.max(0, radius - borderWidth / 2));
+  context.lineWidth = borderWidth;
+  context.strokeStyle = layer.borderColor ?? "rgba(255,255,255,0.72)";
+  context.stroke();
   context.restore();
 }
 

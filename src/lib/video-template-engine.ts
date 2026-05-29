@@ -92,6 +92,7 @@ export type TemplateLayer = {
   /** Gradient angle in degrees, default 145 */
   angle?: number;
   borderColor?: string;
+  borderWidth?: number;
   borderRadius?: number;
   padding?: number;
   opacity?: number;

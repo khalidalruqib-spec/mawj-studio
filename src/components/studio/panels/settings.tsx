@@ -531,6 +531,14 @@ export function LayerInspector({
             onChange={(borderRadius) => onChange({ borderRadius: clampInspectorNumber(borderRadius, 0, 240) })}
           />
         ) : null}
+        {supportsBorderRadius ? (
+          <NumberField
+            label="Border px"
+            value={layer.borderWidth ?? 0}
+            disabled={locked}
+            onChange={(borderWidth) => onChange({ borderWidth: clampInspectorNumber(borderWidth, 0, 80) })}
+          />
+        ) : null}
         {supportsRotation ? (
           <NumberField
             label="Rotation"
@@ -540,6 +548,17 @@ export function LayerInspector({
           />
         ) : null}
       </div>
+      {supportsBorderRadius ? (
+        <Field label="Border color">
+          <input
+            type="color"
+            value={resolveInspectorColorInputValue(layer.borderColor, "#ffffff")}
+            disabled={locked}
+            onChange={(event) => onChange({ borderColor: event.target.value })}
+            className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        </Field>
+      ) : null}
       {supportsAnimation ? (
         <AnimationControls layer={layer} locked={locked} onChange={onChange} />
       ) : null}

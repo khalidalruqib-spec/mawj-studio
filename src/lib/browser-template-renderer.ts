@@ -171,6 +171,7 @@ function drawLayer(
     roundedRect(context, x, y, width, height, layer.borderRadius ?? 0);
     context.fillStyle = layer.color ?? layer.backgroundColor ?? "rgba(255,255,255,0.16)";
     context.fill();
+    strokeTemplateLayerBorder(context, x, y, width, height, layer.borderRadius ?? 0, layer);
   } else if (layer.type === "image" || layer.type === "video") {
     const asset = layer.src ? assets.get(layer.src) : null;
     if (asset) {
@@ -181,6 +182,7 @@ function drawLayer(
         offsetY: layer.mediaOffsetY,
       });
       context.filter = "none";
+      strokeTemplateLayerBorder(context, x, y, width, height, layer.borderRadius ?? 0, layer);
     } else {
       drawMissingMedia(context, x, y, width, height, layer.type);
     }
@@ -329,7 +331,12 @@ function drawTextLayer(
     context.fillStyle = layer.backgroundColor;
     roundedRect(context, x, y, width, height, Math.min(48, layer.borderRadius ?? 28));
     context.fill();
+    strokeTemplateLayerBorder(context, x, y, width, height, Math.min(48, layer.borderRadius ?? 28), layer);
     context.restore();
+  }
+
+  if (!layer.backgroundColor || layer.backgroundColor.includes("{{") || shouldDrawPlaceholder) {
+    strokeTemplateLayerBorder(context, x, y, width, height, layer.borderRadius ?? 0, layer);
   }
 
   if (shouldDrawPlaceholder) {
@@ -521,6 +528,26 @@ function drawMedia(
   const drawHeight = sourceHeight * scale;
   const rect = resolveMediaDrawRect(x, y, width, height, drawWidth, drawHeight, framing);
   context.drawImage(asset, rect.x, rect.y, rect.width, rect.height);
+  context.restore();
+}
+
+function strokeTemplateLayerBorder(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+  layer: Pick<TemplateTimelineLayer, "borderColor" | "borderWidth">,
+) {
+  const borderWidth = Math.max(0, layer.borderWidth ?? 0);
+  if (!borderWidth) return;
+
+  context.save();
+  roundedRect(context, x + borderWidth / 2, y + borderWidth / 2, Math.max(0, width - borderWidth), Math.max(0, height - borderWidth), Math.max(0, radius - borderWidth / 2));
+  context.lineWidth = borderWidth;
+  context.strokeStyle = layer.borderColor ?? "rgba(255,255,255,0.72)";
+  context.stroke();
   context.restore();
 }
 

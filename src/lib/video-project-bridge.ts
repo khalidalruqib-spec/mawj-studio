@@ -61,6 +61,8 @@ export type EditorTimelineLayerInput = {
   direction?: "ltr" | "rtl" | "auto";
   backgroundColor?: string;
   borderRadius?: number;
+  borderColor?: string;
+  borderWidth?: number;
   padding?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
@@ -331,6 +333,8 @@ export function editorLayerPatchToVideoLayerPatch(
     textShadowOffsetY: patch.textShadowOffsetY,
     backgroundColor: patch.backgroundColor,
     borderRadius: patch.borderRadius,
+    borderColor: patch.borderColor,
+    borderWidth: patch.borderWidth,
     padding: patch.padding,
     align: patch.align,
     direction: patch.direction,
@@ -503,6 +507,8 @@ function templateLayerToVideoLayer(
       textShadowOffsetY: layer.textShadowOffsetY,
       backgroundColor: layer.backgroundColor,
       borderRadius: layer.borderRadius,
+      borderColor: layer.borderColor,
+      borderWidth: layer.borderWidth,
       padding: layer.padding,
       align: layer.align,
       direction: layer.direction,
@@ -566,6 +572,8 @@ function editorTimelineLayerToVideoLayer(
       textShadowOffsetY: layer.textShadowOffsetY ?? previous?.style?.textShadowOffsetY,
       backgroundColor: layer.backgroundColor ?? previous?.style?.backgroundColor,
       borderRadius: layer.borderRadius ?? previous?.style?.borderRadius,
+      borderColor: layer.borderColor ?? previous?.style?.borderColor,
+      borderWidth: layer.borderWidth ?? previous?.style?.borderWidth,
       padding: layer.padding ?? previous?.style?.padding,
       align: layer.align ?? previous?.style?.align ?? "center",
       direction: layer.direction ?? previous?.style?.direction ?? "auto",
