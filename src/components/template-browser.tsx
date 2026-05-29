@@ -59,6 +59,7 @@ import {
   listCustomVideoTemplates,
   storeCustomVideoTemplate,
 } from "@/lib/custom-video-template-store";
+import { generateLocalVideoTemplate } from "@/lib/local-template-generator";
 
 /* ─────────────────────────────────────────────────────────────────────
    Category metadata — colour, icon, Arabic label
@@ -239,6 +240,7 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
   const [inputValues, setInputValues] = useState<TemplateUserInputs>({});
   const [customTemplates, setCustomTemplates] = useState<VideoTemplate[]>(listCustomVideoTemplates);
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
+  const [generatorPrompt, setGeneratorPrompt] = useState("");
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const availableTemplates = useMemo(() => {
@@ -402,6 +404,23 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
     }
   }
 
+  function generateTemplateFromPrompt() {
+    const prompt = generatorPrompt.trim();
+
+    if (!prompt) {
+      setTemplateNotice("اكتب وصفًا قصيرًا للقالب أولاً.");
+      return;
+    }
+
+    const generatedTemplate = generateLocalVideoTemplate(prompt);
+    setCustomTemplates(storeCustomVideoTemplate(generatedTemplate));
+    setTemplatePack("custom");
+    setCategory("All");
+    setQuery("");
+    setPreviewTemplate(generatedTemplate);
+    setTemplateNotice(`تم توليد "${generatedTemplate.name}" وإضافته إلى قوالبي.`);
+  }
+
   function useTemplate() {
     if (!selectedTemplate) return;
     const project = createProjectFromTemplate(selectedTemplate, inputValues);
@@ -476,6 +495,21 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
                     <UploadCloud className="h-4 w-4" aria-hidden="true" />
                     Import template JSON
                   </button>
+                  <div className="flex min-w-[min(520px,100%)] flex-1 flex-col gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-soft)] p-2 sm:flex-row">
+                    <input
+                      value={generatorPrompt}
+                      onChange={(event) => setGeneratorPrompt(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") generateTemplateFromPrompt();
+                      }}
+                      placeholder="مثال: قالب إعلان عطر فاخر أسود وذهبي للتيك توك"
+                      className="min-h-11 flex-1 rounded-lg border border-transparent bg-black/20 px-3 text-sm font-bold outline-none transition focus:border-[var(--brand)]"
+                    />
+                    <button type="button" onClick={generateTemplateFromPrompt} className="btn-ghost shrink-0">
+                      <Sparkles className="h-4 w-4" aria-hidden="true" />
+                      Generate
+                    </button>
+                  </div>
                   {templateNotice ? (
                     <span className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-3 py-2 text-xs font-black text-[var(--brand)]">
                       {templateNotice}
