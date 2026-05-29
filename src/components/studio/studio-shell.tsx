@@ -1260,6 +1260,19 @@ export function ProfessionalVideoStudio() {
     setEnginePlayhead(nextTime);
   }
 
+  function seekPreview(seconds: number) {
+    const video = videoRef.current;
+    const maxSeconds = Math.max(0, studioFile?.durationSeconds ?? totalTimelineSeconds);
+    const nextTime = clampNumber(seconds, 0, maxSeconds || totalTimelineSeconds);
+
+    if (video && Number.isFinite(video.duration)) {
+      video.currentTime = clampNumber(nextTime, 0, video.duration);
+    }
+
+    setPreviewTime(nextTime);
+    setEnginePlayhead(nextTime);
+  }
+
   function selectTimelineLayer(layerId: string) {
     setSelectedLayerId(layerId);
     selectEngineLayer(layerId);
@@ -2587,8 +2600,10 @@ export function ProfessionalVideoStudio() {
                 selectedLayerId={selectedLayerId}
                 zoom={timelineZoom}
                 totalSeconds={totalTimelineSeconds}
+                currentTime={previewTime}
                 onSelectLayer={selectTimelineLayer}
                 onUpdateLayer={updateTimelineLayer}
+                onSeek={seekPreview}
               />
             </>
           )}

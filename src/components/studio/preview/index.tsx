@@ -26,6 +26,7 @@ import {
   getTimelineCanvasHeight,
   getTimelineCanvasWidth,
   getTimelinePixelsPerSecond,
+  getTimelineSecondFromX,
   hitTestTimeline,
   renderTimelineCanvas,
   type TimelineCanvasRenderPayload,
@@ -822,20 +823,25 @@ export function TimelineEditor({
   selectedLayerId,
   zoom,
   totalSeconds,
+  currentTime,
   onSelectLayer,
   onUpdateLayer,
+  onSeek,
 }: {
   tracks: TimelineTrack[];
   selectedLayerId: string;
   zoom: number;
   totalSeconds: number;
+  currentTime: number;
   onSelectLayer: (id: string) => void;
   onUpdateLayer: (id: string, patch: Partial<TimelineLayer>) => void;
+  onSeek: (seconds: number) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const transferredRef = useRef(false);
   const [timelineDrag, setTimelineDrag] = useState<TimelineDragState | null>(null);
+  const [timelineScrub, setTimelineScrub] = useState<TimelineScrubState | null>(null);
   const canvasWidth = useMemo(
     () => getTimelineCanvasWidth(totalSeconds, zoom),
     [totalSeconds, zoom],
@@ -853,12 +859,13 @@ export function TimelineEditor({
       tracks: previewTracks,
       selectedLayerId,
       totalSeconds,
+      playheadSeconds: currentTime,
       zoom,
       width: canvasWidth,
       height: canvasHeight,
       dpr: typeof window === "undefined" ? 1 : window.devicePixelRatio || 1,
     }),
-    [canvasHeight, canvasWidth, previewTracks, selectedLayerId, totalSeconds, zoom],
+    [canvasHeight, canvasWidth, currentTime, previewTracks, selectedLayerId, totalSeconds, zoom],
   );
 
   useEffect(() => {
@@ -920,7 +927,13 @@ export function TimelineEditor({
         y: (event.clientY - rect.top) * (canvasHeight / rect.height),
       };
       const hit = hitTestTimeline(renderPayload, point);
-      if (!hit) return;
+      if (!hit) {
+        event.preventDefault();
+        canvas.setPointerCapture(event.pointerId);
+        setTimelineScrub({ pointerId: event.pointerId });
+        onSeek(getTimelineSecondFromX(point.x, zoom, totalSeconds));
+        return;
+      }
 
       const layer = tracks
         .flatMap((track) => track.layers)
@@ -943,21 +956,38 @@ export function TimelineEditor({
         deltaSeconds: 0,
       });
     },
-    [canvasHeight, canvasWidth, onSelectLayer, renderPayload, tracks, zoom],
+    [canvasHeight, canvasWidth, onSeek, onSelectLayer, renderPayload, totalSeconds, tracks, zoom],
   );
-  const handleTimelinePointerMove = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
-    setTimelineDrag((state) => {
-      if (!state || state.pointerId !== event.pointerId) return state;
-      event.preventDefault();
+  const handleTimelinePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-      return {
-        ...state,
-        deltaSeconds: ((event.clientX - state.startPointerX) * state.scaleX) / state.pxPerSecond,
-      };
-    });
-  }, []);
+      if (timelineScrub?.pointerId === event.pointerId) {
+        const rect = canvas.getBoundingClientRect();
+        const pointX = (event.clientX - rect.left) * (canvasWidth / rect.width);
+        event.preventDefault();
+        onSeek(getTimelineSecondFromX(pointX, zoom, totalSeconds));
+        return;
+      }
+
+      if (!timelineDrag || timelineDrag.pointerId !== event.pointerId) return;
+      event.preventDefault();
+      setTimelineDrag({
+        ...timelineDrag,
+        deltaSeconds: ((event.clientX - timelineDrag.startPointerX) * timelineDrag.scaleX) / timelineDrag.pxPerSecond,
+      });
+    },
+    [canvasWidth, onSeek, timelineDrag, timelineScrub, totalSeconds, zoom],
+  );
   const handleTimelinePointerEnd = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
+      if (timelineScrub?.pointerId === event.pointerId) {
+        event.preventDefault();
+        setTimelineScrub(null);
+        return;
+      }
+
       if (!timelineDrag || timelineDrag.pointerId !== event.pointerId) return;
 
       event.preventDefault();
@@ -970,7 +1000,7 @@ export function TimelineEditor({
       }
       setTimelineDrag(null);
     },
-    [onUpdateLayer, timelineDrag, totalSeconds],
+    [onUpdateLayer, timelineDrag, timelineScrub, totalSeconds],
   );
 
   const selectedLayer = tracks
@@ -1028,6 +1058,10 @@ type TimelineDragState = {
   start: number;
   duration: number;
   deltaSeconds: number;
+};
+
+type TimelineScrubState = {
+  pointerId: number;
 };
 
 function getTimelineDragMode(zoneX: number, zoneWidth: number, pointerX: number): TimelineDragMode {

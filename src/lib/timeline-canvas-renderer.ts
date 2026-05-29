@@ -32,6 +32,7 @@ export type TimelineCanvasRenderPayload = {
   tracks: TimelineCanvasTrack[];
   selectedLayerId: string;
   totalSeconds: number;
+  playheadSeconds: number;
   zoom: number;
   width: number;
   height: number;
@@ -69,6 +70,11 @@ export function getTimelineCanvasWidth(totalSeconds: number, zoom: number) {
 
 export function getTimelineCanvasHeight(trackCount: number) {
   return RULER_HEIGHT + TRACK_GAP + trackCount * (TRACK_HEIGHT + TRACK_GAP) + TIMELINE_PADDING;
+}
+
+export function getTimelineSecondFromX(x: number, zoom: number, totalSeconds: number) {
+  const seconds = (x - HEADER_WIDTH - TIMELINE_PADDING) / getTimelinePixelsPerSecond(zoom);
+  return clamp(seconds, 0, totalSeconds);
 }
 
 export function renderTimelineCanvas(
@@ -258,7 +264,8 @@ function drawClip(
 
 function drawPlayhead(context: TimelineContext, payload: TimelineCanvasRenderPayload) {
   const pxPerSecond = getTimelinePixelsPerSecond(payload.zoom);
-  const playheadX = HEADER_WIDTH + TIMELINE_PADDING;
+  const playheadSeconds = clamp(payload.playheadSeconds, 0, payload.totalSeconds);
+  const playheadX = HEADER_WIDTH + TIMELINE_PADDING + playheadSeconds * pxPerSecond;
 
   context.strokeStyle = "rgba(239,68,68,0.95)";
   context.lineWidth = 2;
@@ -274,6 +281,15 @@ function drawPlayhead(context: TimelineContext, payload: TimelineCanvasRenderPay
   context.lineTo(playheadX, 10);
   context.closePath();
   context.fill();
+
+  context.fillStyle = "rgba(239,68,68,0.92)";
+  roundRect(context, Math.max(HEADER_WIDTH + 4, playheadX - 24), 14, 48, 18, 6);
+  context.fill();
+  context.fillStyle = "#ffffff";
+  context.font = '850 10px "Geist", "Inter", system-ui, sans-serif';
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(`${playheadSeconds.toFixed(1)}s`, Math.max(HEADER_WIDTH + 28, playheadX), 23);
 
   const totalWidth = Math.max(1, payload.totalSeconds * pxPerSecond);
   context.fillStyle = "rgba(142,247,194,0.9)";
