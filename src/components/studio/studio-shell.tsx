@@ -2147,41 +2147,6 @@ export function ProfessionalVideoStudio() {
     );
   }
 
-  function addEffectLayer(name: string, color: string, duration = Math.min(totalTimelineSeconds, 30)) {
-    const effectLayer: TimelineLayer = {
-      id: crypto.randomUUID(),
-      type: "effect",
-      name,
-      start: 0,
-      duration: Math.max(1, duration),
-      color,
-    };
-
-    commitTimeline((tracks) => {
-      let added = false;
-      const nextTracks = tracks.map((track) => {
-        if (track.kind !== "effects") return track;
-        added = true;
-        return {
-          ...track,
-          layers: [...track.layers, effectLayer],
-        };
-      });
-
-      if (added) return nextTracks;
-
-      return [
-        ...nextTracks,
-        {
-          id: "track-effects",
-          name: "AI Effects",
-          kind: "effects",
-          layers: [effectLayer],
-        },
-      ];
-    });
-  }
-
   function applyBackgroundReplacement(mode = backgroundMode) {
     setBackgroundMode(mode);
     const backgroundLayer = createBackgroundReplacementLayer({
@@ -2210,6 +2175,14 @@ export function ProfessionalVideoStudio() {
   }
 
   function applyAudioEnhancementChain() {
+    const enabledTools = [
+      "Noise reduction",
+      "Voice enhancement",
+      "Echo reduction",
+      "Auto volume leveling",
+    ];
+    const duration = Math.max(1, totalTimelineSeconds);
+
     setActiveAudioTools((tools) => ({
       ...tools,
       "Noise reduction": true,
@@ -2217,8 +2190,33 @@ export function ProfessionalVideoStudio() {
       "Echo reduction": true,
       "Auto volume leveling": true,
     }));
-    addEffectLayer("Audio cleanup chain · noise/echo/leveling", "#7dd3fc");
-    setProjectStatus("Audio enhancement chain applied to timeline");
+
+    const audioLayer: TimelineLayer = {
+      id: "audio-enhancement-chain",
+      type: "effect",
+      name: `Audio cleanup chain · ${enabledTools.join(" + ")}`,
+      content: enabledTools.join(", "),
+      start: 0,
+      duration,
+      color: "#7dd3fc",
+    };
+
+    commitTimeline((tracks) =>
+      tracks.map((track) =>
+        track.kind === "effects"
+          ? {
+              ...track,
+              layers: [
+                ...track.layers.filter((layer) => layer.id !== audioLayer.id),
+                audioLayer,
+              ],
+            }
+          : track,
+      ),
+    );
+    setSelectedLayerId(audioLayer.id);
+    selectEngineLayer(audioLayer.id);
+    setProjectStatus("Audio enhancement chain will be applied during export");
   }
 
   function generateCaptionsFromTranscript() {

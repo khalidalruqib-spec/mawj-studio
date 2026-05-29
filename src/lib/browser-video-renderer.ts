@@ -60,6 +60,14 @@ type RenderTimelineTrack = {
   layers: RenderTimelineLayer[];
 };
 
+type AudioEnhancementSettings = {
+  enabled: boolean;
+  noiseReduction: boolean;
+  voiceEnhancement: boolean;
+  echoReduction: boolean;
+  volumeLeveling: boolean;
+};
+
 export async function renderEditedVideo({
   sourceFile,
   sourceUrl,
@@ -148,7 +156,8 @@ export async function renderEditedVideo({
 
   const canvasStream = canvas.captureStream(FPS);
   const stream = new MediaStream(canvasStream.getVideoTracks());
-  const audio = connectAudioToStream(video, stream);
+  const audioEnhancement = getAudioEnhancementSettings(timelineTracks);
+  const audio = connectAudioToStream(video, stream, audioEnhancement);
   const mimeType = pickRecorderMimeType();
   const chunks: Blob[] = [];
   const recorderOptions: MediaRecorderOptions = {
@@ -240,8 +249,7 @@ export async function renderEditedVideo({
     video.pause();
     canvasStream.getTracks().forEach((track) => track.stop());
     stream.getTracks().forEach((track) => track.stop());
-    audio?.source.disconnect();
-    audio?.destination.disconnect();
+    audio?.cleanup();
     await audio?.context.close().catch(() => undefined);
   }
 
@@ -762,6 +770,28 @@ function getActiveRenderBackgroundLayer(tracks: RenderTimelineTrack[], time: num
     );
 }
 
+function getAudioEnhancementSettings(tracks: RenderTimelineTrack[]): AudioEnhancementSettings {
+  const labels = tracks
+    .flatMap((track) => track.layers)
+    .filter((layer) => layer.type === "effect" || layer.type === "audio")
+    .map((layer) => `${layer.name} ${layer.content ?? ""}`.toLowerCase());
+
+  const has = (patterns: string[]) => labels.some((label) => patterns.some((pattern) => label.includes(pattern)));
+  const fullChain = has(["audio cleanup chain", "audio enhancement chain"]);
+  const noiseReduction = fullChain || has(["noise reduction", "noise"]);
+  const voiceEnhancement = fullChain || has(["voice enhancement", "voice"]);
+  const echoReduction = fullChain || has(["echo reduction", "echo"]);
+  const volumeLeveling = fullChain || has(["auto volume leveling", "volume leveling", "leveling"]);
+
+  return {
+    enabled: noiseReduction || voiceEnhancement || echoReduction || volumeLeveling,
+    noiseReduction,
+    voiceEnhancement,
+    echoReduction,
+    volumeLeveling,
+  };
+}
+
 async function loadTimelineOverlayImages(tracks: RenderTimelineTrack[]) {
   const sources = Array.from(
     new Set(
@@ -1037,7 +1067,11 @@ function pickRecorderMimeType() {
   return candidates.find((type) => MediaRecorder.isTypeSupported(type)) ?? "";
 }
 
-function connectAudioToStream(video: HTMLVideoElement, stream: MediaStream) {
+function connectAudioToStream(
+  video: HTMLVideoElement,
+  stream: MediaStream,
+  enhancement: AudioEnhancementSettings,
+) {
   const AudioContextConstructor =
     window.AudioContext ??
     (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -1048,12 +1082,82 @@ function connectAudioToStream(video: HTMLVideoElement, stream: MediaStream) {
     const context = new AudioContextConstructor();
     const source = context.createMediaElementSource(video);
     const destination = context.createMediaStreamDestination();
-    source.connect(destination);
+    const nodes = enhancement.enabled ? createAudioEnhancementNodes(context, enhancement) : [];
+    let currentNode: AudioNode = source;
+
+    for (const node of nodes) {
+      currentNode.connect(node);
+      currentNode = node;
+    }
+
+    currentNode.connect(destination);
     destination.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
-    return { context, source, destination };
+
+    return {
+      context,
+      cleanup: () => {
+        source.disconnect();
+        nodes.forEach((node) => node.disconnect());
+        destination.disconnect();
+      },
+    };
   } catch {
     return null;
   }
+}
+
+function createAudioEnhancementNodes(
+  context: AudioContext,
+  enhancement: AudioEnhancementSettings,
+) {
+  const nodes: AudioNode[] = [];
+
+  if (enhancement.noiseReduction) {
+    const highPass = context.createBiquadFilter();
+    highPass.type = "highpass";
+    highPass.frequency.value = 85;
+    highPass.Q.value = 0.72;
+    nodes.push(highPass);
+
+    const lowPass = context.createBiquadFilter();
+    lowPass.type = "lowpass";
+    lowPass.frequency.value = 12_500;
+    lowPass.Q.value = 0.58;
+    nodes.push(lowPass);
+  }
+
+  if (enhancement.voiceEnhancement) {
+    const presence = context.createBiquadFilter();
+    presence.type = "peaking";
+    presence.frequency.value = 2_600;
+    presence.Q.value = 0.92;
+    presence.gain.value = 3.2;
+    nodes.push(presence);
+
+    const warmth = context.createBiquadFilter();
+    warmth.type = "lowshelf";
+    warmth.frequency.value = 180;
+    warmth.gain.value = -1.4;
+    nodes.push(warmth);
+  }
+
+  if (enhancement.echoReduction || enhancement.volumeLeveling) {
+    const compressor = context.createDynamicsCompressor();
+    compressor.threshold.value = enhancement.echoReduction ? -32 : -24;
+    compressor.knee.value = enhancement.echoReduction ? 18 : 24;
+    compressor.ratio.value = enhancement.echoReduction ? 8 : 5;
+    compressor.attack.value = 0.006;
+    compressor.release.value = enhancement.echoReduction ? 0.18 : 0.24;
+    nodes.push(compressor);
+  }
+
+  if (enhancement.volumeLeveling) {
+    const gain = context.createGain();
+    gain.gain.value = 1.08;
+    nodes.push(gain);
+  }
+
+  return nodes;
 }
 
 function waitForVideoEvent(video: HTMLVideoElement, eventName: keyof HTMLMediaElementEventMap) {
