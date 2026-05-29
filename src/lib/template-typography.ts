@@ -107,8 +107,15 @@ export function resolveLayerFontFamily({
   presetId?: string;
   canvas?: boolean;
 }) {
-  if (layer?.fontFamily && !(canvas && layer.fontFamily.includes("var("))) {
-    return layer.fontFamily;
+  if (layer?.fontFamily) {
+    const explicitPreset = findFontPresetForStack(layer.fontFamily);
+    if (explicitPreset) {
+      return canvas ? explicitPreset.canvasStack : explicitPreset.cssStack;
+    }
+
+    if (!(canvas && layer.fontFamily.includes("var("))) {
+      return layer.fontFamily;
+    }
   }
 
   if (layer?.direction === "ltr" && !presetId) {
@@ -117,6 +124,13 @@ export function resolveLayerFontFamily({
 
   const preset = resolveTemplateFontPreset(presetId, template);
   return canvas ? preset.canvasStack : preset.cssStack;
+}
+
+function findFontPresetForStack(fontFamily: string) {
+  return TEMPLATE_FONT_PRESETS.find((preset) => {
+    const firstCssToken = preset.cssStack.split(",")[0]?.trim();
+    return preset.cssStack === fontFamily || Boolean(firstCssToken && fontFamily.includes(firstCssToken));
+  });
 }
 
 export function normalizeTemplateFontWeight(weight?: string) {

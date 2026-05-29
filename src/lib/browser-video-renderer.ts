@@ -1,6 +1,7 @@
 import type { EditPlan } from "@/lib/edit-plan";
 import { trimVideoWithFFmpeg, type FFmpegCut } from "@/lib/ffmpeg-renderer";
 import { resolveMediaDuration } from "@/lib/media-duration";
+import { resolveLayerFontFamily } from "@/lib/template-typography";
 import type { AspectRatio, VideoStyle } from "@/lib/video-styles";
 import type { TemplateAnimation } from "@/lib/video-template-engine";
 
@@ -534,9 +535,7 @@ function drawTimelineTextLayer(
 
   const fontSize = Math.max(18, (layer.fontSize ?? 52) * scale);
   const fontWeight = normalizeRenderFontWeight(layer.fontWeight);
-  const fontFamily = layer.fontFamily?.includes("var(")
-    ? '"IBM Plex Sans Arabic", "Cairo", Tahoma, Arial, sans-serif'
-    : layer.fontFamily || '"IBM Plex Sans Arabic", "Cairo", Tahoma, Arial, sans-serif';
+  const fontFamily = resolveLayerFontFamily({ layer, canvas: true });
   const radius = Math.max(0, (layer.borderRadius ?? 0) * scale);
 
   context.save();
