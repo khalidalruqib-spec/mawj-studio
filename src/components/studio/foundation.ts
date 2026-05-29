@@ -103,6 +103,7 @@ export type TimelineLayer = {
   y?: number;
   width?: number;
   height?: number;
+  rotation?: number;
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;

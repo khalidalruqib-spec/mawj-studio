@@ -80,6 +80,7 @@ export type TemplateLayer = {
   y?: number;
   width?: number;
   height?: number;
+  rotation?: number;
   start?: number;
   duration?: number;
   color?: string;

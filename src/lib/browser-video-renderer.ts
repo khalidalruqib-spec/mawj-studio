@@ -47,6 +47,7 @@ export type BrowserTimelineLayer = {
   y?: number;
   width?: number;
   height?: number;
+  rotation?: number;
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
@@ -428,6 +429,7 @@ function drawTimelineOverlays(
 
     context.save();
     context.globalAlpha *= layer.opacity ?? 1;
+    applyTimelineLayerRotation(context, x, y, width, height, layer.rotation);
 
     if (layer.type === "image" && layer.src) {
       const image = assets.get(layer.src);
@@ -442,6 +444,23 @@ function drawTimelineOverlays(
 
     context.restore();
   }
+}
+
+function applyTimelineLayerRotation(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  rotation = 0,
+) {
+  if (!rotation) return;
+
+  const centerX = x + width / 2;
+  const centerY = y + height / 2;
+  context.translate(centerX, centerY);
+  context.rotate((rotation * Math.PI) / 180);
+  context.translate(-centerX, -centerY);
 }
 
 function drawTimelineTextLayer(

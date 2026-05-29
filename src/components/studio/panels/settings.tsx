@@ -205,6 +205,7 @@ export function LayerInspector({
   const locked = Boolean(layer.locked);
   const supportsBorderRadius = layer.type === "text" || layer.type === "caption" || layer.type === "shape" || layer.type === "image" || layer.type === "video";
   const supportsBackgroundColor = layer.type === "text" || layer.type === "caption" || layer.type === "shape";
+  const supportsRotation = supportsBorderRadius;
 
   return (
     <section className="panel p-4">
@@ -312,6 +313,14 @@ export function LayerInspector({
             value={layer.borderRadius ?? 0}
             disabled={locked}
             onChange={(borderRadius) => onChange({ borderRadius: clampInspectorNumber(borderRadius, 0, 240) })}
+          />
+        ) : null}
+        {supportsRotation ? (
+          <NumberField
+            label="Rotation"
+            value={layer.rotation ?? 0}
+            disabled={locked}
+            onChange={(rotation) => onChange({ rotation: clampInspectorNumber(rotation, -360, 360) })}
           />
         ) : null}
       </div>

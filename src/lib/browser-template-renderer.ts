@@ -149,15 +149,17 @@ function drawLayer(
   const height = layer.height ?? context.canvas.height;
   const opacity = getAnimatedOpacity(layer, time);
   const transform = getLayerTransform(layer, time);
+  const rotation = ((layer.rotation ?? 0) * Math.PI) / 180;
 
   context.save();
   context.globalAlpha = opacity * (layer.opacity ?? 1);
 
-  // Apply transform for slide/zoom/pop/bounce animations
-  if (transform.tx !== 0 || transform.ty !== 0 || transform.scale !== 1) {
+  // Apply transform for slide/zoom/pop/bounce animations and manual rotation.
+  if (transform.tx !== 0 || transform.ty !== 0 || transform.scale !== 1 || rotation !== 0) {
     const cx = x + width / 2;
     const cy = y + height / 2;
     context.translate(cx + transform.tx, cy + transform.ty);
+    if (rotation !== 0) context.rotate(rotation);
     context.scale(transform.scale, transform.scale);
     context.translate(-cx, -cy);
   }

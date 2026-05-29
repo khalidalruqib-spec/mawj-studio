@@ -44,6 +44,7 @@ export type EditorTimelineLayerInput = {
   y?: number;
   width?: number;
   height?: number;
+  rotation?: number;
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
@@ -330,6 +331,7 @@ export function editorLayerPatchToVideoLayerPatch(
     y: patch.y,
     width: patch.width,
     height: patch.height,
+    rotation: patch.rotation,
     opacity: patch.opacity,
     locked: patch.locked,
     hidden: patch.hidden,
@@ -454,7 +456,7 @@ function templateLayerToVideoLayer(
     y: layer.y ?? 0,
     width: layer.width ?? defaultLayerSize(type).width,
     height: layer.height ?? defaultLayerSize(type).height,
-    rotation: 0,
+    rotation: layer.rotation ?? 0,
     scaleX: 1,
     scaleY: 1,
     opacity: layer.opacity ?? 1,
@@ -507,7 +509,7 @@ function editorTimelineLayerToVideoLayer(
     y: layer.y ?? previous?.y ?? dimensions.y,
     width: layer.width ?? previous?.width ?? dimensions.width,
     height: layer.height ?? previous?.height ?? dimensions.height,
-    rotation: previous?.rotation ?? 0,
+    rotation: layer.rotation ?? previous?.rotation ?? 0,
     scaleX: previous?.scaleX ?? 1,
     scaleY: previous?.scaleY ?? 1,
     opacity: layer.opacity ?? previous?.opacity ?? 1,

@@ -468,6 +468,8 @@ function TimelinePreviewLayer({
           ...box,
           borderRadius: scalePreviewRadius(layer.borderRadius),
           opacity: layer.opacity ?? 1,
+          transform: resolvePreviewLayerTransform(layer),
+          transformOrigin: "center",
         }}
       >
         <img
@@ -494,6 +496,8 @@ function TimelinePreviewLayer({
           backgroundColor: layer.backgroundColor ?? layer.color,
           borderRadius: scalePreviewRadius(layer.borderRadius),
           opacity: layer.opacity ?? 1,
+          transform: resolvePreviewLayerTransform(layer),
+          transformOrigin: "center",
         }}
       >
         <ResizeHandles selected={selected && !locked} onResizePointerDown={onResizePointerDown} />
@@ -519,6 +523,8 @@ function TimelinePreviewLayer({
     opacity: layer.opacity ?? 1,
     WebkitTextStroke: resolvePreviewTextStroke(layer, fontScale),
     textShadow: resolvePreviewTextShadow(layer, fontScale),
+    transform: resolvePreviewLayerTransform(layer),
+    transformOrigin: "center",
   } satisfies React.CSSProperties;
 
   if (editingDraft !== null) {
@@ -757,6 +763,10 @@ function scalePreviewRadius(radius?: number) {
   return radius ? `${Math.max(4, radius * 0.2)}px` : undefined;
 }
 
+function resolvePreviewLayerTransform(layer: Pick<TimelineLayer, "rotation">) {
+  return layer.rotation ? `rotate(${layer.rotation}deg)` : undefined;
+}
+
 function resolvePreviewTextStroke(layer: Pick<TimelineLayer, "textStrokeColor" | "textStrokeWidth">, scale: number) {
   const width = layer.textStrokeWidth ?? 4;
   if (width <= 0) return undefined;
@@ -805,6 +815,8 @@ export function TemplatePreviewLayer({
           textShadow: resolvePreviewTextShadow(layer, 0.2),
           backgroundColor: layer.backgroundColor,
           borderRadius: layer.borderRadius ? `${Math.max(4, layer.borderRadius * 0.2)}px` : undefined,
+          transform: resolvePreviewLayerTransform(layer),
+          transformOrigin: "center",
           direction: layer.direction === "ltr" ? "ltr" : "rtl",
           justifyItems: textAlign === "right" ? "end" : textAlign === "left" ? "start" : "center",
           textAlign,
@@ -828,10 +840,19 @@ export function TemplatePreviewLayer({
           objectFit: layer.fit ?? "cover",
           borderRadius: layer.borderRadius ? `${Math.max(4, layer.borderRadius * 0.2)}px` : undefined,
           opacity: layer.opacity ?? 1,
+          transform: resolvePreviewLayerTransform(layer),
+          transformOrigin: "center",
         }}
       />
     ) : (
-      <div className="absolute grid place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70" style={style}>
+      <div
+        className="absolute grid place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70"
+        style={{
+          ...style,
+          transform: resolvePreviewLayerTransform(layer),
+          transformOrigin: "center",
+        }}
+      >
         {layer.type.toUpperCase()}
       </div>
     );
@@ -854,6 +875,8 @@ export function TemplatePreviewLayer({
         background: normalizeHexColor(layer.color),
         borderRadius: `${Math.min(28, (layer.borderRadius ?? 18) / 2)}px`,
         opacity: layer.opacity ?? 0.75,
+        transform: resolvePreviewLayerTransform(layer),
+        transformOrigin: "center",
       }}
     />
   );
