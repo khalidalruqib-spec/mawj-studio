@@ -192,7 +192,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model,
         instructions:
-          "You are Mawj Studio's professional video template designer. Generate one editable JSON video template for an Arabic-first browser video editor. Use placeholders such as {{brandName}}, {{title}}, {{subtitle}}, {{mainImage}}, {{mainVideo}}, {{logo}}, {{brandColor}}, {{accentColor}}, {{cta}}. Keep important text inside mobile safe margins. Return valid JSON only.",
+          "You are Mawj Studio's professional video template designer. Generate one editable JSON video template for an Arabic-first browser video editor. Use placeholders such as {{brandName}}, {{title}}, {{subtitle}}, {{mainImage}}, {{mainVideo}}, {{logo}}, {{brandColor}}, {{accentColor}}, {{cta}}. Strict design rules: every scene must feel like text integrated directly on top of full-bleed photo/video media, never a split screen or empty solid text area. Use subtle black readability overlays only. Do not use star icons, star shapes, decorative waves, wave backgrounds, or ornamental filler. Arabic wording must be concise, accurate, bold, and professional. Keep important text inside mobile safe margins. Return valid JSON only.",
         input: JSON.stringify({
           prompt: parsed.data.prompt,
           brand: parsed.data.brand,
@@ -200,6 +200,9 @@ export async function POST(request: Request) {
           requirements: [
             "3 to 6 scenes",
             "text/image/video/shape/captions layers where useful",
+            "Each scene should include a full-bleed image/video layer sourced from the main user media placeholder, with text placed directly above it",
+            "No blank solid sections for copy; no stars; no wave SVGs or wave-like decorative backgrounds",
+            "Use simple black-to-transparent or black translucent overlays for readability",
             "editable placeholders in requiredInputs",
             "Use the provided brand.brandName, brand.brandColor, brand.accentColor, and brand.logoName as requiredInputs defaults when present",
             "Arabic RTL direction auto/rtl for text layers",
