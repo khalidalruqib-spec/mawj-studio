@@ -29,6 +29,7 @@ import {
   getTimelineCanvasWidth,
   getTimelinePixelsPerSecond,
   getTimelineSecondFromX,
+  getTimelineTrackIdFromY,
   hitTestTimeline,
   renderTimelineCanvas,
   type TimelineCanvasRenderPayload,
@@ -1020,6 +1021,7 @@ export function TimelineEditor({
   currentTime,
   onSelectLayer,
   onUpdateLayer,
+  onMoveLayer,
   onSeek,
 }: {
   tracks: TimelineTrack[];
@@ -1029,6 +1031,7 @@ export function TimelineEditor({
   currentTime: number;
   onSelectLayer: (id: string) => void;
   onUpdateLayer: (id: string, patch: Partial<TimelineLayer>) => void;
+  onMoveLayer: (id: string, targetTrackId: string, patch: Partial<TimelineLayer>) => void;
   onSeek: (seconds: number) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1142,6 +1145,8 @@ export function TimelineEditor({
         layerId: layer.id,
         pointerId: event.pointerId,
         mode: getTimelineDragMode(hit.x, hit.width, point.x),
+        startTrackId: hit.trackId,
+        targetTrackId: hit.trackId,
         startPointerX: event.clientX,
         scaleX: canvasWidth / rect.width,
         pxPerSecond: getTimelinePixelsPerSecond(zoom),
@@ -1167,12 +1172,25 @@ export function TimelineEditor({
 
       if (!timelineDrag || timelineDrag.pointerId !== event.pointerId) return;
       event.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const pointY = (event.clientY - rect.top) * (canvasHeight / rect.height);
+      const draggedLayer = tracks
+        .flatMap((track) => track.layers)
+        .find((layer) => layer.id === timelineDrag.layerId);
+      const candidateTrackId = getTimelineTrackIdFromY(renderPayload, pointY);
+      const targetTrack = tracks.find((track) => track.id === candidateTrackId);
+      const targetTrackId =
+        timelineDrag.mode === "move" && draggedLayer && targetTrack && isTimelineLayerCompatibleWithTrack(draggedLayer, targetTrack)
+          ? targetTrack.id
+          : timelineDrag.startTrackId;
+
       setTimelineDrag({
         ...timelineDrag,
         deltaSeconds: ((event.clientX - timelineDrag.startPointerX) * timelineDrag.scaleX) / timelineDrag.pxPerSecond,
+        targetTrackId,
       });
     },
-    [canvasWidth, onSeek, timelineDrag, timelineScrub, totalSeconds, zoom],
+    [canvasHeight, canvasWidth, onSeek, renderPayload, timelineDrag, timelineScrub, totalSeconds, tracks, zoom],
   );
   const handleTimelinePointerEnd = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -1188,13 +1206,18 @@ export function TimelineEditor({
       const patch = getTimelineDragPatch(timelineDrag, totalSeconds);
       if (
         patch.start !== roundTimelineSeconds(timelineDrag.start) ||
-        patch.duration !== roundTimelineSeconds(timelineDrag.duration)
+        patch.duration !== roundTimelineSeconds(timelineDrag.duration) ||
+        timelineDrag.targetTrackId !== timelineDrag.startTrackId
       ) {
-        onUpdateLayer(timelineDrag.layerId, patch);
+        if (timelineDrag.mode === "move" && timelineDrag.targetTrackId !== timelineDrag.startTrackId) {
+          onMoveLayer(timelineDrag.layerId, timelineDrag.targetTrackId, patch);
+        } else {
+          onUpdateLayer(timelineDrag.layerId, patch);
+        }
       }
       setTimelineDrag(null);
     },
-    [onUpdateLayer, timelineDrag, timelineScrub, totalSeconds],
+    [onMoveLayer, onUpdateLayer, timelineDrag, timelineScrub, totalSeconds],
   );
 
   const selectedLayer = tracks
@@ -1228,7 +1251,7 @@ export function TimelineEditor({
             onPointerCancel={handleTimelinePointerEnd}
             tabIndex={0}
             role="img"
-            aria-label="Canvas timeline. Drag clips to move timing, or drag edges to trim."
+            aria-label="Canvas timeline. Drag clips horizontally to move timing, vertically to move tracks, or drag edges to trim."
             className="block cursor-pointer rounded-lg border border-[var(--line)] bg-black/20 outline-none transition focus:border-[var(--brand)]"
           />
         </div>
@@ -1246,6 +1269,8 @@ type TimelineDragState = {
   layerId: string;
   pointerId: number;
   mode: TimelineDragMode;
+  startTrackId: string;
+  targetTrackId: string;
   startPointerX: number;
   scaleX: number;
   pxPerSecond: number;
@@ -1271,6 +1296,28 @@ function applyTimelineDragPreview(
   totalSeconds: number,
 ): TimelineTrack[] {
   const patch = getTimelineDragPatch(drag, totalSeconds);
+  const sourceTrack = tracks.find((track) => track.layers.some((layer) => layer.id === drag.layerId));
+  const movingLayer = sourceTrack?.layers.find((layer) => layer.id === drag.layerId);
+
+  if (drag.mode === "move" && movingLayer && drag.targetTrackId !== sourceTrack?.id) {
+    return tracks.map((track) => {
+      if (track.id === sourceTrack?.id) {
+        return {
+          ...track,
+          layers: track.layers.filter((layer) => layer.id !== drag.layerId),
+        };
+      }
+
+      if (track.id === drag.targetTrackId && isTimelineLayerCompatibleWithTrack(movingLayer, track)) {
+        return {
+          ...track,
+          layers: [...track.layers, { ...movingLayer, ...patch }],
+        };
+      }
+
+      return track;
+    });
+  }
 
   return tracks.map((track) => ({
     ...track,
@@ -1283,6 +1330,20 @@ function applyTimelineDragPreview(
         : layer,
     ),
   }));
+}
+
+function isTimelineLayerCompatibleWithTrack(layer: TimelineLayer, track: TimelineTrack) {
+  if (track.kind === "video") return layer.type === "video";
+  if (track.kind === "audio") return layer.type === "audio" || layer.type === "waveform";
+  if (track.kind === "caption") return layer.type === "caption";
+  if (track.kind === "effects") return layer.type === "effect" || layer.type === "shape" || layer.type === "background" || layer.type === "waveform";
+  if (track.kind === "overlay") return layer.type === "text" || layer.type === "image" || layer.type === "shape" || layer.type === "caption";
+  if (track.kind === "text") return layer.type === "text";
+  if (track.kind === "image") return layer.type === "image";
+  if (track.kind === "shape") return layer.type === "shape";
+  if (track.kind === "background") return layer.type === "background";
+  if (track.kind === "waveform") return layer.type === "waveform";
+  return false;
 }
 
 function getTimelineDragPatch(

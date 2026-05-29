@@ -77,6 +77,16 @@ export function getTimelineSecondFromX(x: number, zoom: number, totalSeconds: nu
   return clamp(seconds, 0, totalSeconds);
 }
 
+export function getTimelineTrackIdFromY(payload: Pick<TimelineCanvasRenderPayload, "tracks">, y: number) {
+  const trackIndex = Math.floor((y - RULER_HEIGHT - TRACK_GAP) / (TRACK_HEIGHT + TRACK_GAP));
+  if (trackIndex < 0 || trackIndex >= payload.tracks.length) return null;
+
+  const trackY = RULER_HEIGHT + TRACK_GAP + trackIndex * (TRACK_HEIGHT + TRACK_GAP);
+  if (y < trackY || y > trackY + TRACK_HEIGHT) return null;
+
+  return payload.tracks[trackIndex]?.id ?? null;
+}
+
 export function renderTimelineCanvas(
   context: TimelineContext,
   payload: TimelineCanvasRenderPayload,

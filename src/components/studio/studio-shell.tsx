@@ -536,6 +536,70 @@ export function ProfessionalVideoStudio() {
     updateEngineLayer(layerId, editorLayerPatchToVideoLayerPatch(patch));
   }
 
+  function moveTimelineLayerToTrack(layerId: string, targetTrackId: string, patch: Partial<TimelineLayer>) {
+    let sourceLayer: TimelineLayer | null = null;
+    let sourceTrackId: string | null = null;
+
+    for (const track of timelineTracks) {
+      const layer = track.layers.find((entry) => entry.id === layerId);
+      if (layer) {
+        sourceLayer = layer;
+        sourceTrackId = track.id;
+        break;
+      }
+    }
+
+    if (!sourceLayer || !sourceTrackId) {
+      setProjectStatus("Could not find the selected timeline layer");
+      return;
+    }
+
+    if (sourceLayer.locked && !isLayerStatePatch(patch)) {
+      setProjectStatus(`${sourceLayer.name} is locked`);
+      return;
+    }
+
+    const targetTrack = timelineTracks.find((track) => track.id === targetTrackId);
+    if (!targetTrack) {
+      setProjectStatus("Could not find the target track");
+      return;
+    }
+
+    if (!isTimelineLayerCompatibleWithTrack(sourceLayer, targetTrack)) {
+      setProjectStatus(`${sourceLayer.name} cannot move to ${targetTrack.name}`);
+      return;
+    }
+
+    if (sourceTrackId === targetTrackId) {
+      updateTimelineLayer(layerId, patch);
+      return;
+    }
+
+    const movedLayer = { ...sourceLayer, ...patch };
+    const nextTracks = timelineTracks.map((track) => {
+      if (track.id === sourceTrackId) {
+        return {
+          ...track,
+          layers: track.layers.filter((layer) => layer.id !== layerId),
+        };
+      }
+
+      if (track.id === targetTrackId) {
+        return {
+          ...track,
+          layers: [...track.layers, movedLayer],
+        };
+      }
+
+      return track;
+    });
+
+    commitTimeline(nextTracks);
+    setSelectedLayerId(layerId);
+    selectEngineLayer(layerId);
+    setProjectStatus(`${sourceLayer.name} moved to ${targetTrack.name}`);
+  }
+
   function applyBrandKitToSelectedLayer() {
     if (!selectedLayer || (selectedLayer.type !== "text" && selectedLayer.type !== "caption")) {
       setProjectStatus("Select a text or caption layer before applying Brand Kit");
@@ -2839,6 +2903,7 @@ export function ProfessionalVideoStudio() {
                 currentTime={previewTime}
                 onSelectLayer={selectTimelineLayer}
                 onUpdateLayer={updateTimelineLayer}
+                onMoveLayer={moveTimelineLayerToTrack}
                 onSeek={seekPreview}
               />
             </>
@@ -3520,6 +3585,20 @@ function getLayerStackValue(layer: TimelineLayer, fallbackIndex: number) {
 
 function isStackableEditorLayer(layer: TimelineLayer) {
   return layer.type === "video" || layer.type === "image" || layer.type === "text" || layer.type === "caption" || layer.type === "shape" || layer.type === "background";
+}
+
+function isTimelineLayerCompatibleWithTrack(layer: TimelineLayer, track: TimelineTrack) {
+  if (track.kind === "video") return layer.type === "video";
+  if (track.kind === "audio") return layer.type === "audio" || layer.type === "waveform";
+  if (track.kind === "caption") return layer.type === "caption";
+  if (track.kind === "effects") return layer.type === "effect" || layer.type === "shape" || layer.type === "background" || layer.type === "waveform";
+  if (track.kind === "overlay") return layer.type === "text" || layer.type === "image" || layer.type === "shape" || layer.type === "caption";
+  if (track.kind === "text") return layer.type === "text";
+  if (track.kind === "image") return layer.type === "image";
+  if (track.kind === "shape") return layer.type === "shape";
+  if (track.kind === "background") return layer.type === "background";
+  if (track.kind === "waveform") return layer.type === "waveform";
+  return false;
 }
 
 function createImageStoryboardTemplateProject({
