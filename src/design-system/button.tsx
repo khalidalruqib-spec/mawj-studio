@@ -34,7 +34,10 @@ export function Button(props: ButtonProps | LinkButtonProps) {
     );
   }
 
-  const { children, variant: _variant, className: _className, ...rest } = props;
+  const { children, ...rest } = props;
+  delete rest.variant;
+  delete rest.className;
+
   return (
     <button type="button" className={classes} {...rest}>
       {children}
