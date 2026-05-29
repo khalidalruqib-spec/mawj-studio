@@ -1,5 +1,6 @@
 import { Layers3, SlidersHorizontal, Trash2, UploadCloud } from "lucide-react";
 import { FORMAT_PRESETS, PLATFORM_LABELS, VIDEO_STYLES, type AspectRatio, type LanguageMode, type Platform, type VideoStyle, type VideoStyleId } from "@/lib/video-styles";
+import { TEMPLATE_FONT_PRESETS } from "@/lib/template-typography";
 import { GOAL_LABELS } from "../foundation";
 import type { Goal, TimelineLayer } from "../foundation";
 import { EmptyMini, Field, PanelHeading } from "../ui";
@@ -157,8 +158,83 @@ export function LayerInspector({
         <NumberField label="Height" value={layer.height ?? 0} onChange={(height) => onChange({ height })} />
       </div>
       {layer.type === "text" || layer.type === "caption" ? (
-        <div className="grid grid-cols-2 gap-2">
-          <NumberField label="Font size" value={layer.fontSize ?? 48} onChange={(fontSize) => onChange({ fontSize })} />
+        <div className="space-y-3">
+          <Field label="Font family">
+            <select
+              value={resolveInspectorFontValue(layer)}
+              onChange={(event) => onChange({ fontFamily: event.target.value })}
+              className="control-select"
+            >
+              {TEMPLATE_FONT_PRESETS.map((preset) => (
+                <option key={preset.id} value={preset.cssStack}>
+                  {preset.label} — {preset.description}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-3">
+            <p
+              className="text-xl font-black leading-snug"
+              dir={layer.direction ?? "auto"}
+              style={{
+                color: layer.textColor ?? layer.color,
+                fontFamily: resolveInspectorFontValue(layer),
+                fontWeight: normalizeInspectorFontWeight(layer.fontWeight),
+                textAlign: layer.align ?? "center",
+              }}
+            >
+              {layer.content ?? layer.name}
+            </p>
+            <p className="mt-2 text-[10px] font-bold text-[var(--muted)]">
+              Live typography sample
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <NumberField label="Font size" value={layer.fontSize ?? 48} onChange={(fontSize) => onChange({ fontSize })} />
+            <Field label="Font weight">
+              <select
+                value={layer.fontWeight ?? "bold"}
+                onChange={(event) => onChange({ fontWeight: event.target.value })}
+                className="control-select"
+              >
+                <option value="normal">Normal</option>
+                <option value="600">Semi Bold</option>
+                <option value="bold">Bold</option>
+                <option value="900">Black</option>
+              </select>
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Align">
+              <div className="grid grid-cols-3 gap-1">
+                {(["right", "center", "left"] as const).map((align) => (
+                  <button
+                    key={align}
+                    type="button"
+                    onClick={() => onChange({ align })}
+                    className={`min-h-10 rounded-md border px-2 text-xs font-black transition ${
+                      (layer.align ?? "center") === align
+                        ? "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]"
+                        : "border-[var(--line)] bg-[var(--panel-soft)] text-[var(--muted)]"
+                    }`}
+                  >
+                    {align}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <Field label="Direction">
+              <select
+                value={layer.direction ?? "auto"}
+                onChange={(event) => onChange({ direction: event.target.value as TimelineLayer["direction"] })}
+                className="control-select"
+              >
+                <option value="auto">Auto</option>
+                <option value="rtl">RTL Arabic</option>
+                <option value="ltr">LTR English</option>
+              </select>
+            </Field>
+          </div>
           <Field label="Text color">
             <input
               type="color"
@@ -188,6 +264,16 @@ export function LayerInspector({
       </button>
     </section>
   );
+}
+
+function resolveInspectorFontValue(layer: TimelineLayer) {
+  return layer.fontFamily ?? TEMPLATE_FONT_PRESETS[0].cssStack;
+}
+
+function normalizeInspectorFontWeight(weight?: string) {
+  if (weight === "normal") return 500;
+  if (weight === "bold") return 900;
+  return weight ?? 900;
 }
 
 export function NumberField({

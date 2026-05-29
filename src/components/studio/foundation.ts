@@ -103,9 +103,12 @@ export type TimelineLayer = {
   y?: number;
   width?: number;
   height?: number;
+  fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
   textColor?: string;
+  align?: "left" | "center" | "right";
+  direction?: "ltr" | "rtl" | "auto";
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;

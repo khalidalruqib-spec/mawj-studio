@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { EditPlan } from "@/lib/edit-plan";
 import type { TemplateProject, TemplateTimelineTrack } from "@/lib/video-template-engine";
+import { normalizeTemplateFontWeight, resolveLayerFontFamily } from "@/lib/template-typography";
 import type { AspectRatio, VideoStyle } from "@/lib/video-styles";
 import type { VideoProject } from "@/lib/video-project-model";
 import { isUsableMediaDuration } from "@/lib/media-duration";
@@ -238,14 +239,20 @@ export function TemplatePreviewLayer({
   };
 
   if (layer.type === "text" || layer.type === "captions") {
+    const textAlign = layer.align ?? "center";
+
     return (
       <div
         className="absolute grid place-items-center overflow-hidden px-2 text-center font-black leading-tight"
         style={{
           ...style,
           color: normalizeHexColor(layer.color),
+          fontFamily: resolveLayerFontFamily({ layer }),
           fontSize: `${Math.max(11, (layer.fontSize ?? 44) * 0.2)}px`,
+          fontWeight: normalizeTemplateFontWeight(layer.fontWeight),
           direction: layer.direction === "ltr" ? "ltr" : "rtl",
+          justifyItems: textAlign === "right" ? "end" : textAlign === "left" ? "start" : "center",
+          textAlign,
         }}
       >
         {layer.content ?? layer.name}

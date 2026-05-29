@@ -44,9 +44,12 @@ export type EditorTimelineLayerInput = {
   y?: number;
   width?: number;
   height?: number;
+  fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
   textColor?: string;
+  align?: "left" | "center" | "right";
+  direction?: "ltr" | "rtl" | "auto";
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
@@ -293,11 +296,14 @@ export function editorLayerPatchToVideoLayerPatch(
   patch: Partial<EditorTimelineLayerInput>,
 ): Partial<Layer> {
   const style = {
+    fontFamily: patch.fontFamily,
     fontSize: patch.fontSize,
     fontWeight: patch.fontWeight,
     color: patch.textColor ?? patch.color,
     backgroundColor: patch.backgroundColor,
     borderRadius: patch.borderRadius,
+    align: patch.align,
+    direction: patch.direction,
   };
   const cleanStyle = removeUndefined(style);
 
@@ -489,14 +495,14 @@ function editorTimelineLayerToVideoLayer(
     hidden: previous?.hidden ?? false,
     style: {
       ...previous?.style,
-      fontFamily: previous?.style?.fontFamily ?? defaultFontForDirection("auto"),
+      fontFamily: layer.fontFamily ?? previous?.style?.fontFamily ?? defaultFontForDirection(layer.direction ?? "auto"),
       fontSize: layer.fontSize ?? previous?.style?.fontSize,
       fontWeight: layer.fontWeight ?? previous?.style?.fontWeight,
       color: layer.textColor ?? layer.color ?? previous?.style?.color,
       backgroundColor: layer.backgroundColor ?? previous?.style?.backgroundColor,
       borderRadius: layer.borderRadius ?? previous?.style?.borderRadius,
-      align: previous?.style?.align ?? "center",
-      direction: previous?.style?.direction ?? "auto",
+      align: layer.align ?? previous?.style?.align ?? "center",
+      direction: layer.direction ?? previous?.style?.direction ?? "auto",
       fit: previous?.style?.fit ?? (type === "video" || type === "image" ? "cover" : undefined),
     },
     effects:

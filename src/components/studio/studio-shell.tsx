@@ -73,6 +73,7 @@ import {
   createVideoProjectFromEditorTimeline,
   createVideoProjectFromMediaAssets,
   createVideoProjectFromTemplateProject,
+  editorLayerPatchToVideoLayerPatch,
   type MediaAssetInput,
 } from "@/lib/video-project-bridge";
 import type { VideoProject } from "@/lib/video-project-model";
@@ -204,6 +205,7 @@ export function ProfessionalVideoStudio() {
   const engineProject = useVideoProjectStore((state) => state.currentProject);
   const setEngineProject = useVideoProjectStore((state) => state.setCurrentProject);
   const selectEngineLayer = useVideoProjectStore((state) => state.selectLayer);
+  const updateEngineLayer = useVideoProjectStore((state) => state.updateLayer);
   const setEnginePlayhead = useVideoProjectStore((state) => state.setPlayhead);
   const setEngineZoom = useVideoProjectStore((state) => state.setZoom);
   const undoEngineProject = useVideoProjectStore((state) => state.undo);
@@ -481,6 +483,7 @@ export function ProfessionalVideoStudio() {
         : project,
     );
 
+    updateEngineLayer(selectedLayer.id, editorLayerPatchToVideoLayerPatch(patch));
   }
 
   const applyTemplateProject = useCallback((
@@ -3893,9 +3896,12 @@ function templateTimelineToEditorTracks(templateTracks: TemplateTimelineTrack[])
       y: layer.y,
       width: layer.width,
       height: layer.height,
+      fontFamily: layer.fontFamily,
       fontSize: layer.fontSize,
       fontWeight: layer.fontWeight,
       textColor: layer.color,
+      align: layer.align,
+      direction: layer.direction,
       backgroundColor: layer.backgroundColor,
       borderRadius: layer.borderRadius,
       opacity: layer.opacity,
@@ -3916,8 +3922,11 @@ function toTemplateTimelinePatch(patch: Partial<TimelineLayer>): Partial<Templat
     y: patch.y,
     width: patch.width,
     height: patch.height,
+    fontFamily: patch.fontFamily,
     fontSize: patch.fontSize,
     fontWeight: patch.fontWeight,
+    align: patch.align,
+    direction: patch.direction,
     borderRadius: patch.borderRadius,
     opacity: patch.opacity,
   };
