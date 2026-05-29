@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Captions,
@@ -160,6 +161,7 @@ import {
 const DEFAULT_IMAGE_CLIP_DURATION_SECONDS = 6;
 
 export function ProfessionalVideoStudio() {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const imageLayerInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -242,6 +244,10 @@ export function ProfessionalVideoStudio() {
   const exportHistoryUrlsRef = useRef<string[]>([]);
   const [error, setError] = useState("");
   const [projectStatus, setProjectStatus] = useState("Autosave ready");
+  const openTemplatesPage = useCallback(() => {
+    setProjectStatus("Opening template library");
+    router.push("/templates");
+  }, [router]);
   const engineProject = useVideoProjectStore((state) => state.currentProject);
   const setEngineProject = useVideoProjectStore((state) => state.setCurrentProject);
   const selectEngineLayer = useVideoProjectStore((state) => state.selectLayer);
@@ -3259,10 +3265,10 @@ export function ProfessionalVideoStudio() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href="/templates" className="btn-ghost hidden sm:inline-flex">
+            <button type="button" onClick={openTemplatesPage} className="btn-ghost hidden sm:inline-flex">
               <LayoutTemplate className="h-4 w-4" aria-hidden="true" />
               <span>Templates</span>
-            </Link>
+            </button>
             <button
               type="button"
               onClick={resetStudioProject}
@@ -3319,17 +3325,19 @@ export function ProfessionalVideoStudio() {
                 const active = activePanel === panel.id;
                 if (panel.id === "templates") {
                   return (
-                    <Link
+                    <button
                       key={panel.id}
-                      href="/templates"
-                      className="nav-btn"
+                      type="button"
+                      onClick={openTemplatesPage}
+                      className="nav-btn w-full"
+                      aria-label="Open templates page"
                     >
                       <Icon className="nav-btn-icon h-4 w-4 shrink-0" aria-hidden="true" />
                       <span className="min-w-0">
                         <span className="block truncate text-xs font-black">{panel.label}</span>
                         <span className="block truncate text-[11px] font-semibold opacity-75">Open library</span>
                       </span>
-                    </Link>
+                    </button>
                   );
                 }
                 return (
