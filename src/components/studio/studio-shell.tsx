@@ -3477,7 +3477,13 @@ export function ProfessionalVideoStudio() {
       commitTimeline((tracks) =>
         tracks.map((track) =>
           track.kind === "effects"
-            ? { ...track, layers: [...track.layers, ...clips] }
+            ? {
+                ...track,
+                layers: [
+                  ...track.layers.filter((layer) => !layer.id.startsWith("clip-")),
+                  ...clips,
+                ],
+              }
             : track,
         ),
       );
@@ -3491,7 +3497,7 @@ export function ProfessionalVideoStudio() {
             "assistant",
             `تم تحديد ${suggestions.length} مقاطع:\n${suggestions
               .map((clip) => `• ${formatDuration(clip.start)}-${formatDuration(clip.end)} ثانية (${clip.label})`)
-              .join("\n")}\n\nتقدر تصدر نسخة 30s من زر Export 30s Clip في لوحة المساعد.`,
+              .join("\n")}\n\nتقدر تصدر أي نسخة مباشرة من أزرار Ready clips في لوحة المساعد.`,
             [{ type: "EXTRACT_CLIPS", label: "3 clip ranges prepared" }],
           ),
           ...messages,
