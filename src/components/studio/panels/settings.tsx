@@ -1,6 +1,7 @@
 import { Eye, EyeOff, Layers3, Lock, SlidersHorizontal, Trash2, Unlock, UploadCloud } from "lucide-react";
 import { FORMAT_PRESETS, PLATFORM_LABELS, VIDEO_STYLES, type AspectRatio, type LanguageMode, type Platform, type VideoStyle, type VideoStyleId } from "@/lib/video-styles";
 import { TEMPLATE_FONT_PRESETS } from "@/lib/template-typography";
+import type { TemplateAnimation, TemplateAnimationType } from "@/lib/video-template-engine";
 import { GOAL_LABELS } from "../foundation";
 import type { Goal, TimelineLayer } from "../foundation";
 import { EmptyMini, Field, PanelHeading } from "../ui";
@@ -91,6 +92,19 @@ const TEXT_STYLE_PRESETS: Array<{
       direction: "auto",
     },
   },
+];
+
+const ANIMATION_OPTIONS: Array<{ value: "none" | TemplateAnimationType; label: string }> = [
+  { value: "none", label: "None" },
+  { value: "fadeIn", label: "Fade" },
+  { value: "slideUp", label: "Slide up" },
+  { value: "slideDown", label: "Slide down" },
+  { value: "slideLeft", label: "Slide left" },
+  { value: "slideRight", label: "Slide right" },
+  { value: "zoomIn", label: "Zoom in" },
+  { value: "zoomOut", label: "Zoom out" },
+  { value: "pop", label: "Pop" },
+  { value: "bounce", label: "Bounce" },
 ];
 
 export function ProjectSettingsPanel({
@@ -209,6 +223,7 @@ export function LayerInspector({
   const supportsBackgroundColor = layer.type === "text" || layer.type === "caption" || layer.type === "shape";
   const supportsRotation = supportsBorderRadius;
   const supportsQuickPosition = supportsBorderRadius;
+  const supportsAnimation = supportsBorderRadius;
   const dimensions = getInspectorDimensions(aspectRatio);
   const safeMargins = getInspectorSafeMargins(aspectRatio);
   const quickPositionActions = createQuickPositionActions(layer, dimensions, safeMargins);
@@ -348,6 +363,9 @@ export function LayerInspector({
           />
         ) : null}
       </div>
+      {supportsAnimation ? (
+        <AnimationControls layer={layer} locked={locked} onChange={onChange} />
+      ) : null}
       {layer.type === "text" || layer.type === "caption" ? (
         <div className="space-y-3">
           <Field label="Font family">
@@ -619,6 +637,98 @@ function createQuickPositionActions(
       patch: { x: 0, y: 0, width: dimensions.width, height: dimensions.height },
     },
   ];
+}
+
+function AnimationControls({
+  layer,
+  locked,
+  onChange,
+}: {
+  layer: TimelineLayer;
+  locked: boolean;
+  onChange: (patch: Partial<TimelineLayer>) => void;
+}) {
+  return (
+    <Field label="Layer animation">
+      <div className="grid grid-cols-2 gap-2">
+        <select
+          value={resolveAnimationSelectValue(layer.animationIn)}
+          disabled={locked}
+          onChange={(event) =>
+            onChange({
+              animationIn: createInspectorAnimation(event.target.value, layer.animationIn?.duration),
+            })
+          }
+          className="control-select disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {ANIMATION_OPTIONS.map((option) => (
+            <option key={`in-${option.value}`} value={option.value}>
+              In · {option.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={resolveAnimationSelectValue(layer.animationOut)}
+          disabled={locked}
+          onChange={(event) =>
+            onChange({
+              animationOut: createInspectorAnimation(event.target.value, layer.animationOut?.duration),
+            })
+          }
+          className="control-select disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {ANIMATION_OPTIONS.map((option) => (
+            <option key={`out-${option.value}`} value={option.value}>
+              Out · {option.label}
+            </option>
+          ))}
+        </select>
+        <NumberField
+          label="In duration"
+          value={layer.animationIn?.duration ?? 0}
+          disabled={locked || resolveAnimationSelectValue(layer.animationIn) === "none"}
+          onChange={(duration) =>
+            onChange({
+              animationIn: {
+                type: resolveConcreteAnimationType(layer.animationIn, "fadeIn"),
+                duration: clampInspectorNumber(duration, 0, 3),
+              },
+            })
+          }
+        />
+        <NumberField
+          label="Out duration"
+          value={layer.animationOut?.duration ?? 0}
+          disabled={locked || resolveAnimationSelectValue(layer.animationOut) === "none"}
+          onChange={(duration) =>
+            onChange({
+              animationOut: {
+                type: resolveConcreteAnimationType(layer.animationOut, "fadeOut"),
+                duration: clampInspectorNumber(duration, 0, 3),
+              },
+            })
+          }
+        />
+      </div>
+    </Field>
+  );
+}
+
+function resolveAnimationSelectValue(animation?: TemplateAnimation) {
+  if (!animation?.duration) return "none";
+  return animation.type;
+}
+
+function createInspectorAnimation(value: string, previousDuration?: number): TemplateAnimation {
+  if (value === "none") return { type: "fadeIn", duration: 0 };
+  return {
+    type: value as TemplateAnimationType,
+    duration: previousDuration && previousDuration > 0 ? previousDuration : 0.45,
+  };
+}
+
+function resolveConcreteAnimationType(animation: TemplateAnimation | undefined, fallback: TemplateAnimationType) {
+  return animation?.duration ? animation.type : fallback;
 }
 
 function BackgroundColorField({

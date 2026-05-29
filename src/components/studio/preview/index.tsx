@@ -390,6 +390,7 @@ function TimelinePreviewOverlay({
           key={layer.id}
           layer={layer}
           dimensions={dimensions}
+          currentTime={currentTime}
           selected={layer.id === selectedLayerId}
           interactionFrame={activeFrame?.layerId === layer.id ? activeFrame : null}
           onSelect={() => onSelectLayer(layer.id)}
@@ -412,6 +413,7 @@ function TimelinePreviewOverlay({
 function TimelinePreviewLayer({
   layer,
   dimensions,
+  currentTime,
   selected,
   interactionFrame,
   onSelect,
@@ -428,6 +430,7 @@ function TimelinePreviewLayer({
 }: {
   layer: TimelineLayer;
   dimensions: { width: number; height: number };
+  currentTime: number;
   selected: boolean;
   interactionFrame: PreviewLayerFrame | null;
   onSelect: () => void;
@@ -444,6 +447,7 @@ function TimelinePreviewLayer({
 }) {
   const box = getTimelineLayerBox(layer, dimensions, interactionFrame);
   const locked = Boolean(layer.locked);
+  const animatedStyle = getPreviewAnimatedStyle(layer, currentTime);
   const baseClass =
     "absolute touch-none overflow-hidden transition outline-offset-2 " +
     (selected ? "outline outline-2 outline-[var(--brand)]" : "outline outline-1 outline-transparent hover:outline-white/45");
@@ -467,8 +471,8 @@ function TimelinePreviewLayer({
         style={{
           ...box,
           borderRadius: scalePreviewRadius(layer.borderRadius),
-          opacity: layer.opacity ?? 1,
-          transform: resolvePreviewLayerTransform(layer),
+          opacity: (layer.opacity ?? 1) * animatedStyle.opacity,
+          transform: resolvePreviewLayerTransform(layer, animatedStyle),
           transformOrigin: "center",
         }}
       >
@@ -495,8 +499,8 @@ function TimelinePreviewLayer({
           ...box,
           backgroundColor: layer.backgroundColor ?? layer.color,
           borderRadius: scalePreviewRadius(layer.borderRadius),
-          opacity: layer.opacity ?? 1,
-          transform: resolvePreviewLayerTransform(layer),
+          opacity: (layer.opacity ?? 1) * animatedStyle.opacity,
+          transform: resolvePreviewLayerTransform(layer, animatedStyle),
           transformOrigin: "center",
         }}
       >
@@ -520,10 +524,10 @@ function TimelinePreviewLayer({
     fontWeight: normalizeTemplateFontWeight(layer.fontWeight),
     justifyItems: textAlign === "right" ? "end" : textAlign === "left" ? "start" : "center",
     textAlign,
-    opacity: layer.opacity ?? 1,
+    opacity: (layer.opacity ?? 1) * animatedStyle.opacity,
     WebkitTextStroke: resolvePreviewTextStroke(layer, fontScale),
     textShadow: resolvePreviewTextShadow(layer, fontScale),
-    transform: resolvePreviewLayerTransform(layer),
+    transform: resolvePreviewLayerTransform(layer, animatedStyle),
     transformOrigin: "center",
   } satisfies React.CSSProperties;
 
@@ -763,8 +767,56 @@ function scalePreviewRadius(radius?: number) {
   return radius ? `${Math.max(4, radius * 0.2)}px` : undefined;
 }
 
-function resolvePreviewLayerTransform(layer: Pick<TimelineLayer, "rotation">) {
-  return layer.rotation ? `rotate(${layer.rotation}deg)` : undefined;
+function resolvePreviewLayerTransform(
+  layer: Pick<TimelineLayer, "rotation">,
+  animation: { translateX: number; translateY: number; scale: number },
+) {
+  const transforms: string[] = [];
+  if (animation.translateX) transforms.push(`translateX(${animation.translateX}%)`);
+  if (animation.translateY) transforms.push(`translateY(${animation.translateY}%)`);
+  if (animation.scale !== 1) transforms.push(`scale(${animation.scale})`);
+  if (layer.rotation) transforms.push(`rotate(${layer.rotation}deg)`);
+  return transforms.length ? transforms.join(" ") : undefined;
+}
+
+function getPreviewAnimatedStyle(layer: TimelineLayer, currentTime: number) {
+  const relativeTime = currentTime - layer.start;
+  let opacity = 1;
+  let translateX = 0;
+  let translateY = 0;
+  let scale = 1;
+
+  const applyAnimation = (type: string, progress: number, direction: "in" | "out") => {
+    const eased = easePreview(progress);
+    const inverse = 1 - eased;
+    const amount = direction === "in" ? inverse : eased;
+
+    if (type === "fadeIn" || type === "fadeOut") opacity *= direction === "in" ? eased : 1 - eased;
+    if (type === "slideUp") translateY += direction === "in" ? amount * 28 : -amount * 28;
+    if (type === "slideDown") translateY += direction === "in" ? -amount * 28 : amount * 28;
+    if (type === "slideLeft") translateX += direction === "in" ? amount * 28 : -amount * 28;
+    if (type === "slideRight") translateX += direction === "in" ? -amount * 28 : amount * 28;
+    if (type === "zoomIn") scale *= direction === "in" ? 0.72 + eased * 0.28 : 1 + eased * 0.24;
+    if (type === "zoomOut") scale *= direction === "in" ? 1.24 - eased * 0.24 : 1 - eased * 0.24;
+    if (type === "pop") scale *= direction === "in" ? 0.7 + eased * 0.3 : 1 - eased * 0.18;
+    if (type === "bounce") scale *= 1 + Math.sin(progress * Math.PI * 2.5) * 0.08 * (1 - progress);
+  };
+
+  if (layer.animationIn?.duration && relativeTime < layer.animationIn.duration) {
+    applyAnimation(layer.animationIn.type, Math.max(0, Math.min(1, relativeTime / layer.animationIn.duration)), "in");
+  }
+
+  const outDuration = layer.animationOut?.duration ?? 0;
+  const outStart = layer.duration - outDuration;
+  if (outDuration && relativeTime > outStart) {
+    applyAnimation(layer.animationOut?.type ?? "fadeOut", Math.max(0, Math.min(1, (relativeTime - outStart) / outDuration)), "out");
+  }
+
+  return { opacity, translateX, translateY, scale };
+}
+
+function easePreview(progress: number) {
+  return 1 - Math.pow(1 - progress, 3);
 }
 
 function resolvePreviewTextStroke(layer: Pick<TimelineLayer, "textStrokeColor" | "textStrokeWidth">, scale: number) {
@@ -792,6 +844,7 @@ export function TemplatePreviewLayer({
   layer: TemplateTimelineTrack["layers"][number];
   project: TemplateProject;
 }) {
+  const staticAnimation = { opacity: 1, translateX: 0, translateY: 0, scale: 1 };
   const style = {
     left: `${((layer.x ?? 0) / project.width) * 100}%`,
     top: `${((layer.y ?? 0) / project.height) * 100}%`,
@@ -815,7 +868,7 @@ export function TemplatePreviewLayer({
           textShadow: resolvePreviewTextShadow(layer, 0.2),
           backgroundColor: layer.backgroundColor,
           borderRadius: layer.borderRadius ? `${Math.max(4, layer.borderRadius * 0.2)}px` : undefined,
-          transform: resolvePreviewLayerTransform(layer),
+          transform: resolvePreviewLayerTransform(layer, staticAnimation),
           transformOrigin: "center",
           direction: layer.direction === "ltr" ? "ltr" : "rtl",
           justifyItems: textAlign === "right" ? "end" : textAlign === "left" ? "start" : "center",
@@ -840,7 +893,7 @@ export function TemplatePreviewLayer({
           objectFit: layer.fit ?? "cover",
           borderRadius: layer.borderRadius ? `${Math.max(4, layer.borderRadius * 0.2)}px` : undefined,
           opacity: layer.opacity ?? 1,
-          transform: resolvePreviewLayerTransform(layer),
+          transform: resolvePreviewLayerTransform(layer, staticAnimation),
           transformOrigin: "center",
         }}
       />
@@ -849,7 +902,7 @@ export function TemplatePreviewLayer({
         className="absolute grid place-items-center border border-white/20 bg-white/10 text-xs font-black text-white/70"
         style={{
           ...style,
-          transform: resolvePreviewLayerTransform(layer),
+          transform: resolvePreviewLayerTransform(layer, staticAnimation),
           transformOrigin: "center",
         }}
       >
@@ -875,7 +928,7 @@ export function TemplatePreviewLayer({
         background: normalizeHexColor(layer.color),
         borderRadius: `${Math.min(28, (layer.borderRadius ?? 18) / 2)}px`,
         opacity: layer.opacity ?? 0.75,
-        transform: resolvePreviewLayerTransform(layer),
+        transform: resolvePreviewLayerTransform(layer, staticAnimation),
         transformOrigin: "center",
       }}
     />

@@ -2,6 +2,7 @@ import type { EditPlan } from "@/lib/edit-plan";
 import { trimVideoWithFFmpeg, type FFmpegCut } from "@/lib/ffmpeg-renderer";
 import { resolveMediaDuration } from "@/lib/media-duration";
 import type { AspectRatio, VideoStyle } from "@/lib/video-styles";
+import type { TemplateAnimation } from "@/lib/video-template-engine";
 
 const FPS = 30;
 
@@ -64,6 +65,8 @@ export type BrowserTimelineLayer = {
   borderRadius?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
+  animationIn?: TemplateAnimation;
+  animationOut?: TemplateAnimation;
   hidden?: boolean;
 };
 
@@ -426,10 +429,16 @@ function drawTimelineOverlays(
     const width = (layer.width ?? design.width) * scaleX;
     const height = (layer.height ?? Math.max(120, design.height * 0.08)) * scaleY;
     const radius = Math.max(0, (layer.borderRadius ?? 0) * Math.min(scaleX, scaleY));
+    const animation = getTimelineLayerAnimationFrame(layer, outputTime, context.canvas.width, context.canvas.height);
 
     context.save();
-    context.globalAlpha *= layer.opacity ?? 1;
-    applyTimelineLayerRotation(context, x, y, width, height, layer.rotation);
+    context.globalAlpha *= (layer.opacity ?? 1) * animation.opacity;
+    applyTimelineLayerTransform(context, x, y, width, height, {
+      translateX: animation.translateX,
+      translateY: animation.translateY,
+      scale: animation.scale,
+      rotation: layer.rotation ?? 0,
+    });
 
     if (layer.type === "image" && layer.src) {
       const image = assets.get(layer.src);
@@ -446,21 +455,67 @@ function drawTimelineOverlays(
   }
 }
 
-function applyTimelineLayerRotation(
+function applyTimelineLayerTransform(
   context: CanvasRenderingContext2D,
   x: number,
   y: number,
   width: number,
   height: number,
-  rotation = 0,
+  transform: { translateX: number; translateY: number; scale: number; rotation: number },
 ) {
-  if (!rotation) return;
+  if (!transform.translateX && !transform.translateY && transform.scale === 1 && !transform.rotation) return;
 
   const centerX = x + width / 2;
   const centerY = y + height / 2;
-  context.translate(centerX, centerY);
-  context.rotate((rotation * Math.PI) / 180);
+  context.translate(centerX + transform.translateX, centerY + transform.translateY);
+  if (transform.rotation) context.rotate((transform.rotation * Math.PI) / 180);
+  if (transform.scale !== 1) context.scale(transform.scale, transform.scale);
   context.translate(-centerX, -centerY);
+}
+
+function getTimelineLayerAnimationFrame(
+  layer: BrowserTimelineLayer,
+  outputTime: number,
+  canvasWidth: number,
+  canvasHeight: number,
+) {
+  const relativeTime = outputTime - layer.start;
+  let opacity = 1;
+  let translateX = 0;
+  let translateY = 0;
+  let scale = 1;
+
+  const applyAnimation = (type: string, progress: number, direction: "in" | "out") => {
+    const eased = easeOut(progress);
+    const inverse = 1 - eased;
+    const amount = direction === "in" ? inverse : eased;
+
+    if (type === "fadeIn" || type === "fadeOut") opacity *= direction === "in" ? eased : 1 - eased;
+    if (type === "slideUp") translateY += direction === "in" ? amount * canvasHeight * 0.18 : -amount * canvasHeight * 0.18;
+    if (type === "slideDown") translateY += direction === "in" ? -amount * canvasHeight * 0.18 : amount * canvasHeight * 0.18;
+    if (type === "slideLeft") translateX += direction === "in" ? amount * canvasWidth * 0.22 : -amount * canvasWidth * 0.22;
+    if (type === "slideRight") translateX += direction === "in" ? -amount * canvasWidth * 0.22 : amount * canvasWidth * 0.22;
+    if (type === "zoomIn") scale *= direction === "in" ? 0.72 + eased * 0.28 : 1 + eased * 0.24;
+    if (type === "zoomOut") scale *= direction === "in" ? 1.24 - eased * 0.24 : 1 - eased * 0.24;
+    if (type === "pop") scale *= direction === "in" ? 0.68 + eased * 0.32 : 1 - eased * 0.18;
+    if (type === "bounce") scale *= 1 + Math.sin(progress * Math.PI * 2.5) * 0.08 * (1 - progress);
+  };
+
+  if (layer.animationIn?.duration && relativeTime < layer.animationIn.duration) {
+    applyAnimation(layer.animationIn.type, Math.max(0, Math.min(1, relativeTime / layer.animationIn.duration)), "in");
+  }
+
+  const outDuration = layer.animationOut?.duration ?? 0;
+  const outStart = layer.duration - outDuration;
+  if (outDuration && relativeTime > outStart) {
+    applyAnimation(layer.animationOut?.type ?? "fadeOut", Math.max(0, Math.min(1, (relativeTime - outStart) / outDuration)), "out");
+  }
+
+  return { opacity, translateX, translateY, scale };
+}
+
+function easeOut(progress: number) {
+  return 1 - Math.pow(1 - progress, 3);
 }
 
 function drawTimelineTextLayer(

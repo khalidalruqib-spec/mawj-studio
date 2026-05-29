@@ -28,6 +28,7 @@ import type { StudioProject } from "@/lib/project-store";
 import type { AspectRatio, Platform, VideoStyleId } from "@/lib/video-styles";
 import type { AdCampaign } from "@/lib/ad-maker";
 import type { AICommandAction } from "@/lib/ai-command";
+import type { TemplateAnimation } from "@/lib/video-template-engine";
 
 export type Goal = "engagement" | "sales" | "education" | "awareness";
 export type PanelId =
@@ -120,6 +121,8 @@ export type TimelineLayer = {
   borderRadius?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
+  animationIn?: TemplateAnimation;
+  animationOut?: TemplateAnimation;
   locked?: boolean;
   hidden?: boolean;
 };

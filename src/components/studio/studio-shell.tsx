@@ -4643,13 +4643,12 @@ function editorLayerToTemplateTimelineLayer(
     align: layer.align,
     direction: layer.direction,
     editable: true,
-    animationIn:
+    animationIn: layer.animationIn ?? (
       templateType === "text" || templateType === "captions"
-        ? {
-            type: "slideUp",
-            duration: 0.45,
-          }
-        : undefined,
+        ? { type: "slideUp", duration: 0.45 }
+        : undefined
+    ),
+    animationOut: layer.animationOut,
   };
 }
 
@@ -4752,6 +4751,8 @@ function templateTimelineToEditorTracks(templateTracks: TemplateTimelineTrack[])
       borderRadius: layer.borderRadius,
       opacity: layer.opacity,
       fit: layer.fit,
+      animationIn: layer.animationIn,
+      animationOut: layer.animationOut,
       locked: layer.locked,
       hidden: layer.hidden,
     })),
@@ -4786,6 +4787,8 @@ function toTemplateTimelinePatch(patch: Partial<TimelineLayer>): Partial<Templat
     borderRadius: patch.borderRadius,
     opacity: patch.opacity,
     fit: patch.fit,
+    animationIn: patch.animationIn,
+    animationOut: patch.animationOut,
     locked: patch.locked,
     hidden: patch.hidden,
   };

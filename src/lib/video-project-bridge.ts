@@ -14,6 +14,7 @@ import {
   type VideoProject,
 } from "@/lib/video-project-model";
 import type {
+  TemplateAnimation,
   TemplateLayer,
   TemplateProject,
   TemplateTimelineTrack,
@@ -61,6 +62,8 @@ export type EditorTimelineLayerInput = {
   borderRadius?: number;
   opacity?: number;
   fit?: "cover" | "contain" | "fill";
+  animationIn?: TemplateAnimation;
+  animationOut?: TemplateAnimation;
   locked?: boolean;
   hidden?: boolean;
 };
@@ -337,6 +340,8 @@ export function editorLayerPatchToVideoLayerPatch(
     hidden: patch.hidden,
     start: patch.start,
     duration: patch.duration,
+    animationIn: templateAnimationToProjectAnimation(patch.animationIn),
+    animationOut: templateAnimationToProjectAnimation(patch.animationOut),
     style: Object.keys(cleanStyle).length ? cleanStyle : undefined,
   });
 }
@@ -549,8 +554,8 @@ function editorTimelineLayerToVideoLayer(
           ]
         : previous?.effects,
     keyframes: previous?.keyframes,
-    animationIn: previous?.animationIn,
-    animationOut: previous?.animationOut,
+    animationIn: templateAnimationToProjectAnimation(layer.animationIn) ?? previous?.animationIn,
+    animationOut: templateAnimationToProjectAnimation(layer.animationOut) ?? previous?.animationOut,
   };
 }
 
