@@ -7,6 +7,8 @@ import {
   ArrowUp,
   Captions,
   Cloud,
+  ClipboardCopy,
+  ClipboardPaste,
   Copy,
   Crop,
   Download,
@@ -164,6 +166,11 @@ export function ProfessionalVideoStudio() {
   const [timelineUndo, setTimelineUndo] = useState<TimelineTrack[][]>([]);
   const [timelineRedo, setTimelineRedo] = useState<TimelineTrack[][]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState("clip-main");
+  const [layerClipboard, setLayerClipboard] = useState<{
+    layer: TimelineLayer;
+    trackId: string;
+    trackKind: TimelineTrack["kind"];
+  } | null>(null);
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<TranscriptSegment[]>(SAMPLE_TRANSCRIPT);
@@ -548,6 +555,18 @@ export function ProfessionalVideoStudio() {
       if (commandPressed && key === "d") {
         event.preventDefault();
         duplicateSelectedLayer();
+        return;
+      }
+
+      if (commandPressed && key === "c") {
+        event.preventDefault();
+        copySelectedLayer();
+        return;
+      }
+
+      if (commandPressed && key === "v") {
+        event.preventDefault();
+        pasteLayerFromClipboard();
         return;
       }
 
@@ -1623,6 +1642,59 @@ export function ProfessionalVideoStudio() {
     setProjectStatus(`${selectedLayer.name} duplicated`);
   }
 
+  function copySelectedLayer() {
+    if (!selectedLayer || !isDuplicableEditorLayer(selectedLayer)) {
+      setProjectStatus("Select a text, image, shape, or caption layer to copy");
+      return;
+    }
+
+    const sourceTrack = timelineTracks.find((track) =>
+      track.layers.some((layer) => layer.id === selectedLayer.id),
+    );
+    if (!sourceTrack) {
+      setProjectStatus("Could not find the selected layer track");
+      return;
+    }
+
+    setLayerClipboard({
+      layer: { ...selectedLayer },
+      trackId: sourceTrack.id,
+      trackKind: sourceTrack.kind,
+    });
+    setProjectStatus(`${selectedLayer.name} copied`);
+  }
+
+  function pasteLayerFromClipboard() {
+    if (!layerClipboard) {
+      setProjectStatus("Copy a layer before pasting");
+      return;
+    }
+
+    const targetTrack =
+      timelineTracks.find((track) => track.id === layerClipboard.trackId) ??
+      timelineTracks.find((track) => track.kind === layerClipboard.trackKind);
+
+    if (!targetTrack) {
+      setProjectStatus("Could not find a compatible track for paste");
+      return;
+    }
+
+    const pastedLayer = createPastedTimelineLayer(layerClipboard.layer, aspectRatio, previewTime);
+    const nextTracks = timelineTracks.map((track) =>
+      track.id === targetTrack.id
+        ? {
+            ...track,
+            layers: [...track.layers, pastedLayer],
+          }
+        : track,
+    );
+
+    commitTimeline(nextTracks);
+    setSelectedLayerId(pastedLayer.id);
+    selectEngineLayer(pastedLayer.id);
+    setProjectStatus(`${pastedLayer.name} pasted at ${formatDuration(previewTime)}`);
+  }
+
   function reorderSelectedLayer(direction: "forward" | "backward" | "front" | "back") {
     if (!selectedLayer) {
       setProjectStatus("Select a layer to change its order");
@@ -2541,6 +2613,18 @@ export function ProfessionalVideoStudio() {
                       disabled={!isDuplicableEditorLayer(selectedLayer) || selectedLayer?.locked}
                     />
                     <ToolbarButton
+                      label="Copy"
+                      icon={ClipboardCopy}
+                      onClick={copySelectedLayer}
+                      disabled={!isDuplicableEditorLayer(selectedLayer)}
+                    />
+                    <ToolbarButton
+                      label="Paste"
+                      icon={ClipboardPaste}
+                      onClick={pasteLayerFromClipboard}
+                      disabled={!layerClipboard}
+                    />
+                    <ToolbarButton
                       label={selectedLayer?.hidden ? "Show" : "Hide"}
                       icon={selectedLayer?.hidden ? Eye : EyeOff}
                       onClick={toggleSelectedLayerHidden}
@@ -3181,6 +3265,16 @@ function duplicateTimelineLayer(layer: TimelineLayer, aspectRatio: AspectRatio):
     y: clampNumber((layer.y ?? 0) + offset, 0, Math.max(0, dimensions.height - height)),
     width,
     height,
+  };
+}
+
+function createPastedTimelineLayer(layer: TimelineLayer, aspectRatio: AspectRatio, start: number): TimelineLayer {
+  return {
+    ...duplicateTimelineLayer(layer, aspectRatio),
+    start: roundTime(Math.max(0, start)),
+    sceneId: undefined,
+    locked: false,
+    hidden: false,
   };
 }
 
