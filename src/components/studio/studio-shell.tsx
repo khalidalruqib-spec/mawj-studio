@@ -2519,7 +2519,22 @@ export function ProfessionalVideoStudio() {
           `${index + 1}\n${secondsToSrt(caption.start)} --> ${secondsToSrt(caption.end)}\n${caption.text}\n`,
       )
       .join("\n");
-    downloadTextFile("mawj-captions.srt", srt, "text/plain;charset=utf-8");
+    const blob = new Blob([srt], { type: "text/plain;charset=utf-8" });
+    const durationSeconds = Math.max(1, Math.round(Math.max(0, ...captions.map((caption) => caption.end))));
+    const result: BrowserRenderResult = {
+      blob,
+      url: URL.createObjectURL(blob),
+      fileName: "mawj-captions.srt",
+      mimeType: "text/plain;charset=utf-8",
+      durationSeconds,
+      resolution: "SRT subtitles",
+      textPreview: srt.slice(0, 4000),
+    };
+
+    setRenderResult(result);
+    persistExportResult(result, `${brandName || BRAND.displayName} captions`);
+    setProjectStatus("SRT captions export ready");
+    setActivePanel("exports");
   }
 
   async function exportThumbnail() {
@@ -2537,9 +2552,18 @@ export function ProfessionalVideoStudio() {
           project: templateProject,
           time: previewTime,
         });
-        downloadBlobFile(thumbnail.fileName, thumbnail.blob);
-        revokeObjectUrl(thumbnail.url);
+        const result: BrowserRenderResult = {
+          blob: thumbnail.blob,
+          url: thumbnail.url,
+          fileName: thumbnail.fileName,
+          mimeType: "image/png",
+          durationSeconds: 1,
+          resolution: thumbnail.resolution,
+        };
+        setRenderResult(result);
+        persistExportResult(result, `${templateProject.name} thumbnail`);
         setProjectStatus(`Thumbnail exported: ${thumbnail.resolution}`);
+        setActivePanel("exports");
         return;
       }
 
@@ -2550,8 +2574,18 @@ export function ProfessionalVideoStudio() {
         time: previewTime,
         aspectRatio,
       });
-      downloadBlobFile(`${withoutFileExtension(studioFile.file.name)}-thumbnail.png`, blob);
+      const result: BrowserRenderResult = {
+        blob,
+        url: URL.createObjectURL(blob),
+        fileName: `${withoutFileExtension(studioFile.file.name)}-thumbnail.png`,
+        mimeType: "image/png",
+        durationSeconds: 1,
+        resolution: getThumbnailResolutionLabel(aspectRatio),
+      };
+      setRenderResult(result);
+      persistExportResult(result, `${brandName || BRAND.displayName} thumbnail`);
       setProjectStatus("Thumbnail exported from current preview frame");
+      setActivePanel("exports");
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Could not export thumbnail.");
     }
@@ -6251,6 +6285,12 @@ function withoutFileExtension(fileName: string) {
   return fileName.replace(/\.[^.]+$/, "") || "image";
 }
 
+function getThumbnailResolutionLabel(aspectRatio: AspectRatio) {
+  if (aspectRatio === "16:9") return "1280x720 PNG";
+  if (aspectRatio === "1:1") return "1080x1080 PNG";
+  return "720x1280 PNG";
+}
+
 function createMediaAssetFromFile(file: File): MediaAsset {
   const kind = getAssetKind(file);
 
@@ -6292,21 +6332,6 @@ function storedMediaRecordToAsset(record: StoredMediaRecord): MediaAsset {
   };
 }
 
-function downloadTextFile(fileName: string, content: string, type: string) {
-  const blob = new Blob([content], { type });
-  downloadBlobFile(fileName, blob);
-}
-
-function downloadBlobFile(fileName: string, blob: Blob) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
 
 async function createSourceVideoThumbnail({
   sourceUrl,

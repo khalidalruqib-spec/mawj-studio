@@ -167,6 +167,13 @@ export function ExportsPanel({
         <div className="rounded-lg border border-[var(--brand)] bg-[var(--brand-soft)] p-3">
           {renderResult.mimeType.startsWith("audio/") ? (
             <audio src={renderResult.url} controls className="mb-3 w-full" />
+          ) : renderResult.mimeType.startsWith("text/") ? (
+            <pre
+              className="mb-3 max-h-[320px] overflow-auto rounded-lg border border-white/10 bg-black/45 p-3 text-left text-xs font-bold leading-5 text-[var(--text)]"
+              dir="ltr"
+            >
+              {renderResult.textPreview ?? "Text export ready."}
+            </pre>
           ) : renderResult.mimeType.startsWith("image/") ? (
             <Image
               src={renderResult.url}

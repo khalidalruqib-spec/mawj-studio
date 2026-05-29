@@ -19,6 +19,7 @@ export type BrowserRenderResult = {
   mimeType: string;
   durationSeconds: number;
   resolution: string;
+  textPreview?: string;
 };
 
 type RenderEditedVideoOptions = {
