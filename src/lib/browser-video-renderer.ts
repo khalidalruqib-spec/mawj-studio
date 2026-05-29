@@ -1,5 +1,6 @@
 import type { EditPlan } from "@/lib/edit-plan";
 import { trimVideoWithFFmpeg, type FFmpegCut } from "@/lib/ffmpeg-renderer";
+import { resolveCanvasCompositeOperation, type LayerBlendMode } from "@/lib/layer-blend-modes";
 import { resolveLayerFilter } from "@/lib/layer-filters";
 import { resolveMediaDuration } from "@/lib/media-duration";
 import { resolveLayerFontFamily } from "@/lib/template-typography";
@@ -74,6 +75,7 @@ export type BrowserTimelineLayer = {
   shadowOffsetY?: number;
   padding?: number;
   opacity?: number;
+  blendMode?: LayerBlendMode;
   fit?: "cover" | "contain" | "fill";
   brightness?: number;
   contrast?: number;
@@ -450,6 +452,7 @@ function drawTimelineOverlays(
 
     context.save();
     context.globalAlpha *= (layer.opacity ?? 1) * animation.opacity;
+    context.globalCompositeOperation = resolveCanvasCompositeOperation(layer.blendMode);
     applyTimelineLayerTransform(context, x, y, width, height, {
       translateX: animation.translateX,
       translateY: animation.translateY,

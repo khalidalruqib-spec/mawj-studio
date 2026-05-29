@@ -1,5 +1,6 @@
 import { Eye, EyeOff, Layers3, Lock, SlidersHorizontal, Trash2, Unlock, UploadCloud } from "lucide-react";
 import { FORMAT_PRESETS, PLATFORM_LABELS, VIDEO_STYLES, type AspectRatio, type LanguageMode, type Platform, type VideoStyle, type VideoStyleId } from "@/lib/video-styles";
+import { LAYER_BLEND_MODE_OPTIONS } from "@/lib/layer-blend-modes";
 import { TEMPLATE_FONT_PRESETS } from "@/lib/template-typography";
 import type { TemplateAnimation, TemplateAnimationType } from "@/lib/video-template-engine";
 import { GOAL_LABELS } from "../foundation";
@@ -360,6 +361,7 @@ export function LayerInspector({
   const supportsRotation = supportsBorderRadius;
   const supportsQuickPosition = supportsBorderRadius;
   const supportsAnimation = supportsBorderRadius;
+  const supportsBlendMode = supportsBorderRadius;
   const dimensions = getInspectorDimensions(aspectRatio);
   const safeMargins = getInspectorSafeMargins(aspectRatio);
   const quickPositionActions = createQuickPositionActions(layer, dimensions, safeMargins);
@@ -587,6 +589,22 @@ export function LayerInspector({
           disabled={locked}
           onChange={(opacity) => onChange({ opacity: clampInspectorNumber(opacity, 0, 100) / 100 })}
         />
+        {supportsBlendMode ? (
+          <Field label="Blend mode">
+            <select
+              value={layer.blendMode ?? "normal"}
+              disabled={locked}
+              onChange={(event) => onChange({ blendMode: event.target.value as TimelineLayer["blendMode"] })}
+              className="control-select disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {LAYER_BLEND_MODE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} — {option.detail}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
         {supportsBorderRadius ? (
           <NumberField
             label="Radius"

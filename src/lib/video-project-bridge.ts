@@ -13,6 +13,7 @@ import {
   type TrackType,
   type VideoProject,
 } from "@/lib/video-project-model";
+import type { LayerBlendMode } from "@/lib/layer-blend-modes";
 import type {
   TemplateAnimation,
   TemplateLayer,
@@ -69,6 +70,7 @@ export type EditorTimelineLayerInput = {
   shadowOffsetY?: number;
   padding?: number;
   opacity?: number;
+  blendMode?: LayerBlendMode;
   fit?: "cover" | "contain" | "fill";
   brightness?: number;
   contrast?: number;
@@ -343,6 +345,7 @@ export function editorLayerPatchToVideoLayerPatch(
     shadowBlur: patch.shadowBlur,
     shadowOffsetX: patch.shadowOffsetX,
     shadowOffsetY: patch.shadowOffsetY,
+    blendMode: patch.blendMode,
     padding: patch.padding,
     align: patch.align,
     direction: patch.direction,
@@ -521,6 +524,7 @@ function templateLayerToVideoLayer(
       shadowBlur: layer.shadowBlur,
       shadowOffsetX: layer.shadowOffsetX,
       shadowOffsetY: layer.shadowOffsetY,
+      blendMode: layer.blendMode,
       padding: layer.padding,
       align: layer.align,
       direction: layer.direction,
@@ -590,6 +594,7 @@ function editorTimelineLayerToVideoLayer(
       shadowBlur: layer.shadowBlur ?? previous?.style?.shadowBlur,
       shadowOffsetX: layer.shadowOffsetX ?? previous?.style?.shadowOffsetX,
       shadowOffsetY: layer.shadowOffsetY ?? previous?.style?.shadowOffsetY,
+      blendMode: layer.blendMode ?? previous?.style?.blendMode,
       padding: layer.padding ?? previous?.style?.padding,
       align: layer.align ?? previous?.style?.align ?? "center",
       direction: layer.direction ?? previous?.style?.direction ?? "auto",

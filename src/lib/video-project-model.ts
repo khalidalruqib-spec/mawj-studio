@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LAYER_BLEND_MODES, type LayerBlendMode } from "@/lib/layer-blend-modes";
 
 export const ASSET_TYPES = ["video", "image", "audio", "music", "font", "lottie"] as const;
 export const LAYER_TYPES = [
@@ -154,6 +155,7 @@ export interface LayerStyle {
   shadowBlur?: number;
   shadowOffsetX?: number;
   shadowOffsetY?: number;
+  blendMode?: LayerBlendMode;
   align?: "left" | "center" | "right";
   direction?: "ltr" | "rtl" | "auto";
   fit?: "cover" | "contain" | "fill";
@@ -240,6 +242,7 @@ export const layerStyleSchema = z.object({
   shadowBlur: z.number().min(0).optional(),
   shadowOffsetX: z.number().optional(),
   shadowOffsetY: z.number().optional(),
+  blendMode: z.enum(LAYER_BLEND_MODES).optional(),
   align: z.enum(["left", "center", "right"]).optional(),
   direction: z.enum(["ltr", "rtl", "auto"]).optional(),
   fit: z.enum(["cover", "contain", "fill"]).optional(),

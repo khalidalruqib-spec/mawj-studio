@@ -7,6 +7,7 @@ import type {
   BrowserRenderProgress,
   BrowserRenderResult,
 } from "@/lib/browser-video-renderer";
+import { resolveCanvasCompositeOperation } from "@/lib/layer-blend-modes";
 import { resolveLayerFilter } from "@/lib/layer-filters";
 import {
   TEMPLATE_FONT_PRESET_INPUT_KEY,
@@ -154,6 +155,7 @@ function drawLayer(
 
   context.save();
   context.globalAlpha = opacity * (layer.opacity ?? 1);
+  context.globalCompositeOperation = resolveCanvasCompositeOperation(layer.blendMode);
 
   // Apply transform for slide/zoom/pop/bounce animations and manual rotation.
   if (transform.tx !== 0 || transform.ty !== 0 || transform.scale !== 1 || rotation !== 0) {

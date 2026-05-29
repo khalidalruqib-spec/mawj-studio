@@ -25,6 +25,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { StudioProject } from "@/lib/project-store";
+import type { LayerBlendMode } from "@/lib/layer-blend-modes";
 import type { AspectRatio, Platform, VideoStyleId } from "@/lib/video-styles";
 import type { AdCampaign } from "@/lib/ad-maker";
 import type { AICommandAction } from "@/lib/ai-command";
@@ -128,6 +129,7 @@ export type TimelineLayer = {
   shadowOffsetY?: number;
   padding?: number;
   opacity?: number;
+  blendMode?: LayerBlendMode;
   fit?: "cover" | "contain" | "fill";
   brightness?: number;
   contrast?: number;

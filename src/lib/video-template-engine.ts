@@ -2,6 +2,7 @@ import {
   TEMPLATE_FONT_PRESET_INPUT_KEY,
   resolveLayerFontFamily,
 } from "@/lib/template-typography";
+import type { LayerBlendMode } from "@/lib/layer-blend-modes";
 
 export type TemplateInputType =
   | "text"
@@ -100,6 +101,7 @@ export type TemplateLayer = {
   shadowOffsetY?: number;
   padding?: number;
   opacity?: number;
+  blendMode?: LayerBlendMode;
   fit?: "cover" | "contain" | "fill";
   brightness?: number;
   contrast?: number;

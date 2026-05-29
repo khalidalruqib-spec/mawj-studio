@@ -20,6 +20,7 @@ import type { EditPlan } from "@/lib/edit-plan";
 import type { TemplateProject, TemplateTimelineTrack } from "@/lib/video-template-engine";
 import { normalizeTemplateFontWeight, resolveLayerFontFamily } from "@/lib/template-typography";
 import { resolveLayerFilter } from "@/lib/layer-filters";
+import { resolveCssBlendMode } from "@/lib/layer-blend-modes";
 import type { AspectRatio, VideoStyle } from "@/lib/video-styles";
 import type { VideoProject } from "@/lib/video-project-model";
 import { isUsableMediaDuration } from "@/lib/media-duration";
@@ -475,6 +476,7 @@ function TimelinePreviewLayer({
           border: resolvePreviewLayerBorder(layer, getPreviewFontScale(dimensions)),
           boxShadow: resolvePreviewLayerShadow(layer, getPreviewFontScale(dimensions)),
           boxSizing: "border-box",
+          mixBlendMode: resolveCssBlendMode(layer.blendMode),
           opacity: (layer.opacity ?? 1) * animatedStyle.opacity,
           transform: resolvePreviewLayerTransform(layer, animatedStyle),
           transformOrigin: "center",
@@ -512,6 +514,7 @@ function TimelinePreviewLayer({
           border: resolvePreviewLayerBorder(layer, getPreviewFontScale(dimensions)),
           boxShadow: resolvePreviewLayerShadow(layer, getPreviewFontScale(dimensions)),
           boxSizing: "border-box",
+          mixBlendMode: resolveCssBlendMode(layer.blendMode),
           opacity: (layer.opacity ?? 1) * animatedStyle.opacity,
           transform: resolvePreviewLayerTransform(layer, animatedStyle),
           transformOrigin: "center",
@@ -535,6 +538,7 @@ function TimelinePreviewLayer({
     border: resolvePreviewLayerBorder(layer, fontScale),
     boxShadow: resolvePreviewLayerShadow(layer, fontScale),
     boxSizing: "border-box",
+    mixBlendMode: resolveCssBlendMode(layer.blendMode),
     padding: `${Math.max(0, (layer.padding ?? 8) * fontScale)}px`,
     fontFamily: layer.fontFamily,
     fontSize: `${Math.max(11, (layer.fontSize ?? 48) * fontScale)}px`,
@@ -919,6 +923,7 @@ export function TemplatePreviewLayer({
           border: resolvePreviewLayerBorder(layer, 0.2),
           boxShadow: resolvePreviewLayerShadow(layer, 0.2),
           boxSizing: "border-box",
+          mixBlendMode: resolveCssBlendMode(layer.blendMode),
           padding: `${Math.max(0, (layer.padding ?? 8) * 0.2)}px`,
           transform: resolvePreviewLayerTransform(layer, staticAnimation),
           transformOrigin: "center",
@@ -948,6 +953,7 @@ export function TemplatePreviewLayer({
           border: resolvePreviewLayerBorder(layer, 0.2),
           boxShadow: resolvePreviewLayerShadow(layer, 0.2),
           boxSizing: "border-box",
+          mixBlendMode: resolveCssBlendMode(layer.blendMode),
           opacity: layer.opacity ?? 1,
           filter: resolveLayerFilter(layer, 0.2),
           transform: combinePreviewTransforms(resolvePreviewLayerTransform(layer, staticAnimation), `scale(${layer.mediaZoom ?? 1})`),
@@ -960,6 +966,7 @@ export function TemplatePreviewLayer({
         style={{
           ...style,
           boxShadow: resolvePreviewLayerShadow(layer, 0.2),
+          mixBlendMode: resolveCssBlendMode(layer.blendMode),
           transform: resolvePreviewLayerTransform(layer, staticAnimation),
           transformOrigin: "center",
         }}
@@ -986,6 +993,7 @@ export function TemplatePreviewLayer({
         background: normalizeHexColor(layer.color),
         borderRadius: `${Math.min(28, (layer.borderRadius ?? 18) / 2)}px`,
         boxShadow: resolvePreviewLayerShadow(layer, 0.2),
+        mixBlendMode: resolveCssBlendMode(layer.blendMode),
         opacity: layer.opacity ?? 0.75,
         transform: resolvePreviewLayerTransform(layer, staticAnimation),
         transformOrigin: "center",
