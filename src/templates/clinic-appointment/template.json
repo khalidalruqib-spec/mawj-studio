@@ -7,7 +7,11 @@
     "zoomIn",
     "pop"
   ],
-  "transitions": ["cut", "fade", "slide"],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide"
+  ],
   "id": "clinic-appointment",
   "name": "حجز عيادة 9:16",
   "category": "Clinics",
@@ -81,7 +85,10 @@
         "from": "#042f2e",
         "to": "{{brandColor}}"
       },
-      "transition": { "type": "fade", "duration": 0.35 },
+      "transition": {
+        "type": "fade",
+        "duration": 0.35
+      },
       "layers": [
         {
           "id": "hook-text",
@@ -97,7 +104,21 @@
           "align": "center",
           "direction": "rtl",
           "safeMargin": true,
-          "animationIn": { "type": "slideUp", "duration": 0.45 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.45
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -106,8 +127,14 @@
       "name": "Service",
       "start": 5,
       "duration": 5,
-      "background": { "type": "color", "value": "#f0fdfa" },
-      "transition": { "type": "slide", "duration": 0.3 },
+      "background": {
+        "type": "color",
+        "value": "#f0fdfa"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.3
+      },
       "layers": [
         {
           "id": "clinic",
@@ -123,7 +150,21 @@
           "align": "center",
           "direction": "rtl",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.35 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "service-title",
@@ -139,7 +180,21 @@
           "align": "center",
           "direction": "rtl",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -148,8 +203,14 @@
       "name": "Trust",
       "start": 10,
       "duration": 5,
-      "background": { "type": "color", "value": "#ffffff" },
-      "transition": { "type": "fade", "duration": 0.3 },
+      "background": {
+        "type": "color",
+        "value": "#ffffff"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.3
+      },
       "layers": [
         {
           "id": "doctor",
@@ -165,7 +226,21 @@
           "align": "center",
           "direction": "rtl",
           "safeMargin": true,
-          "animationIn": { "type": "zoomIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "trust-line",
@@ -181,7 +256,21 @@
           "align": "center",
           "direction": "rtl",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.35 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "logo-trust",
@@ -193,7 +282,10 @@
           "height": 140,
           "fit": "contain",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          }
         }
       ]
     },
@@ -207,7 +299,10 @@
         "from": "{{brandColor}}",
         "to": "#042f2e"
       },
-      "transition": { "type": "fade", "duration": 0.3 },
+      "transition": {
+        "type": "fade",
+        "duration": 0.3
+      },
       "layers": [
         {
           "id": "cta-label",
@@ -223,7 +318,21 @@
           "align": "center",
           "direction": "rtl",
           "safeMargin": true,
-          "animationIn": { "type": "pop", "duration": 0.4 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "phone",
@@ -239,7 +348,21 @@
           "align": "center",
           "direction": "ltr",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.35 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.35
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     }

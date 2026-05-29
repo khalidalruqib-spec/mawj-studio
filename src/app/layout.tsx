@@ -1,5 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Cairo, Geist, Geist_Mono } from "next/font/google";
+import {
+  Almarai,
+  Cairo,
+  Changa,
+  Geist,
+  Geist_Mono,
+  IBM_Plex_Sans_Arabic,
+  Noto_Sans_Arabic,
+  Tajawal,
+} from "next/font/google";
 import { BRAND } from "@/lib/brand";
 import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
@@ -21,8 +30,47 @@ const geistMono = Geist_Mono({
 const cairo = Cairo({
   variable: "--font-arabic",
   subsets: ["arabic", "latin"],
-  weight: ["300", "400", "600", "700", "900"],
+  weight: ["400", "700", "900"],
   display: "swap",
+});
+
+const ibmPlexArabic = IBM_Plex_Sans_Arabic({
+  variable: "--font-ibm-plex-arabic",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  display: "swap",
+});
+
+const tajawal = Tajawal({
+  variable: "--font-tajawal",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  display: "swap",
+  preload: false,
+});
+
+const notoSansArabic = Noto_Sans_Arabic({
+  variable: "--font-noto-sans-arabic",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  display: "swap",
+  preload: false,
+});
+
+const almarai = Almarai({
+  variable: "--font-almarai",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  display: "swap",
+  preload: false,
+});
+
+const changa = Changa({
+  variable: "--font-changa",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  display: "swap",
+  preload: false,
 });
 
 export const viewport: Viewport = {
@@ -91,7 +139,7 @@ export default function RootLayout({
     <html
       lang="ar"
       dir="rtl"
-      className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} ${ibmPlexArabic.variable} ${tajawal.variable} ${notoSansArabic.variable} ${almarai.variable} ${changa.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[--background] text-[--foreground]">
         {children}

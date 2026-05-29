@@ -1,7 +1,28 @@
 {
   "language": "mixed",
-  "animations": ["fadeIn","fadeOut","slideUp","slideDown","slideLeft","slideRight","zoomIn","zoomOut","pop","bounce","typewriter","blurReveal","rotateIn"],
-  "transitions": ["cut","fade","slide","zoom","wipe","blur"],
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
   "id": "ugc-testimonial",
   "name": "UGC Testimonial Ad",
   "category": "Product Ads",
@@ -10,17 +31,82 @@
   "height": 1920,
   "duration": 30,
   "description": "Authentic UGC-style 4-scene product ad template: pain hook → discovery → result → irresistible offer. Designed to convert viewers into buyers.",
-  "safeMargins": { "top": 160, "bottom": 260, "left": 70, "right": 70 },
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
   "requiredInputs": [
-    { "key": "painPoint",     "label": "Pain Point Question",  "type": "textarea", "default": "هل سئِلت من التعب بدون نتيجة؟",    "placeholder": "المشكلة التي يعاني منها عميلك", "required": true },
-    { "key": "productName",   "label": "Product Name",         "type": "text",     "default": "كريم الإشراق الذهبي",             "placeholder": "اسم المنتج",                    "required": true },
-    { "key": "result",        "label": "Result Statement",     "type": "textarea", "default": "بشرة نضرة في ٧ أيام فقط!",        "placeholder": "النتيجة التي حققها المنتج",     "required": true },
-    { "key": "price",         "label": "Offer Price",          "type": "text",     "default": "١٤٩ ريال",                        "placeholder": "مثال: ١٤٩ ريال",               "required": true },
-    { "key": "originalPrice", "label": "Original Price",       "type": "text",     "default": "٢٩٩ ريال",                        "placeholder": "السعر الأصلي قبل الخصم",        "required": true },
-    { "key": "offerBadge",   "label": "Urgency Badge Text",   "type": "text",     "default": "العرض ينتهي الليلة!",             "placeholder": "مثال: آخر ٢٤ ساعة",            "required": true },
-    { "key": "ctaText",       "label": "CTA Button Text",      "type": "text",     "default": "اطلب الآن",                        "placeholder": "نص زر الطلب",                   "required": true },
-    { "key": "video",         "label": "Product / UGC Video",  "type": "video",                                                                                                  "required": true },
-    { "key": "brandColor",    "label": "Brand Color",          "type": "color",    "default": "#ff6b6b",                                                                         "required": false }
+    {
+      "key": "painPoint",
+      "label": "Pain Point Question",
+      "type": "textarea",
+      "default": "هل سئِلت من التعب بدون نتيجة؟",
+      "placeholder": "المشكلة التي يعاني منها عميلك",
+      "required": true
+    },
+    {
+      "key": "productName",
+      "label": "Product Name",
+      "type": "text",
+      "default": "كريم الإشراق الذهبي",
+      "placeholder": "اسم المنتج",
+      "required": true
+    },
+    {
+      "key": "result",
+      "label": "Result Statement",
+      "type": "textarea",
+      "default": "بشرة نضرة في ٧ أيام فقط!",
+      "placeholder": "النتيجة التي حققها المنتج",
+      "required": true
+    },
+    {
+      "key": "price",
+      "label": "Offer Price",
+      "type": "text",
+      "default": "١٤٩ ريال",
+      "placeholder": "مثال: ١٤٩ ريال",
+      "required": true
+    },
+    {
+      "key": "originalPrice",
+      "label": "Original Price",
+      "type": "text",
+      "default": "٢٩٩ ريال",
+      "placeholder": "السعر الأصلي قبل الخصم",
+      "required": true
+    },
+    {
+      "key": "offerBadge",
+      "label": "Urgency Badge Text",
+      "type": "text",
+      "default": "العرض ينتهي الليلة!",
+      "placeholder": "مثال: آخر ٢٤ ساعة",
+      "required": true
+    },
+    {
+      "key": "ctaText",
+      "label": "CTA Button Text",
+      "type": "text",
+      "default": "اطلب الآن",
+      "placeholder": "نص زر الطلب",
+      "required": true
+    },
+    {
+      "key": "video",
+      "label": "Product / UGC Video",
+      "type": "video",
+      "required": true
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#ff6b6b",
+      "required": false
+    }
   ],
   "scenes": [
     {
@@ -28,8 +114,14 @@
       "name": "Pain Hook",
       "start": 0,
       "duration": 6,
-      "background": { "type": "color", "value": "#0f0a0a" },
-      "transition": { "type": "cut", "duration": 0.3 },
+      "background": {
+        "type": "color",
+        "value": "#0f0a0a"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0.3
+      },
       "layers": [
         {
           "id": "pain-red-shape",
@@ -56,7 +148,21 @@
           "color": "#ffffff",
           "align": "center",
           "direction": "ltr",
-          "animationIn": { "type": "pop", "duration": 0.4 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "pain-question",
@@ -73,8 +179,25 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.5 },
-          "animationOut": { "type": "fadeOut", "duration": 0.2 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.5
+          },
+          "animationOut": {
+            "type": "fadeOut",
+            "duration": 0.2
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "pain-top-tag",
@@ -101,7 +224,21 @@
           "color": "#ffffff",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "fadeIn", "duration": 0.3 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -110,8 +247,16 @@
       "name": "Discovery",
       "start": 6,
       "duration": 8,
-      "background": { "type": "gradient", "from": "#0f0a14", "to": "#1a0a1a", "angle": 145 },
-      "transition": { "type": "slide", "duration": 0.4 },
+      "background": {
+        "type": "gradient",
+        "from": "#0f0a14",
+        "to": "#1a0a1a",
+        "angle": 145
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.4
+      },
       "layers": [
         {
           "id": "disc-intro-text",
@@ -127,7 +272,21 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "disc-product-name",
@@ -144,7 +303,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "pop", "duration": 0.5 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "disc-product-image",
@@ -156,7 +329,10 @@
           "height": 900,
           "fit": "cover",
           "borderRadius": 32,
-          "animationIn": { "type": "zoomIn", "duration": 0.55 }
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
         },
         {
           "id": "disc-shine",
@@ -177,8 +353,14 @@
       "name": "Result",
       "start": 14,
       "duration": 9,
-      "background": { "type": "color", "value": "#080808" },
-      "transition": { "type": "zoom", "duration": 0.4 },
+      "background": {
+        "type": "color",
+        "value": "#080808"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.4
+      },
       "layers": [
         {
           "id": "result-video",
@@ -217,7 +399,21 @@
           "color": "#ffffff",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "fadeIn", "duration": 0.3 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "result-after-tag",
@@ -244,7 +440,21 @@
           "color": "#ffffff",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "fadeIn", "duration": 0.3 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "result-statement",
@@ -261,7 +471,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.5 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -270,8 +494,16 @@
       "name": "Offer",
       "start": 23,
       "duration": 7,
-      "background": { "type": "gradient", "from": "#1a0808", "to": "#0d0505", "angle": 160 },
-      "transition": { "type": "fade", "duration": 0.4 },
+      "background": {
+        "type": "gradient",
+        "from": "#1a0808",
+        "to": "#0d0505",
+        "angle": 160
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.4
+      },
       "layers": [
         {
           "id": "offer-urgency-bg",
@@ -299,7 +531,21 @@
           "align": "center",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "bounce", "duration": 0.4 }
+          "animationIn": {
+            "type": "bounce",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "offer-product-name",
@@ -316,7 +562,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "offer-original-price",
@@ -333,7 +593,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "offer-price-big",
@@ -350,7 +624,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "pop", "duration": 0.5 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "offer-cta-bg",
@@ -378,11 +666,32 @@
           "align": "center",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "pop", "duration": 0.5 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     }
   ],
-  "audio": { "music": null, "volume": 1 },
-  "export": { "format": "mp4", "fps": 30, "quality": "1080p" }
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
 }

@@ -21,6 +21,7 @@ import type { TemplateProject, TemplateTimelineTrack } from "@/lib/video-templat
 import type { AspectRatio, VideoStyle } from "@/lib/video-styles";
 import type { VideoProject } from "@/lib/video-project-model";
 import { isUsableMediaDuration } from "@/lib/media-duration";
+import { resolveVideoTextStyle } from "@/lib/video-typography";
 import {
   getTimelineCanvasHeight,
   getTimelineCanvasWidth,
@@ -450,7 +451,7 @@ export function TimelinePreviewLayer({
       className="absolute grid cursor-move place-items-center overflow-hidden px-3 text-center font-black leading-tight text-white"
       style={{
         ...shellStyle,
-        color: normalizeHexColor(layer.textColor ?? layer.color ?? "#ffffff"),
+        color: cssVideoColor(layer.textColor ?? layer.color, "#ffffff"),
         background:
           layer.backgroundColor && !layer.backgroundColor.includes("{{")
             ? layer.backgroundColor
@@ -460,6 +461,13 @@ export function TimelinePreviewLayer({
         borderRadius: `${Math.min(24, layer.borderRadius ?? 14)}px`,
         fontSize: `${Math.max(13, (layer.fontSize ?? (layer.type === "caption" ? 58 : 64)) * 0.22)}px`,
         fontWeight: layer.fontWeight ?? "900",
+        fontFamily: resolveVideoTextStyle(layer).fontFamily,
+        lineHeight: resolveVideoTextStyle(layer).lineHeight,
+        letterSpacing: `${resolveVideoTextStyle(layer).letterSpacing * 0.22}px`,
+        padding: `${Math.max(6, resolveVideoTextStyle(layer).backgroundPadding * 0.18)}px`,
+        textTransform: resolveVideoTextStyle(layer).textTransform,
+        textShadow: buildCssTextShadow(layer),
+        WebkitTextStroke: buildCssTextStroke(layer, 0.22),
       }}
     >
       {layer.content ?? layer.name}
@@ -681,8 +689,23 @@ export function TemplatePreviewLayer({
         className="absolute grid cursor-move place-items-center overflow-hidden px-2 text-center font-black leading-tight"
         style={{
           ...shellStyle,
-          color: normalizeHexColor(layer.color),
+          color: cssVideoColor(layer.color, "#ffffff"),
+          background:
+            layer.backgroundColor && !layer.backgroundColor.includes("{{")
+              ? layer.backgroundColor
+              : layer.type === "captions"
+                ? "rgba(0,0,0,0.58)"
+                : "transparent",
+          borderRadius: `${Math.min(24, layer.borderRadius ?? 14)}px`,
           fontSize: `${Math.max(11, (layer.fontSize ?? 44) * 0.2)}px`,
+          fontFamily: resolveVideoTextStyle(layer).fontFamily,
+          fontWeight: layer.fontWeight ?? "900",
+          lineHeight: resolveVideoTextStyle(layer).lineHeight,
+          letterSpacing: `${resolveVideoTextStyle(layer).letterSpacing * 0.2}px`,
+          padding: `${Math.max(5, resolveVideoTextStyle(layer).backgroundPadding * 0.16)}px`,
+          textTransform: resolveVideoTextStyle(layer).textTransform,
+          textShadow: buildCssTextShadow(layer),
+          WebkitTextStroke: buildCssTextStroke(layer, 0.2),
           direction: layer.direction === "ltr" ? "ltr" : "rtl",
         }}
       >
@@ -1246,6 +1269,30 @@ function snapTimelineSeconds(value: number) {
 function cursorForDragMode(mode: TimelineDragMode) {
   if (mode === "move") return "grab";
   return "ew-resize";
+}
+
+function cssVideoColor(value: string | undefined, fallback: string) {
+  if (!value || value.includes("{{")) return fallback;
+  if (value === "transparent" || value.startsWith("rgb(") || value.startsWith("rgba(")) return value;
+  if (/^#[0-9a-f]{6}$/i.test(value)) return value;
+  return fallback;
+}
+
+function buildCssTextShadow(layer: {
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+}) {
+  const style = resolveVideoTextStyle(layer);
+  if (!style.shadowBlur && !style.shadowOffsetX && !style.shadowOffsetY) return undefined;
+  return `${style.shadowOffsetX}px ${style.shadowOffsetY}px ${style.shadowBlur}px ${style.shadowColor}`;
+}
+
+function buildCssTextStroke(layer: { textStrokeColor?: string; textStrokeWidth?: number }, scale: number) {
+  const style = resolveVideoTextStyle(layer);
+  if (!style.textStrokeWidth || style.textStrokeColor === "transparent") return undefined;
+  return `${Math.max(0.5, style.textStrokeWidth * scale)}px ${style.textStrokeColor}`;
 }
 
 export function ProjectMetrics({

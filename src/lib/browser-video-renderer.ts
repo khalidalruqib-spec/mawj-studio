@@ -2,6 +2,7 @@ import type { EditPlan } from "@/lib/edit-plan";
 import { trimVideoWithFFmpeg, type FFmpegCut } from "@/lib/ffmpeg-renderer";
 import { resolveMediaDuration } from "@/lib/media-duration";
 import type { AspectRatio, VideoStyle } from "@/lib/video-styles";
+import { resolveVideoTextStyle } from "@/lib/video-typography";
 
 const FPS = 30;
 
@@ -48,12 +49,23 @@ type RenderTimelineLayer = {
   y?: number;
   width?: number;
   height?: number;
+  fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
   textColor?: string;
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
+  lineHeight?: number;
+  letterSpacing?: number;
+  textStrokeColor?: string;
+  textStrokeWidth?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  backgroundPadding?: number;
+  textTransform?: "none" | "uppercase";
   fit?: "cover" | "contain" | "fill";
 };
 
@@ -629,12 +641,22 @@ function drawTimelineTextLayer(
   if (!text.trim()) return;
 
   const fontSize = clamp((layer.fontSize ?? (layer.type === "caption" ? 58 : 64)) * scaleX, 18, aspectRatio === "16:9" ? 54 : 62);
-  const lineHeight = fontSize * 1.18;
+  const textStyle = resolveVideoTextStyle(layer, {
+    lineHeight: 1.18,
+    textStrokeColor: layer.type === "caption" ? "rgba(0, 0, 0, 0.72)" : "rgba(0, 0, 0, 0.42)",
+    textStrokeWidth: layer.type === "caption" ? Math.max(4, fontSize * 0.09) : 0,
+    shadowColor: "rgba(0, 0, 0, 0.34)",
+    shadowBlur: layer.type === "caption" ? 10 : 0,
+    shadowOffsetY: layer.type === "caption" ? 6 : 0,
+  });
+  const displayText = textStyle.textTransform === "uppercase" ? text.toUpperCase() : text;
+  const lineHeight = fontSize * textStyle.lineHeight;
   const maxLines = Math.max(1, Math.floor((height - fontSize * 0.65) / lineHeight));
+  const maxTextWidth = Math.max(20, width - textStyle.backgroundPadding * 2 - fontSize * 0.2);
 
-  context.font = `${layer.fontWeight ?? "900"} ${fontSize}px "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif`;
-  const lines = wrapText(context, text, width * 0.88, Math.min(4, maxLines), fontSize);
-  const blockHeight = Math.min(height, lines.length * lineHeight + fontSize * 0.85);
+  context.font = `${layer.fontWeight ?? "900"} ${fontSize}px ${textStyle.fontFamily}`;
+  const lines = wrapText(context, displayText, maxTextWidth, Math.min(4, maxLines), fontSize, layer.fontWeight ?? "900", textStyle.fontFamily);
+  const blockHeight = Math.min(height, lines.length * lineHeight + Math.max(fontSize * 0.5, textStyle.backgroundPadding * 1.4));
   const blockY = y + (height - blockHeight) / 2;
   const background =
     layer.type === "caption"
@@ -652,17 +674,28 @@ function drawTimelineTextLayer(
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.direction = "rtl";
+  context.shadowColor = textStyle.shadowColor;
+  context.shadowBlur = textStyle.shadowBlur;
+  context.shadowOffsetX = textStyle.shadowOffsetX;
+  context.shadowOffsetY = textStyle.shadowOffsetY;
+  (context as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = `${textStyle.letterSpacing}px`;
 
   lines.forEach((line, index) => {
-    const baseline = blockY + fontSize * 0.62 + index * lineHeight;
-    if (layer.type === "caption") {
-      context.lineWidth = Math.max(4, fontSize * 0.09);
-      context.strokeStyle = "rgba(0, 0, 0, 0.72)";
-      context.strokeText(line, x + width / 2, baseline, width * 0.9);
+    const baseline = blockY + blockHeight / 2 - ((lines.length - 1) * lineHeight) / 2 + index * lineHeight;
+    if (textStyle.textStrokeWidth > 0 && textStyle.textStrokeColor !== "transparent") {
+      context.lineWidth = textStyle.textStrokeWidth;
+      context.strokeStyle = textStyle.textStrokeColor;
+      context.strokeText(line, x + width / 2, baseline, maxTextWidth);
     }
     context.fillStyle = normalizeCanvasColor(layer.textColor ?? layer.color, "#ffffff");
-    context.fillText(line, x + width / 2, baseline, width * 0.9);
+    context.fillText(line, x + width / 2, baseline, maxTextWidth);
   });
+
+  (context as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = "0px";
+  context.shadowColor = "transparent";
+  context.shadowBlur = 0;
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 0;
 }
 
 function drawCutPulse(context: CanvasRenderingContext2D, plan: EditPlan | null, outputTime: number) {
@@ -705,8 +738,10 @@ function wrapText(
   maxWidth: number,
   maxLines: number,
   fontSize: number,
+  fontWeight = "900",
+  fontFamily = '"IBM Plex Sans Arabic", Tahoma, Arial, sans-serif',
 ) {
-  context.font = `900 ${fontSize}px "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif`;
+  context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
   const words = text.replace(/\s+/g, " ").trim().split(" ");
   const lines: string[] = [];
   let current = "";

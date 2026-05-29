@@ -176,7 +176,18 @@
           "animationIn": {
             "type": "fadeIn",
             "duration": 0.25
-          }
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "hook-text",
@@ -200,7 +211,18 @@
           "animationOut": {
             "type": "fadeOut",
             "duration": 0.2
-          }
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "hook-accent-line",
@@ -231,7 +253,18 @@
           "animationIn": {
             "type": "bounce",
             "duration": 0.5
-          }
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -278,7 +311,18 @@
           "animationIn": {
             "type": "fadeIn",
             "duration": 0.3
-          }
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "problem-divider",
@@ -314,7 +358,18 @@
           "animationOut": {
             "type": "fadeOut",
             "duration": 0.25
-          }
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "problem-handle",
@@ -333,7 +388,18 @@
           "animationIn": {
             "type": "fadeIn",
             "duration": 0.4
-          }
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -402,7 +468,18 @@
           "animationIn": {
             "type": "pop",
             "duration": 0.4
-          }
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "solution-handle",
@@ -421,7 +498,18 @@
           "animationIn": {
             "type": "fadeIn",
             "duration": 0.3
-          }
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -458,7 +546,18 @@
           "animationIn": {
             "type": "fadeIn",
             "duration": 0.35
-          }
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "stat1-box",
@@ -489,7 +588,18 @@
             "type": "pop",
             "duration": 0.4
           },
-          "editable": true
+          "editable": true,
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "stat1-label",
@@ -508,7 +618,18 @@
             "type": "fadeIn",
             "duration": 0.4
           },
-          "editable": true
+          "editable": true,
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "stat2-box",
@@ -539,7 +660,18 @@
             "type": "pop",
             "duration": 0.45
           },
-          "editable": true
+          "editable": true,
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "stat2-label",
@@ -558,7 +690,18 @@
             "type": "fadeIn",
             "duration": 0.45
           },
-          "editable": true
+          "editable": true,
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "stat3-box",
@@ -589,7 +732,18 @@
             "type": "pop",
             "duration": 0.5
           },
-          "editable": true
+          "editable": true,
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "stat3-label",
@@ -608,7 +762,18 @@
             "type": "fadeIn",
             "duration": 0.5
           },
-          "editable": true
+          "editable": true,
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -658,7 +823,18 @@
           "animationIn": {
             "type": "blurReveal",
             "duration": 0.5
-          }
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "cta-divider",
@@ -690,7 +866,18 @@
           "animationIn": {
             "type": "slideUp",
             "duration": 0.45
-          }
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "cta-follow-icon",
@@ -709,7 +896,18 @@
           "animationIn": {
             "type": "bounce",
             "duration": 0.6
-          }
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     }

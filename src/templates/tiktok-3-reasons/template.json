@@ -1,7 +1,21 @@
 {
   "language": "arabic",
-  "animations": ["fadeIn", "fadeOut", "slideUp", "slideDown", "pop", "bounce", "zoomIn", "blurReveal"],
-  "transitions": ["cut", "slide", "zoom", "wipe"],
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "pop",
+    "bounce",
+    "zoomIn",
+    "blurReveal"
+  ],
+  "transitions": [
+    "cut",
+    "slide",
+    "zoom",
+    "wipe"
+  ],
   "id": "tiktok-3-reasons",
   "name": "٣ أسباب — CapCut Style",
   "category": "TikTok / Reels",
@@ -10,16 +24,66 @@
   "height": 1920,
   "duration": 14,
   "description": "قالب فيرال TikTok/CapCut: hook → ٣ أسباب مرقّمة → CTA. إيقاع سريع ونص كبير للموبايل.",
-  "safeMargins": { "top": 160, "bottom": 260, "left": 70, "right": 70 },
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
   "requiredInputs": [
-    { "key": "topic", "label": "الموضوع", "type": "text", "default": "تجربة منتجنا", "required": true },
-    { "key": "reason1", "label": "السبب ١", "type": "textarea", "default": "جودة عالية وسعر منافس", "required": true },
-    { "key": "reason2", "label": "السبب ٢", "type": "textarea", "default": "توصيل سريع لكل المدن", "required": true },
-    { "key": "reason3", "label": "السبب ٣", "type": "textarea", "default": "ضمان استرجاع ١٤ يوم", "required": true },
-    { "key": "cta", "label": "CTA", "type": "text", "default": "اطلب الآن من الرابط", "required": true },
-    { "key": "handle", "label": "الحساب", "type": "text", "default": "@youraccount", "required": true },
-    { "key": "coverImage", "label": "صورة/فيديو خلفية (اختياري)", "type": "image" },
-    { "key": "brandColor", "label": "لون العلامة", "type": "color", "default": "#7ef2bc" }
+    {
+      "key": "topic",
+      "label": "الموضوع",
+      "type": "text",
+      "default": "تجربة منتجنا",
+      "required": true
+    },
+    {
+      "key": "reason1",
+      "label": "السبب ١",
+      "type": "textarea",
+      "default": "جودة عالية وسعر منافس",
+      "required": true
+    },
+    {
+      "key": "reason2",
+      "label": "السبب ٢",
+      "type": "textarea",
+      "default": "توصيل سريع لكل المدن",
+      "required": true
+    },
+    {
+      "key": "reason3",
+      "label": "السبب ٣",
+      "type": "textarea",
+      "default": "ضمان استرجاع ١٤ يوم",
+      "required": true
+    },
+    {
+      "key": "cta",
+      "label": "CTA",
+      "type": "text",
+      "default": "اطلب الآن من الرابط",
+      "required": true
+    },
+    {
+      "key": "handle",
+      "label": "الحساب",
+      "type": "text",
+      "default": "@youraccount",
+      "required": true
+    },
+    {
+      "key": "coverImage",
+      "label": "صورة/فيديو خلفية (اختياري)",
+      "type": "image"
+    },
+    {
+      "key": "brandColor",
+      "label": "لون العلامة",
+      "type": "color",
+      "default": "#7ef2bc"
+    }
   ],
   "scenes": [
     {
@@ -27,15 +91,159 @@
       "name": "Hook",
       "start": 0,
       "duration": 2.8,
-      "background": { "type": "gradient", "from": "#0a0a0a", "to": "#1a1a2e" },
-      "transition": { "type": "cut", "duration": 0.15 },
+      "background": {
+        "type": "gradient",
+        "from": "#0a0a0a",
+        "to": "#1a1a2e"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0.15
+      },
       "layers": [
-        { "id": "hook-glow", "type": "shape", "shape": "circle", "x": 340, "y": 520, "width": 400, "height": 400, "color": "{{brandColor}}", "opacity": 0.12, "borderRadius": 200 },
-        { "id": "hook-num-bg", "type": "shape", "shape": "rect", "x": 420, "y": 480, "width": 240, "height": 240, "color": "{{brandColor}}", "opacity": 1, "borderRadius": 48 },
-        { "id": "hook-num", "type": "text", "content": "٣", "x": 420, "y": 500, "width": 240, "height": 200, "fontSize": 160, "fontWeight": "bold", "color": "#060a09", "align": "center", "direction": "rtl", "animationIn": { "type": "pop", "duration": 0.35 } },
-        { "id": "hook-label", "type": "text", "content": "أسباب تخلي", "x": 70, "y": 780, "width": 940, "height": 90, "fontSize": 48, "fontWeight": "bold", "color": "#a0aaba", "align": "center", "direction": "rtl", "safeMargin": true, "animationIn": { "type": "fadeIn", "duration": 0.25 } },
-        { "id": "hook-topic", "type": "text", "content": "{{topic}}", "x": 70, "y": 880, "width": 940, "height": 200, "fontSize": 72, "fontWeight": "bold", "color": "#ffffff", "align": "center", "direction": "rtl", "safeMargin": true, "editable": true, "animationIn": { "type": "slideUp", "duration": 0.4 } },
-        { "id": "hook-arrow", "type": "text", "content": "↓", "x": 70, "y": 1180, "width": 940, "height": 80, "fontSize": 64, "fontWeight": "bold", "color": "{{brandColor}}", "align": "center", "direction": "ltr", "animationIn": { "type": "bounce", "duration": 0.5 } }
+        {
+          "id": "hook-glow",
+          "type": "shape",
+          "shape": "circle",
+          "x": 340,
+          "y": 520,
+          "width": 400,
+          "height": 400,
+          "color": "{{brandColor}}",
+          "opacity": 0.12,
+          "borderRadius": 200
+        },
+        {
+          "id": "hook-num-bg",
+          "type": "shape",
+          "shape": "rect",
+          "x": 420,
+          "y": 480,
+          "width": 240,
+          "height": 240,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 48
+        },
+        {
+          "id": "hook-num",
+          "type": "text",
+          "content": "٣",
+          "x": 420,
+          "y": 500,
+          "width": 240,
+          "height": 200,
+          "fontSize": 160,
+          "fontWeight": "bold",
+          "color": "#060a09",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.35
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        },
+        {
+          "id": "hook-label",
+          "type": "text",
+          "content": "أسباب تخلي",
+          "x": 70,
+          "y": 780,
+          "width": 940,
+          "height": 90,
+          "fontSize": 48,
+          "fontWeight": "bold",
+          "color": "#a0aaba",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.25
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        },
+        {
+          "id": "hook-topic",
+          "type": "text",
+          "content": "{{topic}}",
+          "x": 70,
+          "y": 880,
+          "width": 940,
+          "height": 200,
+          "fontSize": 72,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        },
+        {
+          "id": "hook-arrow",
+          "type": "text",
+          "content": "↓",
+          "x": 70,
+          "y": 1180,
+          "width": 940,
+          "height": 80,
+          "fontSize": 64,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "animationIn": {
+            "type": "bounce",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        }
       ]
     },
     {
@@ -43,14 +251,112 @@
       "name": "Reason 1",
       "start": 2.8,
       "duration": 2.8,
-      "background": { "type": "color", "value": "#0d0d0d" },
-      "transition": { "type": "slide", "duration": 0.2 },
+      "background": {
+        "type": "color",
+        "value": "#0d0d0d"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.2
+      },
       "layers": [
-        { "id": "r1-bar", "type": "shape", "shape": "rect", "x": 0, "y": 0, "width": 1080, "height": 8, "color": "{{brandColor}}", "opacity": 1, "borderRadius": 0 },
-        { "id": "r1-badge", "type": "shape", "shape": "rect", "x": 80, "y": 200, "width": 120, "height": 120, "color": "{{brandColor}}", "opacity": 1, "borderRadius": 60, "safeMargin": true },
-        { "id": "r1-num", "type": "text", "content": "١", "x": 80, "y": 218, "width": 120, "height": 84, "fontSize": 64, "fontWeight": "bold", "color": "#060a09", "align": "center", "direction": "rtl", "animationIn": { "type": "pop", "duration": 0.3 } },
-        { "id": "r1-text", "type": "text", "content": "{{reason1}}", "x": 80, "y": 420, "width": 920, "height": 400, "fontSize": 68, "fontWeight": "bold", "color": "#ffffff", "align": "right", "direction": "rtl", "safeMargin": true, "editable": true, "animationIn": { "type": "slideUp", "duration": 0.35 } },
-        { "id": "r1-accent", "type": "shape", "shape": "rect", "x": 80, "y": 900, "width": 200, "height": 6, "color": "{{brandColor}}", "opacity": 1, "borderRadius": 3 }
+        {
+          "id": "r1-bar",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 8,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 0
+        },
+        {
+          "id": "r1-badge",
+          "type": "shape",
+          "shape": "rect",
+          "x": 80,
+          "y": 200,
+          "width": 120,
+          "height": 120,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 60,
+          "safeMargin": true
+        },
+        {
+          "id": "r1-num",
+          "type": "text",
+          "content": "١",
+          "x": 80,
+          "y": 218,
+          "width": 120,
+          "height": 84,
+          "fontSize": 64,
+          "fontWeight": "bold",
+          "color": "#060a09",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        },
+        {
+          "id": "r1-text",
+          "type": "text",
+          "content": "{{reason1}}",
+          "x": 80,
+          "y": 420,
+          "width": 920,
+          "height": 400,
+          "fontSize": 68,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "right",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.35
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        },
+        {
+          "id": "r1-accent",
+          "type": "shape",
+          "shape": "rect",
+          "x": 80,
+          "y": 900,
+          "width": 200,
+          "height": 6,
+          "color": "{{brandColor}}",
+          "opacity": 1,
+          "borderRadius": 3
+        }
       ]
     },
     {
@@ -58,12 +364,89 @@
       "name": "Reason 2",
       "start": 5.6,
       "duration": 2.8,
-      "background": { "type": "gradient", "from": "#111827", "to": "#0d0d0d" },
-      "transition": { "type": "slide", "duration": 0.2 },
+      "background": {
+        "type": "gradient",
+        "from": "#111827",
+        "to": "#0d0d0d"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.2
+      },
       "layers": [
-        { "id": "r2-badge", "type": "shape", "shape": "rect", "x": 80, "y": 200, "width": 120, "height": 120, "color": "#fbbf24", "opacity": 1, "borderRadius": 60, "safeMargin": true },
-        { "id": "r2-num", "type": "text", "content": "٢", "x": 80, "y": 218, "width": 120, "height": 84, "fontSize": 64, "fontWeight": "bold", "color": "#060a09", "align": "center", "direction": "rtl", "animationIn": { "type": "pop", "duration": 0.3 } },
-        { "id": "r2-text", "type": "text", "content": "{{reason2}}", "x": 80, "y": 420, "width": 920, "height": 400, "fontSize": 68, "fontWeight": "bold", "color": "#ffffff", "align": "right", "direction": "rtl", "safeMargin": true, "editable": true, "animationIn": { "type": "slideUp", "duration": 0.35 } }
+        {
+          "id": "r2-badge",
+          "type": "shape",
+          "shape": "rect",
+          "x": 80,
+          "y": 200,
+          "width": 120,
+          "height": 120,
+          "color": "#fbbf24",
+          "opacity": 1,
+          "borderRadius": 60,
+          "safeMargin": true
+        },
+        {
+          "id": "r2-num",
+          "type": "text",
+          "content": "٢",
+          "x": 80,
+          "y": 218,
+          "width": 120,
+          "height": 84,
+          "fontSize": 64,
+          "fontWeight": "bold",
+          "color": "#060a09",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        },
+        {
+          "id": "r2-text",
+          "type": "text",
+          "content": "{{reason2}}",
+          "x": 80,
+          "y": 420,
+          "width": 920,
+          "height": 400,
+          "fontSize": 68,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "right",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.35
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        }
       ]
     },
     {
@@ -71,12 +454,88 @@
       "name": "Reason 3",
       "start": 8.4,
       "duration": 2.8,
-      "background": { "type": "color", "value": "#0a0a0a" },
-      "transition": { "type": "zoom", "duration": 0.25 },
+      "background": {
+        "type": "color",
+        "value": "#0a0a0a"
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.25
+      },
       "layers": [
-        { "id": "r3-badge", "type": "shape", "shape": "rect", "x": 80, "y": 200, "width": 120, "height": 120, "color": "#a78bfa", "opacity": 1, "borderRadius": 60, "safeMargin": true },
-        { "id": "r3-num", "type": "text", "content": "٣", "x": 80, "y": 218, "width": 120, "height": 84, "fontSize": 64, "fontWeight": "bold", "color": "#060a09", "align": "center", "direction": "rtl", "animationIn": { "type": "pop", "duration": 0.3 } },
-        { "id": "r3-text", "type": "text", "content": "{{reason3}}", "x": 80, "y": 420, "width": 920, "height": 400, "fontSize": 68, "fontWeight": "bold", "color": "#ffffff", "align": "right", "direction": "rtl", "safeMargin": true, "editable": true, "animationIn": { "type": "slideUp", "duration": 0.35 } }
+        {
+          "id": "r3-badge",
+          "type": "shape",
+          "shape": "rect",
+          "x": 80,
+          "y": 200,
+          "width": 120,
+          "height": 120,
+          "color": "#a78bfa",
+          "opacity": 1,
+          "borderRadius": 60,
+          "safeMargin": true
+        },
+        {
+          "id": "r3-num",
+          "type": "text",
+          "content": "٣",
+          "x": 80,
+          "y": 218,
+          "width": 120,
+          "height": 84,
+          "fontSize": 64,
+          "fontWeight": "bold",
+          "color": "#060a09",
+          "align": "center",
+          "direction": "rtl",
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        },
+        {
+          "id": "r3-text",
+          "type": "text",
+          "content": "{{reason3}}",
+          "x": 80,
+          "y": 420,
+          "width": 920,
+          "height": 400,
+          "fontSize": 68,
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "align": "right",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.35
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        }
       ]
     },
     {
@@ -84,15 +543,99 @@
       "name": "CTA",
       "start": 11.2,
       "duration": 2.8,
-      "background": { "type": "gradient", "from": "{{brandColor}}", "to": "#042f2e" },
-      "transition": { "type": "fade", "duration": 0.2 },
+      "background": {
+        "type": "gradient",
+        "from": "{{brandColor}}",
+        "to": "#042f2e"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.2
+      },
       "layers": [
-        { "id": "cta-text", "type": "text", "content": "{{cta}}", "x": 70, "y": 680, "width": 940, "height": 160, "fontSize": 64, "fontWeight": "bold", "color": "#060a09", "align": "center", "direction": "rtl", "safeMargin": true, "editable": true, "animationIn": { "type": "pop", "duration": 0.4 } },
-        { "id": "cta-btn", "type": "shape", "shape": "rect", "x": 180, "y": 920, "width": 720, "height": 120, "color": "#060a09", "opacity": 0.9, "borderRadius": 60, "safeMargin": true },
-        { "id": "cta-handle", "type": "text", "content": "{{handle}}", "x": 180, "y": 948, "width": 720, "height": 64, "fontSize": 40, "fontWeight": "bold", "color": "{{brandColor}}", "align": "center", "direction": "ltr", "animationIn": { "type": "fadeIn", "duration": 0.3 } }
+        {
+          "id": "cta-text",
+          "type": "text",
+          "content": "{{cta}}",
+          "x": 70,
+          "y": 680,
+          "width": 940,
+          "height": 160,
+          "fontSize": 64,
+          "fontWeight": "bold",
+          "color": "#060a09",
+          "align": "center",
+          "direction": "rtl",
+          "safeMargin": true,
+          "editable": true,
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        },
+        {
+          "id": "cta-btn",
+          "type": "shape",
+          "shape": "rect",
+          "x": 180,
+          "y": 920,
+          "width": 720,
+          "height": 120,
+          "color": "#060a09",
+          "opacity": 0.9,
+          "borderRadius": 60,
+          "safeMargin": true
+        },
+        {
+          "id": "cta-handle",
+          "type": "text",
+          "content": "{{handle}}",
+          "x": 180,
+          "y": 948,
+          "width": 720,
+          "height": 64,
+          "fontSize": 40,
+          "fontWeight": "bold",
+          "color": "{{brandColor}}",
+          "align": "center",
+          "direction": "ltr",
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
+        }
       ]
     }
   ],
-  "audio": { "music": null, "volume": 0.35 },
-  "export": { "format": "mp4", "fps": 30, "quality": "1080p" }
+  "audio": {
+    "music": null,
+    "volume": 0.35
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
 }

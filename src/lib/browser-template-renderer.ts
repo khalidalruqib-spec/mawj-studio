@@ -7,6 +7,7 @@ import type {
   BrowserRenderProgress,
   BrowserRenderResult,
 } from "@/lib/browser-video-renderer";
+import { resolveVideoTextStyle } from "@/lib/video-typography";
 
 const FPS = 30;
 
@@ -320,24 +321,63 @@ function drawTextLayer(context: CanvasRenderingContext2D, layer: TemplateTimelin
   const height = layer.height ?? 120;
   const fontSize = layer.fontSize ?? 48;
   const fontWeight = layer.fontWeight ?? "800";
-  const lines = wrapText(context, layer.content ?? layer.name ?? "", width * 0.92, fontSize);
-  const lineHeight = fontSize * 1.22;
+  const textStyle = resolveVideoTextStyle(layer, {
+    textStrokeColor: layer.type === "captions" ? "rgba(0,0,0,0.72)" : "rgba(0,0,0,0.42)",
+    textStrokeWidth: layer.type === "captions" ? Math.max(4, fontSize * 0.08) : 0,
+    shadowColor: "rgba(0,0,0,0.34)",
+    shadowBlur: layer.type === "captions" ? 10 : 0,
+    shadowOffsetY: layer.type === "captions" ? 5 : 0,
+  });
+  const rawText = layer.content ?? layer.name ?? "";
+  const text = textStyle.textTransform === "uppercase" ? rawText.toUpperCase() : rawText;
+  const maxTextWidth = Math.max(20, width - textStyle.backgroundPadding * 2 - fontSize * 0.36);
+  const lines = wrapText(context, text, maxTextWidth, fontSize, fontWeight, textStyle.fontFamily);
+  const lineHeight = fontSize * textStyle.lineHeight;
 
-  context.font = `${fontWeight} ${fontSize}px "IBM Plex Sans Arabic", "Noto Sans Arabic", Tahoma, Arial, sans-serif`;
+  context.font = `${fontWeight} ${fontSize}px ${textStyle.fontFamily}`;
   context.textAlign = layer.align ?? "center";
   context.textBaseline = "middle";
-  context.direction = layer.direction === "ltr" ? "ltr" : "rtl";
-  context.fillStyle = layer.color ?? "#ffffff";
+  context.direction = layer.direction === "ltr" ? "ltr" : layer.direction === "rtl" ? "rtl" : "inherit";
+  context.fillStyle = normalizeCanvasColor(layer.color, "#ffffff");
+  (context as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = `${textStyle.letterSpacing}px`;
 
-  const textX = layer.align === "left" ? x + 24 : layer.align === "right" ? x + width - 24 : x + width / 2;
-  const startY = y + Math.max(fontSize, (height - (lines.length - 1) * lineHeight) / 2);
+  const blockHeight = Math.min(height, lines.length * lineHeight + textStyle.backgroundPadding * 1.5);
+  const blockY = y + Math.max(0, (height - blockHeight) / 2);
+  const background = normalizeCanvasColor(layer.backgroundColor, "transparent");
+  if (background !== "transparent") {
+    roundedRect(context, x, blockY, width, blockHeight, layer.borderRadius ?? 0);
+    context.fillStyle = background;
+    context.fill();
+    context.fillStyle = normalizeCanvasColor(layer.color, "#ffffff");
+  }
+
+  context.shadowColor = textStyle.shadowColor;
+  context.shadowBlur = textStyle.shadowBlur;
+  context.shadowOffsetX = textStyle.shadowOffsetX;
+  context.shadowOffsetY = textStyle.shadowOffsetY;
+
+  const textX = layer.align === "left"
+    ? x + textStyle.backgroundPadding
+    : layer.align === "right"
+      ? x + width - textStyle.backgroundPadding
+      : x + width / 2;
+  const startY = blockY + blockHeight / 2 - ((lines.length - 1) * lineHeight) / 2;
 
   for (const [index, line] of lines.entries()) {
-    context.lineWidth = Math.max(4, fontSize * 0.08);
-    context.strokeStyle = "rgba(0,0,0,0.42)";
-    context.strokeText(line, textX, startY + index * lineHeight, width * 0.92);
-    context.fillText(line, textX, startY + index * lineHeight, width * 0.92);
+    const baseline = startY + index * lineHeight;
+    if (textStyle.textStrokeWidth > 0 && textStyle.textStrokeColor !== "transparent") {
+      context.lineWidth = textStyle.textStrokeWidth;
+      context.strokeStyle = textStyle.textStrokeColor;
+      context.strokeText(line, textX, baseline, maxTextWidth);
+    }
+    context.fillText(line, textX, baseline, maxTextWidth);
   }
+
+  (context as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = "0px";
+  context.shadowColor = "transparent";
+  context.shadowBlur = 0;
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 0;
 }
 
 function drawWaveform(context: CanvasRenderingContext2D, layer: TemplateTimelineLayer, time: number) {
@@ -511,8 +551,10 @@ function wrapText(
   text: string,
   maxWidth: number,
   fontSize: number,
+  fontWeight = "800",
+  fontFamily = '"IBM Plex Sans Arabic", Tahoma, Arial, sans-serif',
 ) {
-  context.font = `800 ${fontSize}px "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif`;
+  context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
   const sourceLines = text.split(/\n/g);
   const lines: string[] = [];
 
@@ -534,6 +576,13 @@ function wrapText(
   }
 
   return lines.slice(0, 5);
+}
+
+function normalizeCanvasColor(value: string | undefined, fallback: string) {
+  if (!value || value.includes("{{")) return fallback;
+  if (value === "transparent" || value.startsWith("rgba(") || value.startsWith("rgb(")) return value;
+  if (/^#[0-9a-f]{6}$/i.test(value)) return value;
+  return fallback;
 }
 
 function roundedRect(

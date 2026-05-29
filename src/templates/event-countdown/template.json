@@ -1,7 +1,28 @@
 {
   "language": "mixed",
-  "animations": ["fadeIn","fadeOut","slideUp","slideDown","slideLeft","slideRight","zoomIn","zoomOut","pop","bounce","typewriter","blurReveal","rotateIn"],
-  "transitions": ["cut","fade","slide","zoom","wipe","blur"],
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
   "id": "event-countdown",
   "name": "Event Countdown Announcement",
   "category": "Event Announcements",
@@ -10,15 +31,66 @@
   "height": 1920,
   "duration": 15,
   "description": "High-impact 3-scene event announcement: dramatic teaser → event details → registration CTA. Drives registrations for conferences, workshops, meetups, and live events.",
-  "safeMargins": { "top": 160, "bottom": 260, "left": 70, "right": 70 },
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
   "requiredInputs": [
-    { "key": "eventName",    "label": "Event Name",          "type": "text",    "default": "قمة ريادة الأعمال ٢٠٢٦",   "placeholder": "اسم الحدث",                  "required": true },
-    { "key": "date",         "label": "Event Date",          "type": "text",    "default": "السبت ١٥ يونيو ٢٠٢٦",      "placeholder": "تاريخ الحدث",                "required": true },
-    { "key": "venue",        "label": "Venue / Location",    "type": "text",    "default": "فندق الريتز كارلتون، الرياض", "placeholder": "المكان",                   "required": true },
-    { "key": "ticketPrice",  "label": "Ticket Price",        "type": "text",    "default": "٥٠٠ ريال",                 "placeholder": "سعر التذكرة",                "required": true },
-    { "key": "link",         "label": "Registration Link",   "type": "text",    "default": "www.event-register.com",    "placeholder": "رابط التسجيل",              "required": true },
-    { "key": "logo",         "label": "Event / Brand Logo",  "type": "image",                                                                                     "required": false },
-    { "key": "brandColor",   "label": "Brand Color",         "type": "color",   "default": "#f59e0b",                                                             "required": false }
+    {
+      "key": "eventName",
+      "label": "Event Name",
+      "type": "text",
+      "default": "قمة ريادة الأعمال ٢٠٢٦",
+      "placeholder": "اسم الحدث",
+      "required": true
+    },
+    {
+      "key": "date",
+      "label": "Event Date",
+      "type": "text",
+      "default": "السبت ١٥ يونيو ٢٠٢٦",
+      "placeholder": "تاريخ الحدث",
+      "required": true
+    },
+    {
+      "key": "venue",
+      "label": "Venue / Location",
+      "type": "text",
+      "default": "فندق الريتز كارلتون، الرياض",
+      "placeholder": "المكان",
+      "required": true
+    },
+    {
+      "key": "ticketPrice",
+      "label": "Ticket Price",
+      "type": "text",
+      "default": "٥٠٠ ريال",
+      "placeholder": "سعر التذكرة",
+      "required": true
+    },
+    {
+      "key": "link",
+      "label": "Registration Link",
+      "type": "text",
+      "default": "www.event-register.com",
+      "placeholder": "رابط التسجيل",
+      "required": true
+    },
+    {
+      "key": "logo",
+      "label": "Event / Brand Logo",
+      "type": "image",
+      "required": false
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#f59e0b",
+      "required": false
+    }
   ],
   "scenes": [
     {
@@ -26,8 +98,16 @@
       "name": "Teaser",
       "start": 0,
       "duration": 4,
-      "background": { "type": "gradient", "from": "#0a0800", "to": "#1a1000", "angle": 145 },
-      "transition": { "type": "cut", "duration": 0.3 },
+      "background": {
+        "type": "gradient",
+        "from": "#0a0800",
+        "to": "#1a1000",
+        "angle": 145
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0.3
+      },
       "layers": [
         {
           "id": "teas-glow",
@@ -55,7 +135,21 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "blurReveal", "duration": 0.6 }
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.6
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "teas-event-name",
@@ -72,7 +166,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.55 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.55
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "teas-countdown-bg",
@@ -99,7 +207,21 @@
           "color": "#000000",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "bounce", "duration": 0.5 }
+          "animationIn": {
+            "type": "bounce",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "teas-deco-line",
@@ -120,8 +242,14 @@
       "name": "Details",
       "start": 4,
       "duration": 6,
-      "background": { "type": "color", "value": "#070500" },
-      "transition": { "type": "slide", "duration": 0.4 },
+      "background": {
+        "type": "color",
+        "value": "#070500"
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.4
+      },
       "layers": [
         {
           "id": "det-event-name-big",
@@ -138,7 +266,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "det-accent-line",
@@ -167,7 +309,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideLeft", "duration": 0.45 }
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.45
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "det-venue-icon",
@@ -184,7 +340,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideLeft", "duration": 0.5 }
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "det-logo",
@@ -195,7 +365,10 @@
           "width": 400,
           "height": 200,
           "fit": "contain",
-          "animationIn": { "type": "zoomIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.5
+          }
         },
         {
           "id": "det-ticket-bg",
@@ -223,7 +396,21 @@
           "align": "center",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "pop", "duration": 0.4 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -232,8 +419,16 @@
       "name": "Register",
       "start": 10,
       "duration": 5,
-      "background": { "type": "gradient", "from": "#1a1000", "to": "#070500", "angle": 160 },
-      "transition": { "type": "fade", "duration": 0.5 },
+      "background": {
+        "type": "gradient",
+        "from": "#1a1000",
+        "to": "#070500",
+        "angle": 160
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      },
       "layers": [
         {
           "id": "reg-cta-text",
@@ -249,7 +444,21 @@
           "align": "center",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "pop", "duration": 0.5 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "reg-divider",
@@ -278,7 +487,21 @@
           "direction": "ltr",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "reg-logo",
@@ -289,7 +512,10 @@
           "width": 300,
           "height": 150,
           "fit": "contain",
-          "animationIn": { "type": "zoomIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.5
+          }
         },
         {
           "id": "reg-bottom-gradient",
@@ -306,6 +532,13 @@
       ]
     }
   ],
-  "audio": { "music": null, "volume": 1 },
-  "export": { "format": "mp4", "fps": 30, "quality": "1080p" }
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
 }

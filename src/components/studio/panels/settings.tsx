@@ -1,5 +1,6 @@
 import { Layers3, SlidersHorizontal, Trash2, UploadCloud } from "lucide-react";
 import { FORMAT_PRESETS, PLATFORM_LABELS, VIDEO_STYLES, type AspectRatio, type LanguageMode, type Platform, type VideoStyle, type VideoStyleId } from "@/lib/video-styles";
+import { VIDEO_FONT_STACKS, VIDEO_TEXT_PRESETS, getVideoTextPreset } from "@/lib/video-typography";
 import { GOAL_LABELS } from "../foundation";
 import type { Goal, TimelineLayer } from "../foundation";
 import { EmptyMini, Field, PanelHeading } from "../ui";
@@ -181,6 +182,38 @@ export function LayerInspector({
       </Field>
       {layer.type === "text" || layer.type === "caption" ? (
         <div className="grid grid-cols-2 gap-2">
+          <Field label="Text preset">
+            <select
+              value=""
+              onChange={(event) => {
+                const preset = getVideoTextPreset(event.target.value);
+                if (preset) {
+                  const patch = preset.patch as Partial<TimelineLayer>;
+                  onChange({
+                    ...patch,
+                    color: patch.textColor ?? patch.color ?? layer.textColor ?? layer.color,
+                  });
+                }
+              }}
+              className="control-select"
+            >
+              <option value="">Apply style...</option>
+              {VIDEO_TEXT_PRESETS.map((preset) => (
+                <option key={preset.id} value={preset.id}>{preset.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Font">
+            <select
+              value={layer.fontFamily ?? VIDEO_FONT_STACKS[0].value}
+              onChange={(event) => onChange({ fontFamily: event.target.value })}
+              className="control-select"
+            >
+              {VIDEO_FONT_STACKS.map((font) => (
+                <option key={font.id} value={font.value}>{font.label}</option>
+              ))}
+            </select>
+          </Field>
           <NumberField label="Font size" value={layer.fontSize ?? 48} min={12} onChange={(fontSize) => onChange({ fontSize })} />
           <Field label="Weight">
             <select
@@ -195,6 +228,8 @@ export function LayerInspector({
               <option value="950">Heavy</option>
             </select>
           </Field>
+          <NumberField label="Line height" value={layer.lineHeight ?? 1.14} min={0.85} step={0.02} onChange={(lineHeight) => onChange({ lineHeight })} />
+          <NumberField label="Letter spacing" value={layer.letterSpacing ?? 0} step={0.5} onChange={(letterSpacing) => onChange({ letterSpacing })} />
           <Field label="Text color">
             <input
               type="color"
@@ -203,6 +238,15 @@ export function LayerInspector({
               className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1"
             />
           </Field>
+          <Field label="Stroke color">
+            <input
+              type="color"
+              value={normalizeHexColor(layer.textStrokeColor ?? "#000000")}
+              onChange={(event) => onChange({ textStrokeColor: event.target.value })}
+              className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1"
+            />
+          </Field>
+          <NumberField label="Stroke" value={layer.textStrokeWidth ?? 0} min={0} step={1} onChange={(textStrokeWidth) => onChange({ textStrokeWidth })} />
           <Field label="Background">
             <input
               type="color"
@@ -212,6 +256,18 @@ export function LayerInspector({
             />
           </Field>
           <NumberField label="Radius" value={layer.borderRadius ?? 0} min={0} onChange={(borderRadius) => onChange({ borderRadius })} />
+          <NumberField label="Padding" value={layer.backgroundPadding ?? 0} min={0} step={2} onChange={(backgroundPadding) => onChange({ backgroundPadding })} />
+          <Field label="Shadow color">
+            <input
+              type="color"
+              value={normalizeHexColor(layer.shadowColor ?? "#000000")}
+              onChange={(event) => onChange({ shadowColor: event.target.value })}
+              className="h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] p-1"
+            />
+          </Field>
+          <NumberField label="Shadow blur" value={layer.shadowBlur ?? 0} min={0} step={1} onChange={(shadowBlur) => onChange({ shadowBlur })} />
+          <NumberField label="Shadow X" value={layer.shadowOffsetX ?? 0} step={1} onChange={(shadowOffsetX) => onChange({ shadowOffsetX })} />
+          <NumberField label="Shadow Y" value={layer.shadowOffsetY ?? 0} step={1} onChange={(shadowOffsetY) => onChange({ shadowOffsetY })} />
           <Field label="Opacity">
             <input
               type="range"
@@ -264,11 +320,13 @@ export function NumberField({
   label,
   value,
   min,
+  step,
   onChange,
 }: {
   label: string;
   value: number;
   min?: number;
+  step?: number;
   onChange: (value: number) => void;
 }) {
   return (
@@ -276,6 +334,7 @@ export function NumberField({
       <input
         type="number"
         min={min}
+        step={step}
         value={Number.isFinite(value) ? value : 0}
         onChange={(event) => onChange(Number(event.target.value))}
         className="control-input"

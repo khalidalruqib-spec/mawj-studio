@@ -1,4 +1,5 @@
 import type { VideoTemplate, VideoTemplateInput } from "@/lib/video-template-engine";
+import { VIDEO_FONT_STACKS } from "@/lib/video-typography";
 
 export type TemplateGeneratorBrandKit = {
   brandName?: string;
@@ -25,6 +26,42 @@ type GeneratedTemplateIntent = {
   brandColor: string;
   accentColor: string;
 };
+
+const GENERATED_HEADLINE_TYPOGRAPHY = {
+  fontFamily: VIDEO_FONT_STACKS[0].value,
+  lineHeight: 1.06,
+  letterSpacing: 0,
+  textStrokeColor: "rgba(0,0,0,0.72)",
+  textStrokeWidth: 8,
+  shadowColor: "rgba(0,0,0,0.46)",
+  shadowBlur: 18,
+  shadowOffsetY: 9,
+  backgroundPadding: 0,
+} as const;
+
+const GENERATED_CARD_TYPOGRAPHY = {
+  fontFamily: VIDEO_FONT_STACKS[1].value,
+  lineHeight: 1.12,
+  letterSpacing: 0,
+  textStrokeColor: "rgba(0,0,0,0.2)",
+  textStrokeWidth: 2,
+  shadowColor: "rgba(0,0,0,0.36)",
+  shadowBlur: 14,
+  shadowOffsetY: 7,
+  backgroundPadding: 24,
+} as const;
+
+const GENERATED_CAPTION_TYPOGRAPHY = {
+  fontFamily: VIDEO_FONT_STACKS[0].value,
+  lineHeight: 1.1,
+  letterSpacing: 0,
+  textStrokeColor: "rgba(0,0,0,0.78)",
+  textStrokeWidth: 7,
+  shadowColor: "rgba(0,0,0,0.36)",
+  shadowBlur: 12,
+  shadowOffsetY: 6,
+  backgroundPadding: 0,
+} as const;
 
 export function generateLocalVideoTemplate(prompt: string, brand?: TemplateGeneratorBrandKit): VideoTemplate {
   const intent = inferTemplateIntent(prompt, brand);
@@ -108,6 +145,7 @@ export function generateLocalVideoTemplate(prompt: string, brand?: TemplateGener
             y: safeMargins.top + 26,
             width: intent.width - safeMargins.left - safeMargins.right - 72,
             height: intent.aspectRatio === "16:9" ? 74 : 98,
+            ...GENERATED_HEADLINE_TYPOGRAPHY,
             fontSize: intent.aspectRatio === "16:9" ? 58 : 74,
             fontWeight: "950",
             color: "#ffffff",
@@ -123,6 +161,7 @@ export function generateLocalVideoTemplate(prompt: string, brand?: TemplateGener
             y: intent.aspectRatio === "16:9" ? safeMargins.top + 164 : safeMargins.top + 228,
             width: intent.width - safeMargins.left - safeMargins.right,
             height: intent.aspectRatio === "16:9" ? 120 : 190,
+            ...GENERATED_CAPTION_TYPOGRAPHY,
             fontSize: intent.aspectRatio === "16:9" ? 40 : 52,
             fontWeight: "800",
             color: "#ffffff",
@@ -138,6 +177,7 @@ export function generateLocalVideoTemplate(prompt: string, brand?: TemplateGener
             y: intent.aspectRatio === "16:9" ? intent.height - safeMargins.bottom - 72 : safeMargins.top + 450,
             width: intent.width - safeMargins.left - safeMargins.right,
             height: 72,
+            ...GENERATED_CARD_TYPOGRAPHY,
             fontSize: intent.aspectRatio === "16:9" ? 30 : 38,
             fontWeight: "850",
             color: "{{accentColor}}",
@@ -186,6 +226,7 @@ export function generateLocalVideoTemplate(prompt: string, brand?: TemplateGener
             y: intent.aspectRatio === "16:9" ? 740 : 1120,
             width: intent.width - safeMargins.left - safeMargins.right,
             height: intent.aspectRatio === "16:9" ? 150 : 220,
+            ...GENERATED_CARD_TYPOGRAPHY,
             fontSize: intent.aspectRatio === "16:9" ? 44 : 58,
             fontWeight: "950",
             color: "#ffffff",
@@ -237,6 +278,7 @@ export function generateLocalVideoTemplate(prompt: string, brand?: TemplateGener
             y: intent.aspectRatio === "16:9" ? 360 : 720,
             width: intent.width - safeMargins.left - safeMargins.right,
             height: intent.aspectRatio === "16:9" ? 210 : 360,
+            ...GENERATED_CAPTION_TYPOGRAPHY,
             fontSize: intent.aspectRatio === "16:9" ? 54 : 68,
             fontWeight: "950",
             color: "#ffffff",
@@ -299,6 +341,7 @@ export function generateLocalVideoTemplate(prompt: string, brand?: TemplateGener
             y: intent.aspectRatio === "16:9" ? 430 : 760,
             width: intent.width - safeMargins.left - safeMargins.right,
             height: intent.aspectRatio === "16:9" ? 150 : 240,
+            ...GENERATED_HEADLINE_TYPOGRAPHY,
             fontSize: intent.aspectRatio === "16:9" ? 58 : 78,
             fontWeight: "950",
             color: "#ffffff",
@@ -314,6 +357,7 @@ export function generateLocalVideoTemplate(prompt: string, brand?: TemplateGener
             y: intent.aspectRatio === "16:9" ? 620 : 1040,
             width: intent.width - safeMargins.left - safeMargins.right,
             height: 86,
+            ...GENERATED_CARD_TYPOGRAPHY,
             fontSize: intent.aspectRatio === "16:9" ? 34 : 46,
             fontWeight: "850",
             color: "#ffffff",

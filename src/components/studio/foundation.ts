@@ -28,6 +28,7 @@ import type { StudioProject } from "@/lib/project-store";
 import type { AspectRatio, Platform, VideoStyleId } from "@/lib/video-styles";
 import type { AdCampaign } from "@/lib/ad-maker";
 import type { AICommandAction } from "@/lib/ai-command";
+import type { VideoTextTransform } from "@/lib/video-typography";
 
 export type Goal = "engagement" | "sales" | "education" | "awareness";
 export type PanelId =
@@ -103,12 +104,23 @@ export type TimelineLayer = {
   y?: number;
   width?: number;
   height?: number;
+  fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
   textColor?: string;
   backgroundColor?: string;
   borderRadius?: number;
   opacity?: number;
+  lineHeight?: number;
+  letterSpacing?: number;
+  textStrokeColor?: string;
+  textStrokeWidth?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  backgroundPadding?: number;
+  textTransform?: VideoTextTransform;
   fit?: "cover" | "contain" | "fill";
 };
 

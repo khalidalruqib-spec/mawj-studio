@@ -1,7 +1,28 @@
 {
   "language": "mixed",
-  "animations": ["fadeIn","fadeOut","slideUp","slideDown","slideLeft","slideRight","zoomIn","zoomOut","pop","bounce","typewriter","blurReveal","rotateIn"],
-  "transitions": ["cut","fade","slide","zoom","wipe","blur"],
+  "animations": [
+    "fadeIn",
+    "fadeOut",
+    "slideUp",
+    "slideDown",
+    "slideLeft",
+    "slideRight",
+    "zoomIn",
+    "zoomOut",
+    "pop",
+    "bounce",
+    "typewriter",
+    "blurReveal",
+    "rotateIn"
+  ],
+  "transitions": [
+    "cut",
+    "fade",
+    "slide",
+    "zoom",
+    "wipe",
+    "blur"
+  ],
   "id": "course-launch",
   "name": "Course Launch Announcement",
   "category": "Course Announcements",
@@ -10,21 +31,114 @@
   "height": 1920,
   "duration": 35,
   "description": "Professional 4-scene course launch template: hook question → curriculum preview → instructor credibility → enrollment CTA. Perfect for educators and online coaches.",
-  "safeMargins": { "top": 160, "bottom": 260, "left": 70, "right": 70 },
+  "safeMargins": {
+    "top": 160,
+    "bottom": 260,
+    "left": 70,
+    "right": 70
+  },
   "requiredInputs": [
-    { "key": "hookQuestion",    "label": "Hook Question",          "type": "textarea", "default": "هل تريد أن تتقن مهارة تغير حياتك؟",     "placeholder": "السؤال الذي يوقف المشاهد",         "required": true },
-    { "key": "courseName",      "label": "Course Name",            "type": "text",     "default": "دورة إتقان التسويق الرقمي",            "placeholder": "اسم الدورة",                       "required": true },
-    { "key": "lesson1",         "label": "Lesson / Module 1",      "type": "text",     "default": "أساسيات التسويق عبر السوشيال ميديا",   "placeholder": "الدرس أو الوحدة الأولى",            "required": true },
-    { "key": "lesson2",         "label": "Lesson / Module 2",      "type": "text",     "default": "استراتيجيات المحتوى الفيروسي",         "placeholder": "الدرس أو الوحدة الثانية",           "required": true },
-    { "key": "lesson3",         "label": "Lesson / Module 3",      "type": "text",     "default": "الإعلانات المدفوعة من صفر لبطل",       "placeholder": "الدرس أو الوحدة الثالثة",           "required": true },
-    { "key": "instructorName",  "label": "Instructor Name",        "type": "text",     "default": "أ. محمد العمري",                       "placeholder": "اسم المدرب",                        "required": true },
-    { "key": "instructorTitle", "label": "Instructor Title",       "type": "text",     "default": "خبير تسويق رقمي | ١٠+ سنوات خبرة",    "placeholder": "المسمى الوظيفي أو الخبرة",         "required": true },
-    { "key": "price",           "label": "Course Price",           "type": "text",     "default": "٢٩٩ ريال",                            "placeholder": "مثال: ٢٩٩ ريال",                   "required": true },
-    { "key": "deadline",        "label": "Enrollment Deadline",    "type": "text",     "default": "التسجيل يغلق ٣٠ مايو",                "placeholder": "مثال: آخر ٧ أيام",                 "required": true },
-    { "key": "enrollText",      "label": "Enroll CTA Text",        "type": "text",     "default": "سجّل الآن واحجز مكانك",               "placeholder": "نص دعوة التسجيل",                  "required": true },
-    { "key": "link",            "label": "Enrollment Link",        "type": "text",     "default": "www.course-link.com",                  "placeholder": "رابط التسجيل",                      "required": false },
-    { "key": "profileImage",    "label": "Instructor Photo",       "type": "image",                                                                                                            "required": true },
-    { "key": "brandColor",      "label": "Brand Color",            "type": "color",    "default": "#6366f1",                                                                                  "required": false }
+    {
+      "key": "hookQuestion",
+      "label": "Hook Question",
+      "type": "textarea",
+      "default": "هل تريد أن تتقن مهارة تغير حياتك؟",
+      "placeholder": "السؤال الذي يوقف المشاهد",
+      "required": true
+    },
+    {
+      "key": "courseName",
+      "label": "Course Name",
+      "type": "text",
+      "default": "دورة إتقان التسويق الرقمي",
+      "placeholder": "اسم الدورة",
+      "required": true
+    },
+    {
+      "key": "lesson1",
+      "label": "Lesson / Module 1",
+      "type": "text",
+      "default": "أساسيات التسويق عبر السوشيال ميديا",
+      "placeholder": "الدرس أو الوحدة الأولى",
+      "required": true
+    },
+    {
+      "key": "lesson2",
+      "label": "Lesson / Module 2",
+      "type": "text",
+      "default": "استراتيجيات المحتوى الفيروسي",
+      "placeholder": "الدرس أو الوحدة الثانية",
+      "required": true
+    },
+    {
+      "key": "lesson3",
+      "label": "Lesson / Module 3",
+      "type": "text",
+      "default": "الإعلانات المدفوعة من صفر لبطل",
+      "placeholder": "الدرس أو الوحدة الثالثة",
+      "required": true
+    },
+    {
+      "key": "instructorName",
+      "label": "Instructor Name",
+      "type": "text",
+      "default": "أ. محمد العمري",
+      "placeholder": "اسم المدرب",
+      "required": true
+    },
+    {
+      "key": "instructorTitle",
+      "label": "Instructor Title",
+      "type": "text",
+      "default": "خبير تسويق رقمي | ١٠+ سنوات خبرة",
+      "placeholder": "المسمى الوظيفي أو الخبرة",
+      "required": true
+    },
+    {
+      "key": "price",
+      "label": "Course Price",
+      "type": "text",
+      "default": "٢٩٩ ريال",
+      "placeholder": "مثال: ٢٩٩ ريال",
+      "required": true
+    },
+    {
+      "key": "deadline",
+      "label": "Enrollment Deadline",
+      "type": "text",
+      "default": "التسجيل يغلق ٣٠ مايو",
+      "placeholder": "مثال: آخر ٧ أيام",
+      "required": true
+    },
+    {
+      "key": "enrollText",
+      "label": "Enroll CTA Text",
+      "type": "text",
+      "default": "سجّل الآن واحجز مكانك",
+      "placeholder": "نص دعوة التسجيل",
+      "required": true
+    },
+    {
+      "key": "link",
+      "label": "Enrollment Link",
+      "type": "text",
+      "default": "www.course-link.com",
+      "placeholder": "رابط التسجيل",
+      "required": false
+    },
+    {
+      "key": "profileImage",
+      "label": "Instructor Photo",
+      "type": "image",
+      "required": true
+    },
+    {
+      "key": "brandColor",
+      "label": "Brand Color",
+      "type": "color",
+      "default": "#6366f1",
+      "required": false
+    }
   ],
   "scenes": [
     {
@@ -32,8 +146,14 @@
       "name": "Hook Question",
       "start": 0,
       "duration": 6,
-      "background": { "type": "color", "value": "#0f172a" },
-      "transition": { "type": "cut", "duration": 0.3 },
+      "background": {
+        "type": "color",
+        "value": "#0f172a"
+      },
+      "transition": {
+        "type": "cut",
+        "duration": 0.3
+      },
       "layers": [
         {
           "id": "hook-top-accent",
@@ -72,7 +192,21 @@
           "color": "{{brandColor}}",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "hook-question-text",
@@ -89,8 +223,25 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "blurReveal", "duration": 0.6 },
-          "animationOut": { "type": "fadeOut", "duration": 0.3 }
+          "animationIn": {
+            "type": "blurReveal",
+            "duration": 0.6
+          },
+          "animationOut": {
+            "type": "fadeOut",
+            "duration": 0.3
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "hook-course-name",
@@ -107,7 +258,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.5 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -116,8 +281,16 @@
       "name": "Curriculum",
       "start": 6,
       "duration": 12,
-      "background": { "type": "gradient", "from": "#0f172a", "to": "#1e1b4b", "angle": 160 },
-      "transition": { "type": "slide", "duration": 0.4 },
+      "background": {
+        "type": "gradient",
+        "from": "#0f172a",
+        "to": "#1e1b4b",
+        "angle": 160
+      },
+      "transition": {
+        "type": "slide",
+        "duration": 0.4
+      },
       "layers": [
         {
           "id": "curr-header",
@@ -133,7 +306,21 @@
           "align": "right",
           "direction": "auto",
           "safeMargin": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.4 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "curr-divider",
@@ -185,7 +372,21 @@
           "align": "right",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "slideLeft", "duration": 0.5 }
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "curr-lesson2-bg",
@@ -225,7 +426,21 @@
           "align": "right",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "slideLeft", "duration": 0.6 }
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.6
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "curr-lesson3-bg",
@@ -265,7 +480,21 @@
           "align": "right",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "slideLeft", "duration": 0.7 }
+          "animationIn": {
+            "type": "slideLeft",
+            "duration": 0.7
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "curr-course-name",
@@ -282,7 +511,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -291,8 +534,14 @@
       "name": "Instructor",
       "start": 18,
       "duration": 9,
-      "background": { "type": "color", "value": "#0f172a" },
-      "transition": { "type": "fade", "duration": 0.45 },
+      "background": {
+        "type": "color",
+        "value": "#0f172a"
+      },
+      "transition": {
+        "type": "fade",
+        "duration": 0.45
+      },
       "layers": [
         {
           "id": "instr-profile-bg",
@@ -316,7 +565,10 @@
           "height": 500,
           "fit": "cover",
           "borderRadius": 250,
-          "animationIn": { "type": "zoomIn", "duration": 0.55 }
+          "animationIn": {
+            "type": "zoomIn",
+            "duration": 0.55
+          }
         },
         {
           "id": "instr-name",
@@ -333,7 +585,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "slideUp", "duration": 0.5 }
+          "animationIn": {
+            "type": "slideUp",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "instr-title",
@@ -350,7 +616,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.55 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.55
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "instr-credential-bg",
@@ -377,7 +657,21 @@
           "color": "#ffffff",
           "align": "center",
           "direction": "auto",
-          "animationIn": { "type": "pop", "duration": 0.4 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     },
@@ -386,8 +680,16 @@
       "name": "Enroll CTA",
       "start": 27,
       "duration": 8,
-      "background": { "type": "gradient", "from": "#1e1b4b", "to": "#0f172a", "angle": 145 },
-      "transition": { "type": "zoom", "duration": 0.4 },
+      "background": {
+        "type": "gradient",
+        "from": "#1e1b4b",
+        "to": "#0f172a",
+        "angle": 145
+      },
+      "transition": {
+        "type": "zoom",
+        "duration": 0.4
+      },
       "layers": [
         {
           "id": "enroll-course-name",
@@ -404,7 +706,21 @@
           "direction": "auto",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "enroll-price-bg",
@@ -432,7 +748,21 @@
           "align": "center",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "pop", "duration": 0.5 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "enroll-deadline-bg",
@@ -460,7 +790,21 @@
           "align": "center",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "bounce", "duration": 0.4 }
+          "animationIn": {
+            "type": "bounce",
+            "duration": 0.4
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "enroll-cta-bg",
@@ -488,7 +832,21 @@
           "align": "center",
           "direction": "auto",
           "editable": true,
-          "animationIn": { "type": "pop", "duration": 0.5 }
+          "animationIn": {
+            "type": "pop",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         },
         {
           "id": "enroll-link",
@@ -505,11 +863,32 @@
           "direction": "ltr",
           "safeMargin": true,
           "editable": true,
-          "animationIn": { "type": "fadeIn", "duration": 0.5 }
+          "animationIn": {
+            "type": "fadeIn",
+            "duration": 0.5
+          },
+          "fontFamily": "var(--font-arabic), Cairo, \"IBM Plex Sans Arabic\", \"Noto Sans Arabic\", Tahoma, Arial, sans-serif",
+          "lineHeight": 1.12,
+          "letterSpacing": 0,
+          "textStrokeColor": "rgba(0,0,0,0.76)",
+          "textStrokeWidth": 7,
+          "shadowColor": "rgba(0,0,0,0.38)",
+          "shadowBlur": 14,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 7,
+          "backgroundPadding": 0,
+          "textTransform": "none"
         }
       ]
     }
   ],
-  "audio": { "music": null, "volume": 1 },
-  "export": { "format": "mp4", "fps": 30, "quality": "1080p" }
+  "audio": {
+    "music": null,
+    "volume": 1
+  },
+  "export": {
+    "format": "mp4",
+    "fps": 30,
+    "quality": "1080p"
+  }
 }
