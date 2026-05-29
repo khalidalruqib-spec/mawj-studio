@@ -481,7 +481,13 @@ function TimelinePreviewLayer({
           src={layer.src}
           alt={layer.name}
           className="h-full w-full"
-          style={{ objectFit: layer.fit ?? "cover", filter: resolveLayerFilter(layer, getPreviewFontScale(dimensions)) }}
+          style={{
+            objectFit: layer.fit ?? "cover",
+            objectPosition: resolvePreviewMediaObjectPosition(layer),
+            filter: resolveLayerFilter(layer, getPreviewFontScale(dimensions)),
+            transform: `scale(${layer.mediaZoom ?? 1})`,
+            transformOrigin: "center",
+          }}
         />
         <ResizeHandles selected={selected && !locked} onResizePointerDown={onResizePointerDown} />
       </button>
@@ -766,6 +772,17 @@ function getPreviewDesignDimensions(aspectRatio: AspectRatio) {
   return { width: 1080, height: 1920 };
 }
 
+function resolvePreviewMediaObjectPosition(layer: Pick<TimelineLayer, "mediaOffsetX" | "mediaOffsetY">) {
+  const x = Math.min(100, Math.max(0, 50 + (layer.mediaOffsetX ?? 0) / 2));
+  const y = Math.min(100, Math.max(0, 50 + (layer.mediaOffsetY ?? 0) / 2));
+  return `${x}% ${y}%`;
+}
+
+function combinePreviewTransforms(...transforms: Array<string | undefined>) {
+  const value = transforms.filter(Boolean).join(" ");
+  return value || undefined;
+}
+
 function scalePreviewRadius(radius?: number) {
   return radius ? `${Math.max(4, radius * 0.2)}px` : undefined;
 }
@@ -896,10 +913,11 @@ export function TemplatePreviewLayer({
         style={{
           ...style,
           objectFit: layer.fit ?? "cover",
+          objectPosition: resolvePreviewMediaObjectPosition(layer),
           borderRadius: layer.borderRadius ? `${Math.max(4, layer.borderRadius * 0.2)}px` : undefined,
           opacity: layer.opacity ?? 1,
           filter: resolveLayerFilter(layer, 0.2),
-          transform: resolvePreviewLayerTransform(layer, staticAnimation),
+          transform: combinePreviewTransforms(resolvePreviewLayerTransform(layer, staticAnimation), `scale(${layer.mediaZoom ?? 1})`),
           transformOrigin: "center",
         }}
       />

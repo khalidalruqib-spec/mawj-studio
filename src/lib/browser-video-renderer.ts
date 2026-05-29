@@ -73,6 +73,9 @@ export type BrowserTimelineLayer = {
   contrast?: number;
   saturation?: number;
   blur?: number;
+  mediaZoom?: number;
+  mediaOffsetX?: number;
+  mediaOffsetY?: number;
   animationIn?: TemplateAnimation;
   animationOut?: TemplateAnimation;
   hidden?: boolean;
@@ -452,7 +455,11 @@ function drawTimelineOverlays(
       const image = assets.get(layer.src);
       if (image) {
         context.filter = resolveLayerFilter(layer, Math.min(scaleX, scaleY)) ?? "none";
-        drawImageFitted(context, image, x, y, width, height, radius, layer.fit ?? "cover");
+        drawImageFitted(context, image, x, y, width, height, radius, layer.fit ?? "cover", {
+          zoom: layer.mediaZoom,
+          offsetX: layer.mediaOffsetX,
+          offsetY: layer.mediaOffsetY,
+        });
         context.filter = "none";
       }
     } else if (layer.type === "shape") {
@@ -601,6 +608,7 @@ function drawImageFitted(
   height: number,
   radius = 0,
   fit: "cover" | "contain" | "fill" = "cover",
+  framing: { zoom?: number; offsetX?: number; offsetY?: number } = {},
 ) {
   context.save();
   context.beginPath();
@@ -612,20 +620,46 @@ function drawImageFitted(
   context.clip();
 
   if (fit === "fill") {
-    context.drawImage(image, x, y, width, height);
+    const rect = resolveMediaDrawRect(x, y, width, height, width, height, framing);
+    context.drawImage(image, rect.x, rect.y, rect.width, rect.height);
     context.restore();
     return;
   }
 
-  const scale = fit === "cover"
+  const zoom = Math.max(0.2, framing.zoom ?? 1);
+  const scale = (fit === "cover"
     ? Math.max(width / image.naturalWidth, height / image.naturalHeight)
-    : Math.min(width / image.naturalWidth, height / image.naturalHeight);
+    : Math.min(width / image.naturalWidth, height / image.naturalHeight)) * zoom;
   const drawWidth = image.naturalWidth * scale;
   const drawHeight = image.naturalHeight * scale;
-  const drawX = x + (width - drawWidth) / 2;
-  const drawY = y + (height - drawHeight) / 2;
-  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+  const rect = resolveMediaDrawRect(x, y, width, height, drawWidth, drawHeight, framing);
+  context.drawImage(image, rect.x, rect.y, rect.width, rect.height);
   context.restore();
+}
+
+function resolveMediaDrawRect(
+  x: number,
+  y: number,
+  frameWidth: number,
+  frameHeight: number,
+  drawWidth: number,
+  drawHeight: number,
+  framing: { zoom?: number; offsetX?: number; offsetY?: number },
+) {
+  const zoom = Math.max(0.2, framing.zoom ?? 1);
+  const width = drawWidth * (drawWidth === frameWidth ? zoom : 1);
+  const height = drawHeight * (drawHeight === frameHeight ? zoom : 1);
+  const overflowX = Math.max(0, width - frameWidth);
+  const overflowY = Math.max(0, height - frameHeight);
+  const offsetX = Math.min(100, Math.max(-100, framing.offsetX ?? 0)) / 100;
+  const offsetY = Math.min(100, Math.max(-100, framing.offsetY ?? 0)) / 100;
+
+  return {
+    x: x + (frameWidth - width) / 2 - offsetX * overflowX * 0.5,
+    y: y + (frameHeight - height) / 2 - offsetY * overflowY * 0.5,
+    width,
+    height,
+  };
 }
 
 function normalizeRenderFontWeight(weight?: string) {

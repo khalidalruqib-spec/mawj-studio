@@ -352,6 +352,38 @@ export function LayerInspector({
             </select>
           </Field>
           <div>
+            <p className="mb-2 text-xs font-black text-[var(--muted)]">Crop and pan</p>
+            <div className="grid grid-cols-3 gap-2">
+              <NumberField
+                label="Zoom"
+                value={layer.mediaZoom ?? 1}
+                disabled={locked}
+                step={0.05}
+                onChange={(mediaZoom) => onChange({ mediaZoom: clampInspectorNumber(mediaZoom, 0.2, 4) })}
+              />
+              <NumberField
+                label="Pan X"
+                value={layer.mediaOffsetX ?? 0}
+                disabled={locked}
+                onChange={(mediaOffsetX) => onChange({ mediaOffsetX: clampInspectorNumber(mediaOffsetX, -100, 100) })}
+              />
+              <NumberField
+                label="Pan Y"
+                value={layer.mediaOffsetY ?? 0}
+                disabled={locked}
+                onChange={(mediaOffsetY) => onChange({ mediaOffsetY: clampInspectorNumber(mediaOffsetY, -100, 100) })}
+              />
+            </div>
+            <button
+              type="button"
+              disabled={locked}
+              onClick={() => onChange({ mediaZoom: 1, mediaOffsetX: 0, mediaOffsetY: 0 })}
+              className="mt-2 min-h-9 w-full rounded-lg border border-[var(--line)] bg-black/20 px-3 py-2 text-xs font-black text-[var(--muted)] transition hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Reset crop and pan
+            </button>
+          </div>
+          <div>
             <p className="mb-2 text-xs font-black text-[var(--muted)]">Visual filters</p>
             <div className="mb-2 grid grid-cols-2 gap-2">
               {MEDIA_FILTER_PRESETS.map((preset) => (

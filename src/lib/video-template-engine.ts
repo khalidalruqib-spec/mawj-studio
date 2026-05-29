@@ -100,6 +100,9 @@ export type TemplateLayer = {
   contrast?: number;
   saturation?: number;
   blur?: number;
+  mediaZoom?: number;
+  mediaOffsetX?: number;
+  mediaOffsetY?: number;
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;

@@ -157,6 +157,9 @@ export interface LayerStyle {
   contrast?: number;
   saturation?: number;
   blur?: number;
+  mediaZoom?: number;
+  mediaOffsetX?: number;
+  mediaOffsetY?: number;
 }
 
 export interface Keyframe {
@@ -236,6 +239,9 @@ export const layerStyleSchema = z.object({
   contrast: z.number().min(0).optional(),
   saturation: z.number().min(0).optional(),
   blur: z.number().min(0).optional(),
+  mediaZoom: z.number().positive().optional(),
+  mediaOffsetX: z.number().optional(),
+  mediaOffsetY: z.number().optional(),
 });
 
 export const keyframePropertiesSchema = z.object({

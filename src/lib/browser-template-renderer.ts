@@ -175,7 +175,11 @@ function drawLayer(
     const asset = layer.src ? assets.get(layer.src) : null;
     if (asset) {
       context.filter = resolveLayerFilter(layer) ?? "none";
-      drawMedia(context, asset, x, y, width, height, layer.fit ?? "cover", layer.borderRadius ?? 0);
+      drawMedia(context, asset, x, y, width, height, layer.fit ?? "cover", layer.borderRadius ?? 0, {
+        zoom: layer.mediaZoom,
+        offsetX: layer.mediaOffsetX,
+        offsetY: layer.mediaOffsetY,
+      });
       context.filter = "none";
     } else {
       drawMissingMedia(context, x, y, width, height, layer.type);
@@ -490,6 +494,7 @@ function drawMedia(
   height: number,
   fit: "cover" | "contain" | "fill",
   borderRadius = 0,
+  framing: { zoom?: number; offsetX?: number; offsetY?: number } = {},
 ) {
   const sourceWidth = asset instanceof HTMLVideoElement ? asset.videoWidth : asset.naturalWidth;
   const sourceHeight = asset instanceof HTMLVideoElement ? asset.videoHeight : asset.naturalHeight;
@@ -504,16 +509,44 @@ function drawMedia(
   context.clip();
 
   if (!sourceWidth || !sourceHeight || fit === "fill") {
-    context.drawImage(asset, x, y, width, height);
+    const rect = resolveMediaDrawRect(x, y, width, height, width, height, framing);
+    context.drawImage(asset, rect.x, rect.y, rect.width, rect.height);
     context.restore();
     return;
   }
 
-  const scale = fit === "cover" ? Math.max(width / sourceWidth, height / sourceHeight) : Math.min(width / sourceWidth, height / sourceHeight);
+  const zoom = Math.max(0.2, framing.zoom ?? 1);
+  const scale = (fit === "cover" ? Math.max(width / sourceWidth, height / sourceHeight) : Math.min(width / sourceWidth, height / sourceHeight)) * zoom;
   const drawWidth = sourceWidth * scale;
   const drawHeight = sourceHeight * scale;
-  context.drawImage(asset, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+  const rect = resolveMediaDrawRect(x, y, width, height, drawWidth, drawHeight, framing);
+  context.drawImage(asset, rect.x, rect.y, rect.width, rect.height);
   context.restore();
+}
+
+function resolveMediaDrawRect(
+  x: number,
+  y: number,
+  frameWidth: number,
+  frameHeight: number,
+  drawWidth: number,
+  drawHeight: number,
+  framing: { zoom?: number; offsetX?: number; offsetY?: number },
+) {
+  const zoom = Math.max(0.2, framing.zoom ?? 1);
+  const width = drawWidth * (drawWidth === frameWidth ? zoom : 1);
+  const height = drawHeight * (drawHeight === frameHeight ? zoom : 1);
+  const overflowX = Math.max(0, width - frameWidth);
+  const overflowY = Math.max(0, height - frameHeight);
+  const offsetX = Math.min(100, Math.max(-100, framing.offsetX ?? 0)) / 100;
+  const offsetY = Math.min(100, Math.max(-100, framing.offsetY ?? 0)) / 100;
+
+  return {
+    x: x + (frameWidth - width) / 2 - offsetX * overflowX * 0.5,
+    y: y + (frameHeight - height) / 2 - offsetY * overflowY * 0.5,
+    width,
+    height,
+  };
 }
 
 function drawMissingMedia(

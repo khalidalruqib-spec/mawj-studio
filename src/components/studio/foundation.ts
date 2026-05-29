@@ -127,6 +127,9 @@ export type TimelineLayer = {
   contrast?: number;
   saturation?: number;
   blur?: number;
+  mediaZoom?: number;
+  mediaOffsetX?: number;
+  mediaOffsetY?: number;
   animationIn?: TemplateAnimation;
   animationOut?: TemplateAnimation;
   locked?: boolean;

@@ -68,6 +68,9 @@ export type EditorTimelineLayerInput = {
   contrast?: number;
   saturation?: number;
   blur?: number;
+  mediaZoom?: number;
+  mediaOffsetX?: number;
+  mediaOffsetY?: number;
   animationIn?: TemplateAnimation;
   animationOut?: TemplateAnimation;
   locked?: boolean;
@@ -336,6 +339,9 @@ export function editorLayerPatchToVideoLayerPatch(
     contrast: patch.contrast,
     saturation: patch.saturation,
     blur: patch.blur,
+    mediaZoom: patch.mediaZoom,
+    mediaOffsetX: patch.mediaOffsetX,
+    mediaOffsetY: patch.mediaOffsetY,
   };
   const cleanStyle = removeUndefined(style);
 
@@ -505,6 +511,9 @@ function templateLayerToVideoLayer(
       contrast: layer.contrast,
       saturation: layer.saturation,
       blur: layer.blur,
+      mediaZoom: layer.mediaZoom,
+      mediaOffsetX: layer.mediaOffsetX,
+      mediaOffsetY: layer.mediaOffsetY,
     },
     effects: layer.type === "waveform" ? [{ id: `${layer.id}-waveform`, type: "waveform", enabled: true, params: {} }] : undefined,
     animationIn: templateAnimationToProjectAnimation(layer.animationIn),
@@ -565,6 +574,9 @@ function editorTimelineLayerToVideoLayer(
       contrast: layer.contrast ?? previous?.style?.contrast,
       saturation: layer.saturation ?? previous?.style?.saturation,
       blur: layer.blur ?? previous?.style?.blur,
+      mediaZoom: layer.mediaZoom ?? previous?.style?.mediaZoom,
+      mediaOffsetX: layer.mediaOffsetX ?? previous?.style?.mediaOffsetX,
+      mediaOffsetY: layer.mediaOffsetY ?? previous?.style?.mediaOffsetY,
     },
     effects:
       layer.type === "effect"
