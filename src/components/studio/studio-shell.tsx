@@ -2974,7 +2974,12 @@ export function ProfessionalVideoStudio() {
           onLanguageChange={setLanguageMode}
           onGoalChange={setGoal}
         />
-        <LayerInspector layer={selectedLayer} onChange={updateSelectedLayer} onDelete={deleteSelectedLayer} />
+        <LayerInspector
+          layer={selectedLayer}
+          aspectRatio={aspectRatio}
+          onChange={updateSelectedLayer}
+          onDelete={deleteSelectedLayer}
+        />
       </>
     );
   }

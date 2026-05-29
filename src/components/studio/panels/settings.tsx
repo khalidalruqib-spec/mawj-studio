@@ -187,10 +187,12 @@ export function ProjectSettingsPanel({
 
 export function LayerInspector({
   layer,
+  aspectRatio,
   onChange,
   onDelete,
 }: {
   layer: TimelineLayer | null;
+  aspectRatio: AspectRatio;
   onChange: (patch: Partial<TimelineLayer>) => void;
   onDelete: () => void;
 }) {
@@ -206,6 +208,10 @@ export function LayerInspector({
   const supportsBorderRadius = layer.type === "text" || layer.type === "caption" || layer.type === "shape" || layer.type === "image" || layer.type === "video";
   const supportsBackgroundColor = layer.type === "text" || layer.type === "caption" || layer.type === "shape";
   const supportsRotation = supportsBorderRadius;
+  const supportsQuickPosition = supportsBorderRadius;
+  const dimensions = getInspectorDimensions(aspectRatio);
+  const safeMargins = getInspectorSafeMargins(aspectRatio);
+  const quickPositionActions = createQuickPositionActions(layer, dimensions, safeMargins);
 
   return (
     <section className="panel p-4">
@@ -300,6 +306,24 @@ export function LayerInspector({
         <NumberField label="Width" value={layer.width ?? 0} disabled={locked} onChange={(width) => onChange({ width })} />
         <NumberField label="Height" value={layer.height ?? 0} disabled={locked} onChange={(height) => onChange({ height })} />
       </div>
+      {supportsQuickPosition ? (
+        <Field label="Quick position">
+          <div className="grid grid-cols-2 gap-2">
+            {quickPositionActions.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                disabled={locked}
+                onClick={() => onChange(action.patch)}
+                className="min-h-12 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-2 py-1 text-xs font-black transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="block text-white" dir="auto">{action.label}</span>
+                <span className="mt-0.5 block text-[10px] font-bold text-[var(--muted)]" dir="auto">{action.detail}</span>
+              </button>
+            ))}
+          </div>
+        </Field>
+      ) : null}
       <div className="mt-3 grid grid-cols-2 gap-2">
         <NumberField
           label="Opacity %"
@@ -543,6 +567,58 @@ function resolveInspectorTextShadow(layer: TimelineLayer, scale = 1) {
 
   if (!blur && !offsetX && !offsetY) return undefined;
   return `${offsetX}px ${offsetY}px ${blur}px ${layer.textShadowColor ?? "rgba(0,0,0,0.72)"}`;
+}
+
+function getInspectorDimensions(aspectRatio: AspectRatio) {
+  if (aspectRatio === "16:9") return { width: 1920, height: 1080 };
+  if (aspectRatio === "1:1") return { width: 1080, height: 1080 };
+  return { width: 1080, height: 1920 };
+}
+
+function getInspectorSafeMargins(aspectRatio: AspectRatio) {
+  if (aspectRatio === "9:16") return { top: 160, bottom: 260, left: 70, right: 70 };
+  if (aspectRatio === "1:1") return { top: 90, bottom: 120, left: 80, right: 80 };
+  return { top: 84, bottom: 104, left: 120, right: 120 };
+}
+
+function createQuickPositionActions(
+  layer: TimelineLayer,
+  dimensions: { width: number; height: number },
+  safeMargins: { top: number; bottom: number; left: number; right: number },
+) {
+  const layerWidth = Math.max(1, layer.width ?? dimensions.width * 0.74);
+  const layerHeight = Math.max(1, layer.height ?? dimensions.height * 0.12);
+  const centerX = Math.round((dimensions.width - layerWidth) / 2);
+  const centerY = Math.round((dimensions.height - layerHeight) / 2);
+  const safeWidth = dimensions.width - safeMargins.left - safeMargins.right;
+
+  return [
+    {
+      label: "Center",
+      detail: "وسط الكادر",
+      patch: { x: centerX, y: centerY },
+    },
+    {
+      label: "Top safe",
+      detail: "أعلى بدون قص",
+      patch: { x: centerX, y: safeMargins.top },
+    },
+    {
+      label: "Bottom safe",
+      detail: "أسفل بدون واجهات",
+      patch: { x: centerX, y: Math.round(dimensions.height - safeMargins.bottom - layerHeight) },
+    },
+    {
+      label: "Safe width",
+      detail: "عرض مناسب للنص",
+      patch: { x: safeMargins.left, width: safeWidth },
+    },
+    {
+      label: "Full frame",
+      detail: "املأ الكادر",
+      patch: { x: 0, y: 0, width: dimensions.width, height: dimensions.height },
+    },
+  ];
 }
 
 function BackgroundColorField({
