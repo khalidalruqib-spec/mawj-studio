@@ -18,6 +18,7 @@ import {
   Code2,
   Crown,
   Database,
+  Download,
   Eye,
   FileVideo2,
   Film,
@@ -32,6 +33,7 @@ import {
   Sparkles,
   Star,
   Tags,
+  Trash2,
   Upload,
   UploadCloud,
   Users,
@@ -49,7 +51,11 @@ import {
   type VideoTemplate,
   type VideoTemplateInput,
 } from "@/lib/video-template-engine";
-import { isCustomVideoTemplate, listCustomVideoTemplates } from "@/lib/custom-video-template-store";
+import {
+  deleteCustomVideoTemplate,
+  isCustomVideoTemplate,
+  listCustomVideoTemplates,
+} from "@/lib/custom-video-template-store";
 
 /* ─────────────────────────────────────────────────────────────────────
    Category metadata — colour, icon, Arabic label
@@ -209,6 +215,10 @@ function storeFavoriteTemplateIds(ids: Set<string>) {
   window.localStorage.setItem(FAVORITE_TEMPLATES_STORAGE_KEY, JSON.stringify(Array.from(ids)));
 }
 
+function slugifyFileName(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]+/g, "-").replace(/^-+|-+$/g, "") || "mawj-template";
+}
+
 /* ─────────────────────────────────────────────────────────────────────
    Main component
 ───────────────────────────────────────────────────────────────────── */
@@ -224,7 +234,7 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
   const [previewTemplate, setPreviewTemplate] = useState<VideoTemplate | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<VideoTemplate | null>(null);
   const [inputValues, setInputValues] = useState<TemplateUserInputs>({});
-  const [customTemplates] = useState<VideoTemplate[]>(listCustomVideoTemplates);
+  const [customTemplates, setCustomTemplates] = useState<VideoTemplate[]>(listCustomVideoTemplates);
 
   const availableTemplates = useMemo(() => {
     const seenIds = new Set<string>();
@@ -336,6 +346,29 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
       storeFavoriteTemplateIds(next);
       return next;
     });
+  }
+
+  function deleteCustomTemplate(templateId: string) {
+    setCustomTemplates(deleteCustomVideoTemplate(templateId));
+    setFavoriteTemplateIds((current) => {
+      if (!current.has(templateId)) return current;
+      const next = new Set(current);
+      next.delete(templateId);
+      storeFavoriteTemplateIds(next);
+      return next;
+    });
+    if (selectedTemplate?.id === templateId) closeTemplateForm();
+    if (previewTemplate?.id === templateId) setPreviewTemplate(null);
+  }
+
+  function downloadTemplateJson(template: VideoTemplate) {
+    const blob = new Blob([JSON.stringify(template, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${slugifyFileName(template.name)}.template.json`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   function useTemplate() {
@@ -561,6 +594,8 @@ export function TemplateBrowser({ templates }: { templates: VideoTemplate[] }) {
               onToggleFavorite={() => toggleFavoriteTemplate(template.id)}
               onPreview={() => setPreviewTemplate(template)}
               onUse={() => openTemplateForm(template)}
+              onDownloadJson={() => downloadTemplateJson(template)}
+              onDelete={isCustomVideoTemplate(template) ? () => deleteCustomTemplate(template.id) : undefined}
             />
           ))}
         </div>
@@ -606,17 +641,22 @@ function TemplateCard({
   onToggleFavorite,
   onPreview,
   onUse,
+  onDownloadJson,
+  onDelete,
 }: {
   template: VideoTemplate;
   isFavorite: boolean;
   onToggleFavorite: () => void;
   onPreview: () => void;
   onUse: () => void;
+  onDownloadJson: () => void;
+  onDelete?: () => void;
 }) {
   const meta = getCategoryMeta(template.category);
   const Icon = meta.icon;
   const isFeatured = FEATURED_IDS.has(template.id);
   const isMarket = isMarketTemplate(template);
+  const isCustom = isCustomVideoTemplate(template);
   const layerCount = countTemplateLayers(template);
   const editableCount = countEditableLayers(template);
   const captionCount = countLayersByType(template, "captions");
@@ -660,6 +700,12 @@ function TemplateCard({
               <span className="flex items-center gap-1 rounded-lg bg-[var(--brand)]/90 px-2 py-1 text-[10px] font-black text-black backdrop-blur-sm">
                 <Tags className="h-3 w-3" aria-hidden="true" />
                 Market
+              </span>
+            )}
+            {isCustom && (
+              <span className="flex items-center gap-1 rounded-lg bg-[var(--brand)]/90 px-2 py-1 text-[10px] font-black text-black backdrop-blur-sm">
+                <Layers3 className="h-3 w-3" aria-hidden="true" />
+                قوالبي
               </span>
             )}
             {isFeatured && (
@@ -764,6 +810,22 @@ function TemplateCard({
             استخدام
           </button>
         </div>
+        {isCustom ? (
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button type="button" onClick={onDownloadJson} className="btn-ghost text-sm">
+              <Download className="h-4 w-4" aria-hidden="true" />
+              JSON
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-2 text-sm font-black text-red-200 transition hover:bg-red-500/18"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              حذف
+            </button>
+          </div>
+        ) : null}
       </div>
     </article>
   );

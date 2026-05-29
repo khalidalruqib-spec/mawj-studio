@@ -25,6 +25,14 @@ export function storeCustomVideoTemplate(template: VideoTemplate): VideoTemplate
   return next;
 }
 
+export function deleteCustomVideoTemplate(templateId: string): VideoTemplate[] {
+  if (typeof window === "undefined") return [];
+
+  const next = listCustomVideoTemplates().filter((template) => template.id !== templateId);
+  window.localStorage.setItem(CUSTOM_VIDEO_TEMPLATES_STORAGE_KEY, JSON.stringify(next));
+  return next;
+}
+
 export function isCustomVideoTemplate(template: Pick<VideoTemplate, "id" | "category">) {
   return template.id.startsWith("custom-") || template.category === "Custom Templates";
 }
