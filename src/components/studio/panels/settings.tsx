@@ -364,7 +364,7 @@ export function LayerInspector({
   const supportsBlendMode = supportsBorderRadius;
   const dimensions = getInspectorDimensions(aspectRatio);
   const safeMargins = getInspectorSafeMargins(aspectRatio);
-  const quickPositionActions = createQuickPositionActions(layer, dimensions, safeMargins);
+  const { horizontal, vertical, sizing } = createLayerLayoutActions(layer, dimensions, safeMargins);
 
   return (
     <section className="panel p-4">
@@ -565,9 +565,10 @@ export function LayerInspector({
         <NumberField label="Height" value={layer.height ?? 0} disabled={locked} onChange={(height) => onChange({ height })} />
       </div>
       {supportsQuickPosition ? (
-        <Field label="Quick position">
-          <div className="grid grid-cols-2 gap-2">
-            {quickPositionActions.map((action) => (
+        <div className="space-y-2">
+          <p className="text-xs font-black text-[var(--muted)]">Canvas align</p>
+          <div className="grid grid-cols-3 gap-2">
+            {horizontal.map((action) => (
               <button
                 key={action.label}
                 type="button"
@@ -580,7 +581,36 @@ export function LayerInspector({
               </button>
             ))}
           </div>
-        </Field>
+          <div className="grid grid-cols-3 gap-2">
+            {vertical.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                disabled={locked}
+                onClick={() => onChange(action.patch)}
+                className="min-h-12 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-2 py-1 text-xs font-black transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="block text-white" dir="auto">{action.label}</span>
+                <span className="mt-0.5 block text-[10px] font-bold text-[var(--muted)]" dir="auto">{action.detail}</span>
+              </button>
+            ))}
+          </div>
+          <p className="pt-1 text-xs font-black text-[var(--muted)]">Smart sizing</p>
+          <div className="grid grid-cols-2 gap-2">
+            {sizing.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                disabled={locked}
+                onClick={() => onChange(action.patch)}
+                className="min-h-12 rounded-lg border border-[var(--line)] bg-[var(--panel-soft)] px-2 py-1 text-xs font-black transition hover:border-[var(--brand)] hover:bg-[var(--brand-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="block text-white" dir="auto">{action.label}</span>
+                <span className="mt-0.5 block text-[10px] font-bold text-[var(--muted)]" dir="auto">{action.detail}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       ) : null}
       <div className="mt-3 grid grid-cols-2 gap-2">
         <NumberField
@@ -974,7 +1004,7 @@ function getInspectorSafeMargins(aspectRatio: AspectRatio) {
   return { top: 84, bottom: 104, left: 120, right: 120 };
 }
 
-function createQuickPositionActions(
+function createLayerLayoutActions(
   layer: TimelineLayer,
   dimensions: { width: number; height: number },
   safeMargins: { top: number; bottom: number; left: number; right: number },
@@ -983,35 +1013,29 @@ function createQuickPositionActions(
   const layerHeight = Math.max(1, layer.height ?? dimensions.height * 0.12);
   const centerX = Math.round((dimensions.width - layerWidth) / 2);
   const centerY = Math.round((dimensions.height - layerHeight) / 2);
-  const safeWidth = dimensions.width - safeMargins.left - safeMargins.right;
+  const safeWidth = Math.max(1, dimensions.width - safeMargins.left - safeMargins.right);
+  const safeHeight = Math.max(1, dimensions.height - safeMargins.top - safeMargins.bottom);
+  const rightX = Math.round(clampInspectorNumber(dimensions.width - safeMargins.right - layerWidth, 0, Math.max(0, dimensions.width - layerWidth)));
+  const bottomY = Math.round(clampInspectorNumber(dimensions.height - safeMargins.bottom - layerHeight, 0, Math.max(0, dimensions.height - layerHeight)));
 
-  return [
-    {
-      label: "Center",
-      detail: "وسط الكادر",
-      patch: { x: centerX, y: centerY },
-    },
-    {
-      label: "Top safe",
-      detail: "أعلى بدون قص",
-      patch: { x: centerX, y: safeMargins.top },
-    },
-    {
-      label: "Bottom safe",
-      detail: "أسفل بدون واجهات",
-      patch: { x: centerX, y: Math.round(dimensions.height - safeMargins.bottom - layerHeight) },
-    },
-    {
-      label: "Safe width",
-      detail: "عرض مناسب للنص",
-      patch: { x: safeMargins.left, width: safeWidth },
-    },
-    {
-      label: "Full frame",
-      detail: "املأ الكادر",
-      patch: { x: 0, y: 0, width: dimensions.width, height: dimensions.height },
-    },
-  ];
+  return {
+    horizontal: [
+      { label: "Left", detail: "يسار آمن", patch: { x: safeMargins.left } },
+      { label: "Center X", detail: "توسيط أفقي", patch: { x: centerX } },
+      { label: "Right", detail: "يمين آمن", patch: { x: rightX } },
+    ],
+    vertical: [
+      { label: "Top", detail: "أعلى آمن", patch: { y: safeMargins.top } },
+      { label: "Center Y", detail: "توسيط عمودي", patch: { y: centerY } },
+      { label: "Bottom", detail: "أسفل آمن", patch: { y: bottomY } },
+    ],
+    sizing: [
+      { label: "Safe width", detail: "عرض مناسب للنص", patch: { x: safeMargins.left, width: safeWidth } },
+      { label: "Safe frame", detail: "داخل الهوامش", patch: { x: safeMargins.left, y: safeMargins.top, width: safeWidth, height: safeHeight } },
+      { label: "Full width", detail: "عرض الكادر", patch: { x: 0, width: dimensions.width } },
+      { label: "Full frame", detail: "املأ الكادر", patch: { x: 0, y: 0, width: dimensions.width, height: dimensions.height } },
+    ],
+  };
 }
 
 function AnimationControls({
